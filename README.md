@@ -5,7 +5,7 @@
 
 ## 简介
 
-Picasso是58同城推出的一款sketch设计稿智能解析工具，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
+[Picasso](https://picassoui.58.com)是58同城推出的一款sketch设计稿智能解析工具，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
 
 ## 前提
 
@@ -18,8 +18,9 @@ Picasso是58同城推出的一款sketch设计稿智能解析工具，可将sketc
 - 注意：仅仅支持Mac环境(由于Sketch软件只支持Mac环境，而解析需要依赖Sketch软件)，并且需要安装Sketch软件,[下载Sketch](https://www.sketch.com/)
 
 ### 第一步. picassoImg插件安装(辅助解析的sketch插件，必须安装)
+注：安装picassoImg插件之前，请先安装[sketch](https://www.sketch.com/)
 
-[下载picassoImg插件](https://picassoui.58.com/index/downloadPicassoImg) => 解压，双击安装即可
+[下载picassoImg插件](https://picassoui.58.com/index/downloadPicassoImg) => picassoImg.sketchplugin.zip 解压压缩包，双击安装即可
 
 ### 命令行使用
 
