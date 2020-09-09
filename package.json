@@ -1,0 +1,55 @@
+{
+    "name": "@wubafe/picasso",
+    "version": "0.0.3",
+    "description": "sketch设计稿智能解析工具",
+    "main": "src/index.js",
+    "scripts": {
+        "lint": "eslint ./src --fix --ext .js",
+        "dev": "node test/index.js",
+        "test": "node test/index.js"
+    },
+    "pre-commit": [
+        "lint"
+    ],
+    "bin": {
+        "picasso": "bin/index.js"
+    },
+    "keywords": [
+        "picasso",
+        "Picasso",
+        "code",
+        "parse",
+        "sketch",
+        "sketchToCode",
+        "设计稿",
+        "代码转换",
+        "设计稿转换代码"
+    ],
+    "author": {
+        "name": "huangwencun",
+        "email": "huangwencun1990@gmail.com"
+    },
+    "bugs": {
+        "url": "https://github.com/wuba/Picasso/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/wuba/Picasso.git"
+    },
+    "license": "MIT",
+    "dependencies": {
+        "commander": "^5.1.0",
+        "file-system": "^2.2.2",
+        "get-pixels": "^3.3.2",
+        "image-size": "^0.6.3",
+        "images": "^3.0.2",
+        "md5": "2.2.1",
+        "node-sass": "^4.13.0",
+        "rimraf": "^2.6.2",
+        "zip-local": "^0.3.4"
+    },
+    "devDependencies": {
+        "babel-eslint": "^10.1.0",
+        "eslint": "^7.5.0"
+    }
+}

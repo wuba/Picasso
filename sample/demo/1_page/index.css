@@ -1,0 +1,647 @@
+.wrapper {
+  width: 7.5rem;
+  height: 19.29rem;
+  margin: 0 auto;
+  overflow: hidden;
+  background-color: #f2f2f2;
+  border-radius: 0.1rem;
+}
+
+.wrapper .section-a {
+  width: 7.5rem;
+  height: 6.38rem;
+}
+
+.wrapper .section-a .rat {
+  width: 7.5rem;
+  height: 4.5rem;
+  padding-top: 0.001rem;
+  background-image: url(./images/picasso_e08030ec1a5a2246f64db6fe7e4daeac.png);
+  background-size: 7.5rem 4.5rem;
+}
+
+.wrapper .section-a .rat .valley {
+  display: flex;
+  width: 7.27rem;
+  height: 0.32rem;
+  margin: 0.02rem auto 0;
+  align-items: center;
+}
+
+.wrapper .section-a .rat .valley .pence {
+  width: 0.61rem;
+  height: 0.1rem;
+}
+
+.wrapper .section-a .rat .valley .unconditional {
+  height: 0.3rem;
+  margin-left: 0.06rem;
+  font-size: 0.217rem;
+  line-height: 0.3rem;
+  color: white;
+}
+
+.wrapper .section-a .rat .valley .feather {
+  width: 0.24rem;
+  height: 0.16rem;
+  margin-left: 0.05rem;
+}
+
+.wrapper .section-a .rat .valley .zoo {
+  height: 0.3rem;
+  margin-left: 1.39rem;
+  font-size: 0.217rem;
+  line-height: 0.3rem;
+  color: white;
+  text-align: center;
+}
+
+.wrapper .section-a .rat .valley .build {
+  display: flex;
+  height: 0.3rem;
+  margin-left: 2.13rem;
+  align-items: center;
+}
+
+.wrapper .section-a .rat .valley .build .field {
+  height: 0.3rem;
+  font-size: 0.217rem;
+  line-height: 0.3rem;
+  color: white;
+}
+
+.wrapper .section-a .rat .valley .build .nationality {
+  width: 0.44rem;
+  height: 0.17rem;
+  margin-left: 0.06rem;
+}
+
+.wrapper .section-a .rat .salad {
+  display: flex;
+  height: 0.48rem;
+  margin: 0.26rem 0 0 0.3rem;
+  align-items: center;
+}
+
+.wrapper .section-a .rat .salad .ferry {
+  width: 0.18rem;
+  height: 0.33rem;
+}
+
+.wrapper .section-a .rat .salad .building {
+  height: 0.48rem;
+  margin-left: 2.59rem;
+  font-size: 0.34rem;
+  line-height: 0.48rem;
+  color: white;
+  text-align: center;
+}
+
+.wrapper .section-a .limit {
+  width: 6.9rem;
+  height: 4.8rem;
+  padding-top: 0.001rem;
+  margin: -2.92rem auto 0;
+  background-color: white;
+  border-radius: 0.1rem;
+}
+
+.wrapper .section-a .limit .stewardess {
+  display: flex;
+  width: 6.11rem;
+  height: 0.48rem;
+  margin: 0.54rem auto 0;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wrapper .section-a .limit .stewardess .stewardess-left {
+  height: 0.48rem;
+  font-size: 0.34rem;
+  font-weight: 500;
+  line-height: 0.48rem;
+  color: #333333;
+}
+
+.wrapper .section-a .limit .stewardess .stewardess-right {
+  width: 0.14rem;
+  height: 0.24rem;
+}
+
+.wrapper .section-a .limit .water-ul {
+  width: 6.11rem;
+  height: 2.9rem;
+  margin: 0.46rem auto 0;
+}
+
+.wrapper .section-a .limit .water-ul .water-li {
+  display: flex;
+  width: 6.11rem;
+  height: 0.98rem;
+  border-top: 0.02rem solid #f2f2f2;
+}
+
+.wrapper .section-a .limit .water-ul .water-li.li0 {
+  justify-content: space-between;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-left {
+  height: 0.48rem;
+  margin-top: 0.49rem;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-left.subli0 {
+  font-size: 0.34rem;
+  font-weight: 500;
+  line-height: 0.48rem;
+  color: #333333;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-right {
+  height: 0.48rem;
+  margin-top: 0.5rem;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-right.subli0 {
+  display: flex;
+  align-items: center;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-right .manage {
+  height: 0.48rem;
+  font-size: 0.34rem;
+  font-weight: 500;
+  line-height: 0.48rem;
+  color: #ff552e;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-right .path {
+  width: 0.14rem;
+  height: 0.24rem;
+  margin-left: 0.2rem;
+}
+
+.wrapper .section-a .limit .water-ul .water-li {
+  display: flex;
+  width: 6.11rem;
+  height: 0.98rem;
+  border-top: 0.02rem solid #f2f2f2;
+}
+
+.wrapper .section-a .limit .water-ul .water-li.li1 {
+  margin-top: 0.45rem;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-left {
+  height: 0.48rem;
+  margin-top: 0.49rem;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-left.subli1 {
+  width: 0.23rem;
+  height: 0.23rem;
+  margin-top: 0.41rem;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-right {
+  height: 0.48rem;
+  margin-top: 0.5rem;
+}
+
+.wrapper .section-a .limit .water-ul .water-li .water-li-right.subli1 {
+  width: 5.68rem;
+  height: 1.14rem;
+  margin: 0.33rem 0 0 0.2rem;
+  font-size: 0.24rem;
+  line-height: 0.38rem;
+  color: #666666;
+}
+
+.wrapper .section-b {
+  display: flex;
+  width: 6.9rem;
+  height: 1.78rem;
+  margin: 0.3rem auto 0;
+  background-color: white;
+  border-radius: 0.1rem;
+  align-items: center;
+}
+
+.wrapper .section-b .valid {
+  width: 1.17rem;
+  height: 0.88rem;
+  margin-left: 0.3rem;
+}
+
+.wrapper .section-b .hurry {
+  height: 0.75rem;
+  margin-left: 0.2rem;
+}
+
+.wrapper .section-b .hurry .argue {
+  height: 0.37rem;
+  font-size: 0.26rem;
+  font-weight: 500;
+  line-height: 0.37rem;
+  color: #555555;
+  text-align: center;
+}
+
+.wrapper .section-b .hurry .accommodation {
+  height: 0.3rem;
+  margin-top: 0.08rem;
+  font-size: 0.22rem;
+  line-height: 0.3rem;
+  color: #999999;
+}
+
+.wrapper .section-c {
+  width: 6.9rem;
+  height: 8.06rem;
+  padding-top: 0.001rem;
+  margin: 0.3rem auto 0;
+  background-color: white;
+  border-radius: 0.1rem;
+}
+
+.wrapper .section-c .mixture {
+  display: flex;
+  width: 2.24rem;
+  height: 0.42rem;
+  margin: 0.4rem 0 0 0.36rem;
+  align-items: center;
+}
+
+.wrapper .section-c .mixture .time {
+  width: 0.05rem;
+  height: 0.25rem;
+  background-color: #333333;
+  border-radius: 0.025rem;
+}
+
+.wrapper .section-c .mixture .picnic {
+  height: 0.42rem;
+  margin-left: 0.09rem;
+  font-size: 0.3rem;
+  font-weight: 500;
+  line-height: 0.42rem;
+  color: #333333;
+}
+
+.wrapper .section-c .consensus {
+  width: 6.4rem;
+  height: 5.91rem;
+  margin: 0.4rem 0 0 0.3rem;
+}
+
+.wrapper .section-c .consensus .smoke {
+  display: flex;
+  width: 5.78rem;
+  height: 1.11rem;
+}
+
+.wrapper .section-c .consensus .smoke .protection {
+  width: 1.11rem;
+  height: 1.11rem;
+  padding-top: 0.001rem;
+  background-image: url(./images/picasso_6bc2a17f6dde3cd8825ae36bfe856c25.png);
+  background-size: 1.11rem 1.11rem;
+}
+
+.wrapper .section-c .consensus .smoke .protection .conscience {
+  width: 0.14rem;
+  height: 0.13rem;
+  margin: 0.19rem auto 0;
+}
+
+.wrapper .section-c .consensus .smoke .protection .sense {
+  width: 0.34rem;
+  height: 0.25rem;
+  margin: 0 auto;
+}
+
+.wrapper .section-c .consensus .smoke .protection .owe {
+  height: 0.28rem;
+  margin-top: 0.06rem;
+  font-size: 0.2rem;
+  line-height: 0.28rem;
+  color: #999999;
+  text-align: center;
+}
+
+.wrapper .section-c .consensus .smoke .chant {
+  width: 4.4rem;
+  height: 0.77rem;
+  margin: 0.02rem 0 0 0.27rem;
+}
+
+.wrapper .section-c .consensus .smoke .chant .term {
+  height: 0.37rem;
+  font-size: 0.26rem;
+  font-weight: 500;
+  line-height: 0.37rem;
+  color: #555555;
+}
+
+.wrapper .section-c .consensus .smoke .chant .urban {
+  height: 0.3rem;
+  margin-top: 0.1rem;
+  font-size: 0.22rem;
+  line-height: 0.3rem;
+  color: #777777;
+  text-align: center;
+}
+
+.wrapper .section-c .consensus .considerate {
+  display: flex;
+  width: 6.4rem;
+  height: 1.11rem;
+  margin-top: 0.49rem;
+  align-items: center;
+}
+
+.wrapper .section-c .consensus .considerate .afraid {
+  width: 1.11rem;
+  height: 1.11rem;
+  padding-top: 0.001rem;
+  background-image: url(./images/picasso_6bc2a17f6dde3cd8825ae36bfe856c25.png);
+  background-size: 1.11rem 1.11rem;
+}
+
+.wrapper .section-c .consensus .considerate .afraid .bandage {
+  width: 0.38rem;
+  height: 0.38rem;
+  margin: 0.2rem auto 0;
+  font-size: 0.22rem;
+  line-height: 0.38rem;
+  color: white;
+  text-align: center;
+  background-color: #999999;
+  border-radius: 50%;
+}
+
+.wrapper .section-c .consensus .considerate .afraid .table {
+  height: 0.28rem;
+  margin-top: 0.05rem;
+  font-size: 0.2rem;
+  line-height: 0.28rem;
+  color: #999999;
+  text-align: center;
+}
+
+.wrapper .section-c .consensus .considerate .tennis {
+  width: 5.02rem;
+  height: 1.07rem;
+  margin-left: 0.27rem;
+}
+
+.wrapper .section-c .consensus .considerate .tennis .candidate {
+  height: 0.37rem;
+  font-size: 0.26rem;
+  font-weight: 500;
+  line-height: 0.37rem;
+  color: #555555;
+}
+
+.wrapper .section-c .consensus .considerate .tennis .combine {
+  width: 5.02rem;
+  height: 0.6rem;
+  margin-top: 0.1rem;
+  font-size: 0.22rem;
+  color: #777777;
+}
+
+.wrapper .section-c .consensus .hurricane {
+  display: flex;
+  width: 6.4rem;
+  height: 1.11rem;
+  margin-top: 0.49rem;
+  align-items: center;
+}
+
+.wrapper .section-c .consensus .hurricane .independent {
+  width: 1.11rem;
+  height: 1.11rem;
+  padding-top: 0.001rem;
+  background-image: url(./images/picasso_6bc2a17f6dde3cd8825ae36bfe856c25.png);
+  background-size: 1.11rem 1.11rem;
+}
+
+.wrapper .section-c .consensus .hurricane .independent .cancer {
+  width: 0.38rem;
+  height: 0.32rem;
+  margin: 0.23rem auto 0;
+}
+
+.wrapper .section-c .consensus .hurricane .independent .choose {
+  height: 0.28rem;
+  margin-top: 0.04rem;
+  font-size: 0.2rem;
+  line-height: 0.28rem;
+  color: #999999;
+  text-align: center;
+}
+
+.wrapper .section-c .consensus .hurricane .town {
+  width: 5.02rem;
+  height: 1.07rem;
+  margin-left: 0.27rem;
+}
+
+.wrapper .section-c .consensus .hurricane .town .desire {
+  height: 0.37rem;
+  font-size: 0.26rem;
+  font-weight: 500;
+  line-height: 0.37rem;
+  color: #555555;
+}
+
+.wrapper .section-c .consensus .hurricane .town .visual {
+  width: 5.02rem;
+  height: 0.6rem;
+  margin-top: 0.1rem;
+  font-size: 0.22rem;
+  color: #777777;
+}
+
+.wrapper .section-c .consensus .life {
+  display: flex;
+  width: 6.4rem;
+  height: 1.11rem;
+  margin-top: 0.49rem;
+  align-items: center;
+}
+
+.wrapper .section-c .consensus .life .submit {
+  width: 1.11rem;
+  height: 1.11rem;
+  padding-top: 0.001rem;
+  background-image: url(./images/picasso_6bc2a17f6dde3cd8825ae36bfe856c25.png);
+  background-size: 1.11rem 1.11rem;
+}
+
+.wrapper .section-c .consensus .life .submit .physics {
+  width: 0.38rem;
+  height: 0.34rem;
+  margin: 0.2rem auto 0;
+}
+
+.wrapper .section-c .consensus .life .submit .meaning {
+  height: 0.28rem;
+  margin-top: 0.05rem;
+  font-size: 0.2rem;
+  line-height: 0.28rem;
+  color: #999999;
+  text-align: center;
+}
+
+.wrapper .section-c .consensus .life .country {
+  width: 5.02rem;
+  height: 1.07rem;
+  margin-left: 0.27rem;
+}
+
+.wrapper .section-c .consensus .life .country .half {
+  height: 0.37rem;
+  font-size: 0.26rem;
+  font-weight: 500;
+  line-height: 0.37rem;
+  color: #555555;
+}
+
+.wrapper .section-c .consensus .life .country .joy {
+  width: 5.02rem;
+  height: 0.6rem;
+  margin-top: 0.1rem;
+  font-size: 0.22rem;
+  color: #777777;
+}
+
+.wrapper .section-c .adult {
+  display: flex;
+  width: 1.1rem;
+  height: 0.3rem;
+  margin: 0.42rem auto 0;
+  align-items: center;
+}
+
+.wrapper .section-c .adult .servant {
+  height: 0.3rem;
+  font-size: 0.22rem;
+  line-height: 0.3rem;
+  color: #999999;
+}
+
+.wrapper .section-c .adult .care {
+  width: 0.11rem;
+  height: 0.2rem;
+  margin-left: 0.11rem;
+}
+
+.wrapper .section-d {
+  display: flex;
+  width: 3rem;
+  height: 0.28rem;
+  margin: 0.13rem 0 0 0.6rem;
+}
+
+.wrapper .section-d .search {
+  height: 0.28rem;
+  font-size: 0.2rem;
+  line-height: 0.28rem;
+  color: #666666;
+}
+
+.wrapper .section-d .same {
+  height: 0.28rem;
+  font-size: 0.2rem;
+  line-height: 0.28rem;
+  color: #ff552e;
+}
+
+.wrapper .section-e {
+  display: flex;
+  width: 4.3rem;
+  height: 0.5rem;
+  margin: 0.16rem 0 0 0.3rem;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 0.04rem;
+  align-items: center;
+}
+
+.wrapper .section-e .furniture {
+  height: 0.3rem;
+  margin-left: 0.14rem;
+  font-size: 0.22rem;
+  line-height: 0.3rem;
+  color: white;
+}
+
+.wrapper .section-e .agree {
+  width: 0.13rem;
+  height: 0.13rem;
+  margin-left: 0.31rem;
+}
+
+.wrapper .section-f {
+  width: 0.16rem;
+  height: 0.09rem;
+  margin-left: 1.05rem;
+}
+
+.wrapper .section-g {
+  width: 7.5rem;
+  height: 0.01rem;
+  margin-top: 0.01rem;
+  background-color: #eaeaea;
+}
+
+.wrapper .section-h {
+  display: flex;
+  width: 7.5rem;
+  height: 1.28rem;
+  background-color: white;
+  align-items: center;
+}
+
+.wrapper .section-h .heart {
+  display: flex;
+  width: 1.9rem;
+  height: 0.56rem;
+  margin-left: 0.3rem;
+}
+
+.wrapper .section-h .heart .unemployment {
+  height: 0.4rem;
+  margin-top: 0.09rem;
+  font-size: 0.28rem;
+  line-height: 0.4rem;
+  color: #333333;
+}
+
+.wrapper .section-h .heart .nearly {
+  width: 0.76rem;
+  height: 0.56rem;
+  font-size: 0.28rem;
+  font-weight: 500;
+  color: #ff552e;
+}
+
+.wrapper .section-h .heart .bond {
+  width: 0.2rem;
+  height: 0.2rem;
+  margin-left: 0.1rem;
+}
+
+.wrapper .section-h .master {
+  width: 3.8rem;
+  height: 0.96rem;
+  margin-left: 1.2rem;
+  font-size: 0.32rem;
+  font-weight: 700;
+  line-height: 0.96rem;
+  color: white;
+  text-align: center;
+  background-color: #ff552e;
+  border-radius: 0.06rem;
+}

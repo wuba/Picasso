@@ -1,0 +1,6 @@
+sample
+bin/index.js
+# 忽略sketch插件模板文件
+src/handleSketchFile/exportShape/exportFullSliceTemplate.js
+src/handleSketchFile/exportShape/openSketchTemplate.js
+src/handleSketchFile/exportShape/saveVersionTemplate.js
