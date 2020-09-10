@@ -22,7 +22,7 @@
 
 [下载picassoImg插件](https://picassoui.58.com/index/downloadPicassoImg) => picassoImg.sketchplugin.zip 解压压缩包，双击安装即可，如下：
 
-<img src="https://note.youdao.com/yws/public/resource/776f0c95176fd505cf55543804a57998/xmlnote/4F443D22A3DC414BA9EFCB5548176ACE/46" width="600" />
+<img src="https://note.youdao.com/yws/public/resource/776f0c95176fd505cf55543804a57998/xmlnote/4F443D22A3DC414BA9EFCB5548176ACE/46" width="400" />
 
 安装完成后在sketch软件中看到该插件，如下图所示：
 
