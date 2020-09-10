@@ -21,12 +21,10 @@
 注：安装picassoassets插件之前，请先安装[sketch](https://www.sketch.com/)
 
 [下载picassoassets插件](https://picassoui.58.com/index/downloadPicassoassets) => picassoassets.sketchplugin.zip 解压压缩包，双击安装即可，如下：
-
-![avatar](assets/demo1.gif)
+![avatar](https://github.com/wuba/Picasso/blob/master/assets/demo1.gif)
 
 安装完成后在sketch软件中看到该插件，如下图所示：
-
-![avatar](assets/plugins1.png)
+![avatar](https://github.com/wuba/Picasso/blob/master/assets/plugins1.png)
 
 
 ### 命令行使用
@@ -62,16 +60,13 @@
 ```
 
 解析过程中,打印日志如下图所示：
-
-![avatar](assets/picasso3.jpg)
+![avatar](https://github.com/wuba/Picasso/blob/master/assets/picasso3.jpg)
 
 解析结果文件（如果不设置dest输出目录，解析结果会放到sketch文件同目录下，结果文件夹名同sketch文件）：
-
-![avatar](assets/picasso1.png)
+![avatar](https://github.com/wuba/Picasso/blob/master/assets/picasso1.png)
 
 页面效果展示：
-
-![avatar](assets/picasso2.png)
+![avatar](https://github.com/wuba/Picasso/blob/master/assets/picasso2.png)
 
 ### 项目中使用
 
