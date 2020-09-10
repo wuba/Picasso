@@ -17,13 +17,15 @@
 
 - 注意：仅仅支持Mac环境(由于Sketch软件只支持Mac环境，而解析需要依赖Sketch软件)，并且需要安装Sketch软件,[下载Sketch](https://www.sketch.com/)
 
-### 第一步. picassoassets插件安装(辅助解析的sketch插件，必须安装)
-注：安装picassoassets插件之前，请先安装[sketch](https://www.sketch.com/)
+### 第一步. picassoImg插件安装(辅助解析的sketch插件，必须安装)
+注：安装picassoImg插件之前，请先安装[sketch](https://www.sketch.com/)
 
-[下载picassoassets插件](https://picassoui.58.com/index/downloadPicassoassets) => picassoassets.sketchplugin.zip 解压压缩包，双击安装即可，如下：
+[下载picassoImg插件](https://picassoui.58.com/index/downloadPicassoImg) => picassoImg.sketchplugin.zip 解压压缩包，双击安装即可，如下：
+
 ![avatar](https://github.com/wuba/Picasso/blob/master/assets/demo1.gif)
 
 安装完成后在sketch软件中看到该插件，如下图所示：
+
 ![avatar](https://github.com/wuba/Picasso/blob/master/assets/plugins1.png)
 
 
@@ -60,12 +62,15 @@
 ```
 
 解析过程中,打印日志如下图所示：
+
 ![avatar](https://github.com/wuba/Picasso/blob/master/assets/picasso3.jpg)
 
 解析结果文件（如果不设置dest输出目录，解析结果会放到sketch文件同目录下，结果文件夹名同sketch文件）：
+
 ![avatar](https://github.com/wuba/Picasso/blob/master/assets/picasso1.png)
 
 页面效果展示：
+
 ![avatar](https://github.com/wuba/Picasso/blob/master/assets/picasso2.png)
 
 ### 项目中使用
