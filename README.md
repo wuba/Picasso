@@ -22,12 +22,11 @@
 
 [下载picassoImg插件](https://picassoui.58.com/index/downloadPicassoImg) => picassoImg.sketchplugin.zip 解压压缩包，双击安装即可，如下：
 
-![avatar](https://github.com/wuba/Picasso/blob/master/assets/demo1.gif)
+<img src="https://note.youdao.com/yws/public/resource/776f0c95176fd505cf55543804a57998/xmlnote/4F443D22A3DC414BA9EFCB5548176ACE/46" width="600" />
 
 安装完成后在sketch软件中看到该插件，如下图所示：
 
-![avatar](https://github.com/wuba/Picasso/blob/master/assets/plugins1.png)
-
+<img src="https://note.youdao.com/yws/public/resource/776f0c95176fd505cf55543804a57998/xmlnote/DBA2FEDFA1844D73957CCF683255D2CC/50" width="600" />
 
 ### 命令行使用
 
@@ -63,15 +62,14 @@
 
 解析过程中,打印日志如下图所示：
 
-![avatar](https://github.com/wuba/Picasso/blob/master/assets/picasso3.jpg)
+<img src="https://note.youdao.com/yws/public/resource/776f0c95176fd505cf55543804a57998/xmlnote/C4AA07DBA3064DF381BE539C71EE965C/48" width="600" />
 
 解析结果文件（如果不设置dest输出目录，解析结果会放到sketch文件同目录下，结果文件夹名同sketch文件）：
-
-![avatar](https://github.com/wuba/Picasso/blob/master/assets/picasso1.png)
+<img src="https://note.youdao.com/yws/public/resource/776f0c95176fd505cf55543804a57998/xmlnote/DB70BF9FD9054621832793F2E1FCC5B2/49" width="600" />
 
 页面效果展示：
 
-![avatar](https://github.com/wuba/Picasso/blob/master/assets/picasso2.png)
+<img src="https://note.youdao.com/yws/public/resource/776f0c95176fd505cf55543804a57998/xmlnote/28652F542B544CF1AF1FF7031020C486/51" width="600" />
 
 ### 项目中使用
 
