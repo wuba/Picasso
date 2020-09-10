@@ -22,11 +22,11 @@
 
 [下载picassoImg插件](https://picassoui.58.com/index/downloadPicassoImg) => picassoImg.sketchplugin.zip 解压压缩包，双击安装即可，如下：
 
-<img src="https://pic2.58.com/escstatic/fecar/pmuse/picasso/demo1.gif" width="400" />
+<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/demo1.gif" width="400" />
 
 安装完成后在sketch软件中看到该插件，如下图所示：
 
-<img src="https://pic2.58.com/escstatic/fecar/pmuse/picasso/plugins01.png" width="600" />
+<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/plugins01.png" width="600" />
 
 ### 命令行使用
 
@@ -62,15 +62,15 @@
 
 解析过程中,打印日志如下图所示：
 
-<img src="https://pic2.58.com/escstatic/fecar/pmuse/picasso/picasso03.jpg" width="600" />
+<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/picasso03.jpg" width="600" />
 
 解析结果文件（如果不设置dest输出目录，解析结果会放到sketch文件同目录下，结果文件夹名同sketch文件）：
 
-<img src="https://pic2.58.com/escstatic/fecar/pmuse/picasso/picasso01.png" width="600" />
+<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/picasso01.png" width="600" />
 
 页面效果展示：
 
-<img src="https://pic2.58.com/escstatic/fecar/pmuse/picasso/picasso02.png" width="600" />
+<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/picasso02.png" width="600" />
 
 ### 项目中使用
 
