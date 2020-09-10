@@ -55,7 +55,7 @@
   -v, --version               picasso版本
   -s, --src [path]            sketch设计稿源文件路径
   -d, --dest [string]         解析生成的代码存放路径
-  -s, --assetsScale [number]     图片尺寸(1:1倍图 1.5:1.5倍图 2:2倍图 3:3倍图) (default: 1)
+  -s, --imgScale [number]     图片尺寸(1:1倍图 1.5:1.5倍图 2:2倍图 3:3倍图) (default: 1)
   -t, --pageType [number]     解析类型: 1-普通版 2-运营版 (default: 1)
   -p, --classPrefix [string]  生成样式className前缀 (default: "")
 ```
