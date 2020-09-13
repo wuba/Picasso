@@ -1,6 +1,6 @@
 {
     "name": "@wubafe/picasso",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "description": "sketch设计稿智能解析工具",
     "main": "src/index.js",
     "scripts": {
