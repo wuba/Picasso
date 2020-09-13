@@ -5,7 +5,6 @@ const child_process = require("child_process");
 const { sketchtoolPath } = require("../../../common/path");
 
 const parseSymbol = require("./parseSymbol");
-const { handleMeta } = require("../../../common/sketchTools");
 const calculateCoordinate = require("./calculateCoordinate");
 const calculateHiddenLayer = require("./calculateHiddenLayer");
 const handleMask = require("./handleMask");
@@ -111,14 +110,13 @@ module.exports = async (
     } catch (error) {
         console.log(error);
     }
-    //获取版本信息
-    let { appVersion, fonts } = handleMeta(sketchId, artboardIndex);
+
     return {
         data,
         platform,
         size,
-        appVersion,
-        fonts,
+        appVersion: '',
+        fonts: '',
         isMongolian: false,
         errorObj
     };

@@ -1,0 +1,17 @@
+{
+  "identifier": "com.sketchapp.examples.picassoImg",
+  "compatibleVersion": 3,
+  "bundleVersion": 1,
+  "commands": [
+    {
+      "script": "picassoImg.js",
+      "name": "picassoImg!",
+      "identifier": "picassoImg"
+    }
+  ],
+  "version": "1.0.0",
+  "description": "Picasso解析图片处理插件",
+  "name": "picassoImg",
+  "disableCocoaScriptPreprocessor": true,
+  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml"
+}
