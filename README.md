@@ -5,7 +5,7 @@
 
 ## 简介
 
-[Picasso](https://picassoui.58.com)是58同城推出的一款sketch设计稿智能解析工具，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
+[Picasso](https://mp.weixin.qq.com/s/AFA6mpUaXKEF1txe4QRF8Q)是58同城推出的一款sketch设计稿智能解析工具，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
 
 ## 前提
 
