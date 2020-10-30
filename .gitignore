@@ -1,4 +1,5 @@
 .vscode
+.DS_Store
 node_modules
 test/index
 package-lock.json
