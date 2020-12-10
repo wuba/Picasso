@@ -1,10 +1,10 @@
 
 # Picasso
 
-> 一款sketch自动生成代码插件，可将sketch设计页面自动解析成前端代码。
+> 一款sketch生成代码插件，可将sketch设计稿自动解析成前端代码。
 ## 简介
 
-[Picasso](https://mp.weixin.qq.com/s/AFA6mpUaXKEF1txe4QRF8Q)是58同城推出的一款sketch设计稿解析插件，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
+[Picasso](https://picassoui.58.com/index/downloadPicasso)是58同城推出的一款sketch设计稿解析插件，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
 
 ## 前提
 - Sketch >= 60 [下载Sketch](https://www.sketch.com/)
