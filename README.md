@@ -1,113 +1,35 @@
 
 # Picasso
 
-> A tool automatically convert sketch to code.
-
+> 一款sketch自动生成代码插件，可将sketch设计页面自动解析成前端代码。
 ## 简介
 
-[Picasso](https://mp.weixin.qq.com/s/AFA6mpUaXKEF1txe4QRF8Q)是58同城推出的一款sketch设计稿智能解析工具，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
+[Picasso](https://mp.weixin.qq.com/s/AFA6mpUaXKEF1txe4QRF8Q)是58同城推出的一款sketch设计稿解析插件，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
 
 ## 前提
-
-- Mac >= 10.15.1
 - Sketch >= 60 [下载Sketch](https://www.sketch.com/)
-- Node >= 8.9.3
+## 使用
+注：安装picasso插件之前，请先安装[sketch](https://www.sketch.com/)
 
-## 使用方法
+[下载picasso插件](https://picassoui.58.com/index/downloadPicasso) => picasso.sketchplugin.zip 解压，双击安装即可，如下：
 
-- 注意：仅仅支持Mac环境(由于Sketch软件只支持Mac环境，而解析需要依赖Sketch软件)，并且需要安装Sketch软件,[下载Sketch](https://www.sketch.com/)
+![1.jpg](https://wos.58cdn.com.cn/IjGfEdCbIlr/ishare/f3c38c05-9051-4b87-b5ad-32439b0dfed71.jpg)
 
-### 第一步. picassoImg插件安装(辅助解析的sketch插件，必须安装)
-注：安装picassoImg插件之前，请先安装[sketch](https://www.sketch.com/)
+安装完成后在sketch软件中使用插件，如下图所示：
 
-[下载picassoImg插件](https://picassoui.58.com/index/downloadPicassoImg) => picassoImg.sketchplugin.zip 解压压缩包，双击安装即可，如下：
+![two.gif](https://wos.58cdn.com.cn/IjGfEdCbIlr/ishare/43582d7b-0d66-4cc1-b240-7ba55aaa4acctwo.gif)
 
-<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/demo1.gif" width="400" />
-
-安装完成后在sketch软件中看到该插件，如下图所示：
-
-<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/plugins01.png" width="600" />
-
-### 命令行使用
-
-#### 全局安装
-
+## 开发
 ``` sh
-  npm install -g @wubafe/picasso
-```
-
-#### 使用
-
-``` sh
-  # 查看帮助
-  picasso --help
-
-  # 查看版本
-  picasso --version
-
-  # 解析sketch设计稿
-  picasso -s test/index.sketch
-  # 或者
-  picasso -s test/index.sketch -d test -t 1 -p tt
-  
-  # 参数介绍
-  Options:
-  -v, --version               picasso版本
-  -s, --src [path]            sketch设计稿源文件路径
-  -d, --dest [string]         解析生成的代码存放路径
-  -s, --imgScale [number]     图片尺寸(1:1倍图 1.5:1.5倍图 2:2倍图 3:3倍图) (default: 1)
-  -t, --pageType [number]     解析类型: 1-普通版 2-运营版 (default: 1)
-  -p, --classPrefix [string]  生成样式className前缀 (default: "")
-```
-
-解析过程中,打印日志如下图所示：
-
-<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/picasso03.jpg" width="600" />
-
-解析结果文件（如果不设置dest输出目录，解析结果会放到sketch文件同目录下，结果文件夹名同sketch文件）：
-
-<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/picasso01.png" width="600" />
-
-页面效果展示：
-
-<img src="http://pic2.58.com/escstatic/fecar/pmuse/picasso/picasso02.png" width="600" />
-
-### 项目中使用
-
-#### 本地安装
-``` sh
-  npm install @wubafe/picasso -S
-```
-
-#### 使用
-``` js
-    const picasso = require('@wubafe/picasso');
-
-    // 解析sketch
-    (async () => {
-        await picasso({
-            src: 'test/index.sketch', // sketch源文件路径
-            dest: 'test', // 生成代码存放路径
-            assetsScale: 1, // 导出图片尺寸(1 1.5 2 3) 默认 1
-            pageType: 1, // 1 普通版 2 运营版 默认 1
-            classPrefix: '', // 生成样式className前缀 默认 ''
-        });
-    })()
-```
-
-## 启动项目
-``` sh
+  # 插件目录
+  cd picasso
   # 安装依赖
   npm install
-
-  # 运行项目,即可进行解析
-  npm run dev
+  # 启动
+  npm start
+  # 打包
+  npm run build
 ```
-
-## 运行 Sample
-- sample/demo.sketch sketch源文件，可用sketch软件打开进行查看
-- sample/demo/1_page/* 解析生成代码，用浏览器打开sample/demo/1_page/index.html文件,即可预览生成的页面。
-
 ## 贡献
 欢迎参与picasso项目的开发建设和讨论。
 > 提交 pull request 之前请先提 [Issue 讨论].

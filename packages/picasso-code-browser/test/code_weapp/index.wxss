@@ -1,0 +1,362 @@
+.rat{
+width: 750rpx;
+height: 1971rpx;
+margin: 0 auto;
+overflow: hidden;
+background-color: rgba(255, 255, 255, 1);
+}
+.rat .valley{
+display: flex;
+width: 750rpx;
+height: 88rpx;
+background-color: rgba(255, 255, 255, 1);
+flex-direction: row;
+align-items: center;
+}
+.rat .valley .pence{
+width: 55rpx;
+height: 20rpx;
+margin-left: 59rpx;
+font-family: PingFangSC-Medium;
+font-size: 30rpx;
+font-weight: 500rpx;
+line-height: 20rpx;
+letter-spacing: -0.5rpx;
+color: rgba(0, 0, 0, 1);
+text-align: center;
+}
+.rat .valley .unconditional{
+width: 40rpx;
+height: 40rpx;
+padding-top: 0.1rpx;
+margin-left: 470rpx;
+}
+.rat .valley .unconditional .feather{
+width: 35rpx;
+height: 21rpx;
+margin-top: 12rpx;
+margin-left: 3rpx;
+background-color: rgba(0, 0, 0, 1);
+}
+.rat .valley .unconditional .feather .zoo{
+width: 6rpx;
+height: 21rpx;
+margin-left: 29rpx;
+background-color: rgba(0, 0, 0, 1);
+border-radius: 1rpx;
+}
+
+.rat .valley .unconditional .feather .build{
+width: 6rpx;
+height: 17rpx;
+margin-top: -17rpx;
+margin-left: 19rpx;
+background-color: rgba(0, 0, 0, 1);
+border-radius: 1rpx;
+}
+
+.rat .valley .unconditional .feather .field{
+width: 6rpx;
+height: 12rpx;
+margin-top: -12rpx;
+margin-left: 10rpx;
+background-color: rgba(0, 0, 0, 1);
+border-radius: 1rpx;
+}
+
+.rat .valley .unconditional .feather .nationality{
+width: 6rpx;
+height: 8rpx;
+margin-top: -8rpx;
+background-color: rgba(0, 0, 0, 1);
+border-radius: 1rpx;
+}
+
+.rat .valley .salad{
+width: 40rpx;
+height: 40rpx;
+padding-top: 0.1rpx;
+margin-left: 2rpx;
+}
+.rat .valley .salad .ferry{
+width: 30rpx;
+height: 21rpx;
+margin-top: 9rpx;
+margin-left: 6rpx;
+background-color: rgba(0, 0, 0, 1);
+}
+.rat .valley .salad .ferry .building{
+width: 30rpx;
+height: 14rpx;
+}
+.rat .valley .salad .ferry .building .limit{
+width: 30rpx;
+height: 9rpx;
+}
+
+.rat .valley .salad .ferry .building .stewardess{
+width: 19rpx;
+height: 6rpx;
+margin-top: -1rpx;
+margin-left: 5rpx;
+}
+
+.rat .valley .salad .ferry .water{
+width: 9rpx;
+height: 6rpx;
+margin-top: 1rpx;
+margin-left: 10rpx;
+}
+
+.rat .valley .manage{
+width: 54rpx;
+height: 40rpx;
+padding-top: 0.1rpx;
+margin-left: 2rpx;
+}
+.rat .valley .manage .path{
+display: flex;
+width: 49rpx;
+height: 23rpx;
+margin-top: 9rpx;
+margin-left: 4rpx;
+background-color: rgba(0, 0, 0, 1);
+flex-direction: row;
+align-items: center;
+}
+.rat .valley .manage .path .example{
+width: 44rpx;
+height: 23rpx;
+padding-top: 0.1rpx;
+margin-left: 0rpx;
+background-size: 44rpx 23rpx;
+}
+.rat .valley .manage .path .example .purple{
+width: 40rpx;
+height: 19rpx;
+padding-top: 0.1rpx;
+margin-top: 2rpx;
+margin-left: 2rpx;
+background-size: 40rpx 19rpx;
+}
+.rat .valley .manage .path .example .purple .valid{
+width: 36rpx;
+height: 15rpx;
+margin-top: 2rpx;
+margin-left: 2rpx;
+}
+
+.rat .valley .manage .path .hurry{
+width: 3rpx;
+height: 9rpx;
+margin-left: 2rpx;
+}
+
+.rat .argue{
+display: flex;
+width: 643rpx;
+height: 126rpx;
+margin-top: 40rpx;
+margin-left: 40rpx;
+flex-direction: row;
+align-items: center;
+}
+.rat .argue .accommodation{
+width: 126rpx;
+height: 126rpx;
+margin-left: 0rpx;
+}
+
+.rat .argue .mixture{
+width: auto;
+height: 98rpx;
+margin-left: 30rpx;
+}
+.rat .argue .mixture .time{
+width: 487rpx;
+height: 53rpx;
+font-family: PingFangSC-Medium;
+font-size: 38rpx;
+font-weight: 500rpx;
+line-height: 53rpx;
+color: rgba(51, 51, 51, 1);
+text-align: left;
+}
+.rat .argue .mixture .picnic{
+display: flex;
+width: 126rpx;
+height: 37rpx;
+margin-top: 8rpx;
+justify-content: space-between;
+}
+.rat .argue .mixture .picnic .consensus{
+width: 52rpx;
+height: 37rpx;
+font-family: PingFangSC-Regular;
+font-size: 26rpx;
+font-weight: 400rpx;
+line-height: 37rpx;
+color: rgba(128, 128, 128, 1);
+text-align: center;
+}
+.rat .argue .mixture .picnic .smoke{
+width: 52rpx;
+height: 37rpx;
+font-family: PingFangSC-Regular;
+font-size: 26rpx;
+font-weight: 400rpx;
+line-height: 37rpx;
+color: rgba(128, 128, 128, 1);
+text-align: center;
+}
+.rat .protection{
+display: flex;
+width: 540rpx;
+height: 462rpx;
+margin-top: 35rpx;
+margin-left: 40rpx;
+justify-content: space-between;
+flex-direction: row;
+}
+.rat .protection .conscience{
+width: 260rpx;
+height: 462rpx;
+margin-left: 0rpx;
+}
+
+.rat .protection .sense{
+width: 260rpx;
+height: 462rpx;
+margin-right: 0rpx;
+}
+
+.rat .owe{
+width: 144rpx;
+height: 50rpx;
+margin-top: 45rpx;
+margin-left: 40rpx;
+font-family: PingFangSC-Medium;
+font-size: 36rpx;
+font-weight: 500rpx;
+line-height: 50rpx;
+color: rgba(51, 51, 51, 1);
+text-align: left;
+}
+.rat .chant{
+width: 670rpx;
+height: 230rpx;
+margin-top: 35rpx;
+margin-left: 40rpx;
+font-family: PingFangSC-Regular;
+font-size: 28rpx;
+font-weight: 400rpx;
+line-height: 46rpx;
+color: rgba(51, 51, 51, 1);
+text-align: left;
+}
+.rat .term{
+width: 670rpx;
+height: 322rpx;
+margin-top: 29rpx;
+margin-left: 40rpx;
+font-family: PingFangSC-Regular;
+font-size: 28rpx;
+font-weight: 400rpx;
+line-height: 46rpx;
+color: rgba(51, 51, 51, 1);
+text-align: left;
+}
+.rat .urban{
+width: 670rpx;
+height: 138rpx;
+margin-top: 30rpx;
+margin-left: 40rpx;
+font-family: PingFangSC-Regular;
+font-size: 28rpx;
+font-weight: 400rpx;
+line-height: 46rpx;
+color: rgba(51, 51, 51, 1);
+text-align: left;
+}
+.rat .considerate{
+width: 750rpx;
+height: 240rpx;
+margin-top: 33rpx;
+background-color: rgba(255, 255, 255, 1);
+}
+.rat .considerate .afraid{
+width: 750rpx;
+height: 1rpx;
+background-color: rgba(234, 234, 234, 1);
+}
+
+.rat .considerate .bandage{
+width: 615rpx;
+height: 90rpx;
+padding-top: 0.1rpx;
+margin-top: 19rpx;
+margin-left: 68rpx;
+background-color: rgba(53, 187, 154, 1);
+border-radius: 45rpx;
+}
+.rat .considerate .bandage .table{
+width: 48rpx;
+height: 48rpx;
+margin-top: 21rpx;
+margin-left: 169rpx;
+}
+
+.rat .considerate .bandage .tennis{
+width: 201rpx;
+height: 34rpx;
+margin-top: -40rpx;
+margin-left: 237rpx;
+font-family: PingFangSC-Medium;
+font-size: 36rpx;
+font-weight: 500rpx;
+line-height: 34rpx;
+color: rgba(255, 255, 255, 1);
+text-align: left;
+}
+.rat .considerate .candidate{
+width: 615rpx;
+height: 90rpx;
+padding-top: 0.1rpx;
+margin-top: 20rpx;
+margin-left: 68rpx;
+background-color: rgba(53, 187, 154, 1);
+border-radius: 45rpx;
+}
+.rat .considerate .candidate .combine{
+width: 48rpx;
+height: 48rpx;
+margin-top: 21rpx;
+margin-left: 161rpx;
+}
+
+.rat .considerate .candidate .hurricane{
+width: 217rpx;
+height: 34rpx;
+margin-top: -42rpx;
+margin-left: 231rpx;
+font-family: PingFangSC-Medium;
+font-size: 36rpx;
+font-weight: 500rpx;
+line-height: 34rpx;
+color: rgba(255, 255, 255, 1);
+text-align: center;
+}
+.rat .independent{
+width: 750rpx;
+height: 68rpx;
+padding-top: 0.1rpx;
+background-color: rgba(255, 255, 255, 1);
+}
+.rat .independent .cancer{
+width: 268rpx;
+height: 10rpx;
+margin-top: 40rpx;
+margin-left: 242rpx;
+background-color: rgba(0, 0, 0, 1);
+border-radius: 200rpx;
+}

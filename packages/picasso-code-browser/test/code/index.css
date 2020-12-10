@@ -1,0 +1,311 @@
+.rat {
+    width: 7.5rem;
+    height: 19.71rem;
+    margin: 0 auto;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 1);
+}
+.valley {
+    display: flex;
+    width: 7.5rem;
+    height: 0.88rem;
+    background-color: rgba(255, 255, 255, 1);
+    align-items: center;
+}
+.pence {
+    width: 0.55rem;
+    height: 0.2rem;
+    margin-left: 0.59rem;
+    font-family: PingFangSC-Medium;
+    font-size: 0.3rem;
+    font-weight: 500;
+    line-height: 0.2rem;
+    letter-spacing: -0.005rem;
+    color: rgba(0, 0, 0, 1);
+    text-align: center;
+}
+.unconditional {
+    width: 0.4rem;
+    height: 0.4rem;
+    padding-top: 0.001rem;
+    margin-left: 4.7rem;
+}
+.feather {
+    width: 0.35rem;
+    height: 0.21rem;
+    margin: 0.12rem 0 0 0.03rem;
+    background-color: rgba(0, 0, 0, 1);
+}
+.zoo {
+    width: 0.06rem;
+    height: 0.21rem;
+    margin-left: 0.29rem;
+    background-color: rgba(0, 0, 0, 1);
+    border-radius: 0.01rem;
+}
+.build {
+    width: 0.06rem;
+    height: 0.17rem;
+    margin: -0.17rem 0 0 0.19rem;
+    background-color: rgba(0, 0, 0, 1);
+    border-radius: 0.01rem;
+}
+.field {
+    width: 0.06rem;
+    height: 0.12rem;
+    margin: -0.12rem 0 0 0.1rem;
+    background-color: rgba(0, 0, 0, 1);
+    border-radius: 0.01rem;
+}
+.nationality {
+    width: 0.06rem;
+    height: 0.08rem;
+    margin-top: -0.08rem;
+    background-color: rgba(0, 0, 0, 1);
+    border-radius: 0.01rem;
+}
+.salad {
+    width: 0.4rem;
+    height: 0.4rem;
+    padding-top: 0.001rem;
+    margin-left: 0.02rem;
+}
+.ferry {
+    width: 0.3rem;
+    height: 0.21rem;
+    margin: 0.09rem 0 0 0.06rem;
+    background-color: rgba(0, 0, 0, 1);
+}
+.building {
+    width: 0.3rem;
+    height: 0.14rem;
+}
+.limit {
+    width: 0.3rem;
+    height: 0.09rem;
+}
+.stewardess {
+    width: 0.19rem;
+    height: 0.06rem;
+    margin: -0.01rem 0 0 0.05rem;
+}
+.water {
+    width: 0.09rem;
+    height: 0.06rem;
+    margin: 0.01rem 0 0 0.1rem;
+}
+.manage {
+    width: 0.54rem;
+    height: 0.4rem;
+    padding-top: 0.001rem;
+    margin-left: 0.02rem;
+}
+.path {
+    display: flex;
+    width: 0.49rem;
+    height: 0.23rem;
+    margin: 0.09rem 0 0 0.04rem;
+    background-color: rgba(0, 0, 0, 1);
+    align-items: center;
+}
+.example {
+    width: 0.44rem;
+    height: 0.23rem;
+    padding-top: 0.001rem;
+    margin-left: 0rem;
+    background-image: undefined;
+    background-size: 0.44rem 0.23rem;
+}
+.purple {
+    width: 0.4rem;
+    height: 0.19rem;
+    padding-top: 0.001rem;
+    margin: 0.02rem 0 0 0.02rem;
+    background-image: undefined;
+    background-size: 0.4rem 0.19rem;
+}
+.valid {
+    width: 0.36rem;
+    height: 0.15rem;
+    margin: 0.02rem 0 0 0.02rem;
+}
+.hurry {
+    width: 0.03rem;
+    height: 0.09rem;
+    margin-left: 0.02rem;
+}
+.argue {
+    display: flex;
+    width: 6.43rem;
+    height: 1.26rem;
+    margin: 0.4rem 0 0 0.4rem;
+    align-items: center;
+}
+.accommodation {
+    width: 1.26rem;
+    height: 1.26rem;
+    margin-left: 0rem;
+}
+.mixture {
+    height: 0.98rem;
+    margin-left: 0.3rem;
+}
+.time {
+    width: 4.87rem;
+    height: 0.53rem;
+    font-family: PingFangSC-Medium;
+    font-size: 0.38rem;
+    font-weight: 500;
+    line-height: 0.53rem;
+    color: rgba(51, 51, 51, 1);
+}
+.picnic {
+    display: flex;
+    width: 1.26rem;
+    height: 0.37rem;
+    margin-top: 0.08rem;
+    justify-content: space-between;
+}
+.consensus {
+    width: 0.52rem;
+    height: 0.37rem;
+    font-family: PingFangSC-Regular;
+    font-size: 0.26rem;
+    line-height: 0.37rem;
+    color: rgba(128, 128, 128, 1);
+    text-align: center;
+}
+.smoke {
+    width: 0.52rem;
+    height: 0.37rem;
+    font-family: PingFangSC-Regular;
+    font-size: 0.26rem;
+    line-height: 0.37rem;
+    color: rgba(128, 128, 128, 1);
+    text-align: center;
+}
+.protection {
+    display: flex;
+    width: 5.4rem;
+    height: 4.62rem;
+    margin: 0.35rem 0 0 0.4rem;
+    justify-content: space-between;
+}
+.conscience {
+    width: 2.6rem;
+    height: 4.62rem;
+    margin-left: 0rem;
+}
+.sense {
+    width: 2.6rem;
+    height: 4.62rem;
+    margin-right: 0rem;
+}
+.owe {
+    width: 1.44rem;
+    height: 0.5rem;
+    margin: 0.45rem 0 0 0.4rem;
+    font-family: PingFangSC-Medium;
+    font-size: 0.36rem;
+    font-weight: 500;
+    line-height: 0.5rem;
+    color: rgba(51, 51, 51, 1);
+}
+.chant {
+    width: 6.7rem;
+    height: 2.3rem;
+    margin: 0.35rem 0 0 0.4rem;
+    font-family: PingFangSC-Regular;
+    font-size: 0.28rem;
+    line-height: 0.46rem;
+    color: rgba(51, 51, 51, 1);
+}
+.term {
+    width: 6.7rem;
+    height: 3.22rem;
+    margin: 0.29rem 0 0 0.4rem;
+    font-family: PingFangSC-Regular;
+    font-size: 0.28rem;
+    line-height: 0.46rem;
+    color: rgba(51, 51, 51, 1);
+}
+.urban {
+    width: 6.7rem;
+    height: 1.38rem;
+    margin: 0.3rem 0 0 0.4rem;
+    font-family: PingFangSC-Regular;
+    font-size: 0.28rem;
+    line-height: 0.46rem;
+    color: rgba(51, 51, 51, 1);
+}
+.considerate {
+    width: 7.5rem;
+    height: 2.4rem;
+    margin-top: 0.33rem;
+    background-color: rgba(255, 255, 255, 1);
+}
+.afraid {
+    width: 7.5rem;
+    height: 0.01rem;
+    background-color: rgba(234, 234, 234, 1);
+}
+.bandage {
+    width: 6.15rem;
+    height: 0.9rem;
+    padding-top: 0.001rem;
+    margin: 0.19rem 0 0 0.68rem;
+    background-color: rgba(53, 187, 154, 1);
+    border-radius: 0.45rem;
+}
+.table {
+    width: 0.48rem;
+    height: 0.48rem;
+    margin: 0.21rem 0 0 1.69rem;
+}
+.tennis {
+    width: 2.01rem;
+    height: 0.34rem;
+    margin: -0.4rem 0 0 2.37rem;
+    font-family: PingFangSC-Medium;
+    font-size: 0.36rem;
+    font-weight: 500;
+    line-height: 0.34rem;
+    color: rgba(255, 255, 255, 1);
+}
+.candidate {
+    width: 6.15rem;
+    height: 0.9rem;
+    padding-top: 0.001rem;
+    margin: 0.2rem 0 0 0.68rem;
+    background-color: rgba(53, 187, 154, 1);
+    border-radius: 0.45rem;
+}
+.combine {
+    width: 0.48rem;
+    height: 0.48rem;
+    margin: 0.21rem 0 0 1.61rem;
+}
+.hurricane {
+    width: 2.17rem;
+    height: 0.34rem;
+    margin: -0.42rem 0 0 2.31rem;
+    font-family: PingFangSC-Medium;
+    font-size: 0.36rem;
+    font-weight: 500;
+    line-height: 0.34rem;
+    color: rgba(255, 255, 255, 1);
+    text-align: center;
+}
+.independent {
+    width: 7.5rem;
+    height: 0.68rem;
+    padding-top: 0.001rem;
+    background-color: rgba(255, 255, 255, 1);
+}
+.cancer {
+    width: 2.68rem;
+    height: 0.1rem;
+    margin: 0.4rem 0 0 2.42rem;
+    background-color: rgba(0, 0, 0, 1);
+    border-radius: 2rem;
+}

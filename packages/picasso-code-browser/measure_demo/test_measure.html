@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+    }
+    img {
+        display: block;
+    }
+    .test-meature {
+        position: relative;
+        margin: 5px;
+    }
+    .test-meature .layer {
+        position: absolute;
+    }
+    .test-meature .layer:hover {
+        outline: 1px solid red;
+    }
+</style>
+<body>
+    <div class="test-meature" id="test_meature">
+    </div>
+</body>
+</html>
+<script src="./test_measure.js"></script>
+<script>
+    const img = `<img width="${dsl[0].structure.width}" height="${dsl[0].structure.height}" src="./test_measure.png" alt=""/>`
+    const handleClick = (data) => alert(data.replace(/\|/ig,'\n'));
+    const _html = dsl.map(item => {
+        const style = Object.keys(item.style).map(ite=>`${ite}: ${item.style[ite]};`).join('|');
+        return `<div class="layer" style="left:${item.structure.x-dsl[0].structure.x}px;top:${item.structure.y-dsl[0].structure.y}px;width:${item.structure.width}px;height:${item.structure.height}px;" onclick="handleClick('${style}');"></div>`;
+    }).join('');
+    document.getElementById('test_meature').innerHTML = img + _html;
+</script>

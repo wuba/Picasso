@@ -1,0 +1,19 @@
+{
+  "name": "@picasso/picasso-code-browser",
+  "version": "0.0.2",
+  "description": "Picasso代码生成库浏览器端，仅代码生成",
+  "main": "dist/picasso-code-browser/src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn test/index.ts",
+    "test": "ts-node-dev --respawn test/index.ts"
+  },
+  "author": "huangwencun",
+  "devDependencies": {
+    "@types/node": "^10.12.15",
+    "@types/node-sass": "^4.11.1",
+    "ts-node": "^8.10.2",
+    "ts-node-dev": "^1.0.0-pre.54",
+    "typescript": "^3.9.7"
+  }
+}
