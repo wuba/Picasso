@@ -1,0 +1,48 @@
+{
+    "compatibleVersion": 3,
+    "bundleVersion": 1,
+    "commands": [
+        {
+          "name": "生成Web代码",
+          "identifier": "picasso.parse-select",
+          "script": "./index.js",
+          "handlers": {
+            "run": "parseSelectArtboard"
+          }
+        },
+        {
+          "name": "生成Web代码",
+          "identifier": "picasso.parse-all",
+          "script": "./index.js",
+          "handlers": {
+            "run": "parseAllArtboard"
+          }
+        },
+        {
+          "name": "帮助",
+          "identifier": "picasso.help",
+          "script": "./index.js",
+          "handlers": {
+            "run": "help"
+          }
+        }
+      ],
+      "menu": {
+        "title": "毕加索",
+        "items": [
+            {
+                "title": "选中画板",
+                "items": [
+                    "picasso.parse-select"
+                ]
+            },
+            {
+                "title": "全部画板",
+                "items": [
+                    "picasso.parse-all"
+                ]
+            },
+            "picasso.help"
+        ]
+      }
+}

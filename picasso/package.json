@@ -1,0 +1,41 @@
+{
+  "name": "picasso",
+  "version": "0.0.1",
+  "engines": {
+    "sketch": ">=60.0"
+  },
+  "skpm": {
+    "name": "picasso",
+    "manifest": "src/manifest.json",
+    "main": "picasso.sketchplugin",
+    "assets": [
+      "assets/**/*"
+    ],
+    "sketch-assets-file": "sketch-assets/icons.sketch"
+  },
+  "scripts": {
+    "build": "skpm-build",
+    "reload": "rimraf ~/Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin && skpm-build --output ../../../../../../../Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin ",
+    "watch": "skpm-build --watch",
+    "start": "skpm-build --watch",
+    "postinstall": "npm run build && skpm-link"
+  },
+  "devDependencies": {
+    "@skpm/builder": "^0.7.4",
+    "@skpm/extract-loader": "^2.0.2",
+    "css-loader": "^3.2.0",
+    "eslint-config-sketch": "^0.2.4",
+    "html-loader": "^0.5.5",
+    "rimraf": "^3.0.2"
+  },
+  "resources": [
+    "resources/**/*.js"
+  ],
+  "dependencies": {
+    "@wubafe/picasso-parse": "0.0.5",
+    "@skpm/fs": "^0.2.6",
+    "@skpm/promise": "^0.1.0",
+    "sketch-module-web-view": "^3.1.4"
+  },
+  "author": "huangwencun <huangwencun1990@gmail.com>"
+}
