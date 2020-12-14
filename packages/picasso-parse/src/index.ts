@@ -2,8 +2,8 @@ import { SKLayer, Component } from './types';
 import parseDSL from './parseDSL';
 import parseArtboardLayer from './parseArtboard';
 import handleClassName from './handleClassName';
-import picassoGroup from '../../picasso-group/src'
-import picassoLayout from '../../picasso-layout/src'
+import picassoGroup from '../../picasso-group/src';
+import picassoLayout from '../../picasso-layout/src';
 
 /**
  * @description Picasso 画板标注解析方法

@@ -12,16 +12,13 @@ const isSupportedFill = (layer) => {
         // 处理填充 fills,fills是数组，只支持单个情况,处理成背景色, 文本的背景另外设置
         // 填充类型
         // fillStyle.fillType
-        //           0  纯色 Color
-        //           1  渐变色 Gradient
-        //           2
-        //           3
-        //           4  填充图 Pattern
-        //           5  纹理效果
+        //       Color  纯色
+        //       Gradient 渐变色
+        //       Pattern 填充图
         // fillStyle.fillType fillStyle.gradient.gradientType
-        //        1                    0   线性渐变色  完全css解析 Linear
-        //        1                    1   径向渐变色  1.圆形或者椭圆但是没有倾斜角度的 css解析 2.导出为图片 Radial 
-        //        1                    2   直角渐变色  css实验属性暂时不支持 ，导出为图片 Angular
+        //        Gradient  Linear   线性渐变色  完全css解析
+        //        Gradient  Radial   径向渐变色  1.圆形或者椭圆但是没有倾斜角度的 css解析 2.导出为图片
+        //        Gradient  Angular  直角渐变色  css实验属性暂时不支持 ，导出为图片
 
         const fills = layer.style.fills.filter(item => item.enabled);
 

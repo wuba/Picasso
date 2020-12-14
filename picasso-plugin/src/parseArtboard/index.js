@@ -64,7 +64,11 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
     const _handleSlice = (layers,sliceObject) => {
         for (let i = 0; i < layers.length; i++) {
             if (sliceObject[layers[i].do_objectID]) {
-                layers[i]._class = 'slice';
+                // 不是原始切片的图层以image的方式处理
+                if (layers[i]._class !== 'slice') {
+                    layers[i]._class = 'image';
+                }
+
                 layers[i].isFlippedHorizontal = false;
                 layers[i].isFlippedVertical = false;
                 layers[i].style = {
@@ -143,25 +147,11 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
 
         return layers;
     };
-
-    // 切片模式和代码模式公用的切片
-    const commonSliceObject = {};
-    // 代码模式私有切片
-    const codeSliceObject = {};
     const sliceObject = {};
 
     sliceList.forEach((item)=>{
         if (!sliceObject[item.id]) {
             sliceObject[item.id] = 'imageUrl';
-        }
-    });
-    // console.log('sliceObject',sliceObject);
-    // 公共切片和私有切片分开处理
-    Object.keys(sliceObject).map(item => {
-        if (codeImageMap[item]) {
-            codeSliceObject[item] = sliceObject[item];
-        } else {
-            commonSliceObject[item] = sliceObject[item];
         }
     });
     artboardJSON.imageUrl = 'imageUrl';
@@ -174,6 +164,7 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
     
     // 切片尺寸处理
     artboardJSON.layers = _handleCodeImage(artboardJSON.layers, codeImageMap);
+    console.log(JSON.stringify(artboardJSON));
     // 代码DSL
     const codeDSL = picassoArtboardCodeParse(JSON.parse(JSON.stringify(artboardJSON)));
     // 图片map

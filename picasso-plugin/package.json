@@ -1,6 +1,7 @@
 {
   "name": "picasso",
   "version": "0.0.1",
+  "description": "Picasso是58同城推出的一款sketch生成代码插件，可将sketch设计稿自动解析成还原精准，可用度高的前端代码",
   "engines": {
     "sketch": ">=60.0"
   },
@@ -32,7 +33,7 @@
     "resources/**/*.js"
   ],
   "dependencies": {
-    "@wubafe/picasso-parse": "0.0.5",
+    "@wubafe/picasso-parse": "0.0.6",
     "@skpm/fs": "^0.2.6",
     "@skpm/promise": "^0.1.0",
     "sketch-module-web-view": "^3.1.4"

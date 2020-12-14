@@ -4,7 +4,7 @@ import { SKLayer } from '../types';
 const _handleSlicePosition = (layers: SKLayer[]) => {
 
     layers.sort((layerA,layerB) => {
-        if (layerB._class==='slice') {
+        if (layerB._class==='slice'||layerB._class==='image') {
             if (
                 layerA.frame.x<=layerB.frame.x
                 && layerA.frame.y<=layerB.frame.y

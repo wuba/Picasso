@@ -20,7 +20,7 @@ export default (layer) => {
     }
 
     // 如果图层是图片，则导出为图片
-    if (layer.type === 'Image') {
+    if (['Image','Shape'] === 'Image') {
         return true;
     }
 
@@ -34,13 +34,22 @@ export default (layer) => {
         return true;
     }
 
+    // 图片、矢量 则直接导出为图片
+    if (['Image','Shape'].includes(layer.type)) {
+        return true;
+    }
+
     // 不规则图形、矢量图形 则将整个组导出为图片
     if (['Star', 'Triangle', 'ShapeGroup', 'Polygon'].includes(layer.shapeType)) {
         return true;
     }
 
-    // TBD Line&Array
+    // Line&Array 线和箭头
     if (layer.type === 'ShapePath' && layer.shapeType === 'Custom' && Array.isArray(layer.points)) {
+        // 大于4个点的，导出为图片
+        if (layer.points.length>4) {
+            return true;
+        }
         for (let i = 0; i < layer.points.length; i++) {
             const { pointType } = layer.points[i];
 
