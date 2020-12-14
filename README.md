@@ -33,4 +33,3 @@
 ## 贡献
 欢迎参与picasso项目的开发建设和讨论。
 > 提交 pull request 之前请先提 [Issue 讨论].
-![1.jpg](https://wos.58cdn.com.cn/IjGfEdCbIlr/ishare/f3c38c05-9051-4b87-b5ad-32439b0dfed71.jpg)
