@@ -22,7 +22,6 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
     // console.log('解析图片开始：', d1, artboardItem.frame.width);
     const sliceSize = 750 === artboardItem.frame.width ? 4 : 2;
     const sliceList = getImageLayers(artboardItem.layers, symbolInstanceIds, fontMap, symbolGroups, codeImageMap, rootPath, sliceSize);
-    // console.log('codeImageMap', codeImageMap);
     // console.log('fontMap', fontMap);
     const d2 = new Date().valueOf();
     // console.log('解析图片结束：', d2-d1);
@@ -164,7 +163,7 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
     
     // 切片尺寸处理
     artboardJSON.layers = _handleCodeImage(artboardJSON.layers, codeImageMap);
-    console.log(JSON.stringify(artboardJSON));
+
     // 代码DSL
     const codeDSL = picassoArtboardCodeParse(JSON.parse(JSON.stringify(artboardJSON)));
     // 图片map
@@ -187,8 +186,6 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
 
     _handleDSLImageUrl(codeDSL.children);
 
-    // console.log('imageMap', JSON.stringify(imageMap));
-
     const realSliceList = [];
     sliceList.forEach(item => {
         if(imageMap[item.id] === 'imageUrl') {
@@ -200,7 +197,12 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
     const _setImageUrl = (layers, imgMap) => {
         for (let j = 0; j < layers.length; j++) {
             if (imgMap[layers[j].id] && layers[j].value === 'imageUrl') {
+                // 1. 图片url进行替换
                 layers[j].value = imgMap[layers[j].id];
+                // 2. 如果是背景图，需要对背景图url进行替换
+                if (layers[j].style?.background?.image?.url) {
+                    layers[j].style.background.image.url = imgMap[layers[j].id];
+                }
             }
 
             if (Array.isArray(layers[j].children)) {
