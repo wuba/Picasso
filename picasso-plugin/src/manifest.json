@@ -3,7 +3,7 @@
     "bundleVersion": 1,
     "commands": [
         {
-          "name": "生成Web代码",
+          "name": "生成微信小程序代码",
           "identifier": "picasso.parse-select",
           "script": "./index.js",
           "handlers": {
@@ -11,7 +11,7 @@
           }
         },
         {
-          "name": "生成Web代码",
+          "name": "生成微信小程序代码",
           "identifier": "picasso.parse-all",
           "script": "./index.js",
           "handlers": {
