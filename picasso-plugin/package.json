@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "skpm-build",
-    "reload": "rimraf ~/Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin && skpm-build --output ../../../../../../Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin ",
+    "reload": "rimraf ~/Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin && skpm-build --output ../../../../../../../Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin ",
     "watch": "skpm-build --watch",
     "start": "skpm-build --watch",
     "postinstall": "npm run build && skpm-link"
