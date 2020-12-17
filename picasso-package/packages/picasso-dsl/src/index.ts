@@ -9,7 +9,7 @@ export * from './common';
 export interface LStyle extends Style {
     width?: number|string
     height?: number|string
-    left?: number
+    left?: number|string
     top?: number
     right?: number
     bottom?: number

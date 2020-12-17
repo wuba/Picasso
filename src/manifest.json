@@ -19,6 +19,22 @@
           }
         },
         {
+            "name": "生成运营版Web代码",
+            "identifier": "picasso.parse-select-operation",
+            "script": "./index.js",
+            "handlers": {
+                "run": "parseSelectArtboardOperation"
+            }
+        },
+        {
+            "name": "生成运营版Web代码",
+            "identifier": "picasso.parse-all-operation",
+            "script": "./index.js",
+            "handlers": {
+                "run": "parseAllArtboardOperation"
+            }
+        },
+        {
           "name": "帮助",
           "identifier": "picasso.help",
           "script": "./index.js",
@@ -33,13 +49,15 @@
             {
                 "title": "选中画板",
                 "items": [
-                    "picasso.parse-select"
+                    "picasso.parse-select",
+                    "picasso.parse-select-operation"
                 ]
             },
             {
                 "title": "全部画板",
                 "items": [
-                    "picasso.parse-all"
+                    "picasso.parse-all",
+                    "picasso.parse-all-operation"
                 ]
             },
             "picasso.help"

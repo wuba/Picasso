@@ -19,7 +19,7 @@ const handleDelete = (data: Layer[]) => {
                 currItemI.structure.zIndex > currItemJ.structure.zIndex &&
                 isCover(currItemI, currItemJ)
             ) {
-                if (/\,1\)/.test(currItemI.style['background-color'])) {
+                if (currItemI.style?.background?.color?.alpha === 1) {
                     currItemJ.isDelete = true
                 }
                 // if (!currItemI.isPosition) {
@@ -29,7 +29,7 @@ const handleDelete = (data: Layer[]) => {
                 currItemI.structure.zIndex < currItemJ.structure.zIndex &&
                 isCover(currItemJ, currItemI)
             ) {
-                if (/\,1\)/.test(currItemJ.style['background-color'])) {
+                if (currItemJ.style?.background?.color?.alpha === 1) {
                     currItemI.isDelete = true
                 }
                 // if (!currItemJ.isPosition) {

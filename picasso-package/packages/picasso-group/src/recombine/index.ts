@@ -8,6 +8,7 @@ const recombineTreeDataNew = (data: Layer[]) => {
         let preLength = data.length
         for (let i = 0; i < data.length - 1; i++) {
             let record = data[data.length - 2 - i]
+            // 父元素被指定的情况
             if (currRecord.parentId) {
                 if (currRecord.parentId === record.id) {
                     if (!record.children) {
@@ -19,6 +20,7 @@ const recombineTreeDataNew = (data: Layer[]) => {
                     data.length = data.length - 1
                     break
                 }
+            // 包含关系的情况
             } else if (isContain(currRecord, record, data[0])) {
                 if (!record.children) {
                     record.children = []

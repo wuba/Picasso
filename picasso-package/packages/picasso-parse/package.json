@@ -1,6 +1,6 @@
 {
     "name": "@wubafe/picasso-parse",
-    "version": "0.0.6",
+    "version": "0.0.9",
     "description": "Picasso解析库",
     "main": "dist/picasso-parse/src/index.js",
     "scripts": {
@@ -10,7 +10,7 @@
     "devDependencies": {
         "@types/node": "^10.12.15",
         "ts-node": "^8.10.2",
-        "ts-node-dev": "^1.0.0-pre.54",
+        "ts-node-dev": "1.0.0-pre.54",
         "typescript": "^3.9.7"
     },
     "keywords": [

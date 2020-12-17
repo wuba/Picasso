@@ -25,6 +25,7 @@
         "nil": false,
         "COScript": false,
         "NSThread": false,
+        "NSOKButton": false,
         "NSFileHandlingPanelOKButton": false,
         "NSMomentaryChangeButton": false,
         "NSClassFromString": false,

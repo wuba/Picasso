@@ -139,57 +139,40 @@ const isBottomBar = (layer, artLayer) => {
 import { Layer } from './types'
 
 const handleCascading = (data: Layer) => {
-    let cascadingJson = {}
-    //基础层JSON
-    let baseJson = JSON.parse(JSON.stringify(data))
-    if (data.children.length === 1) {
-        let artLayer = data.children[0]
-        let vFlag = true
-        let flag = true
-        //依据全屏弹层对json进行分割
-        function findFullLayer(data:Layer) {
-            if (!data.children) return data;
-            for (let i = 0; i < data.children.length; i++) {
-                const layer = data.children[i];
-                if (
-                    layer.isVisible &&
-                    layer.type === 'Container' &&
-                    layer.structure?.x <= artLayer.structure?.x + 1 &&
-                    layer.structure?.y <= artLayer.structure?.y + 1 &&
-                    layer.structure?.x + layer.structure?.width >=
-                        artLayer.structure?.width + artLayer.structure?.x - 1 &&
-                    layer.structure?.y + layer.structure?.height >=
-                        artLayer.structure?.height + artLayer.structure?.y - 1
-                ) {
-                    if (layer.style.background.color.alpha>0 && layer.style.background.color.alpha<1 && flag) {
-                        flag = false
-                        vFlag = !vFlag
-                    }
-
-                    layer.structure.x = artLayer.structure.x
-                    layer.structure.y = artLayer.structure.y
-                    layer.structure.width = artLayer.structure.width
-                    layer.structure.height = artLayer.structure.height
-                }
-                if (vFlag) {
-                    layer.isVisible = false
-                }
-                if (Array.isArray(layer.children) && layer.children.length) {
-                    findFullLayer(layer)
-                }
-            }
-            return data
+    if (data.children.length < 2) {
+        return {
+            baseJson: [{...data,children:[]}, ...data.children],
+            cascadingJson: [],
         }
-        //属于弹层的JSON
-        cascadingJson = findFullLayer(JSON.parse(JSON.stringify(data)))
-        vFlag = false
-        flag = true
-        //弹层下面的JSON
-        baseJson = findFullLayer(JSON.parse(JSON.stringify(data)))
     }
+    
+    let cascadingIndex = -1;
+    for (let i = 0; i < data.children.length; i++) {
+        const layer = data.children[i];
+        if (
+            layer.type !== 'Text' &&
+            layer.structure?.x <= data.structure?.x + 1 &&
+            layer.structure?.y <= data.structure?.y + 1 &&
+            layer.structure?.x + layer.structure?.width >=
+                data.structure?.width + data.structure?.x - 1 &&
+            layer.structure?.y + layer.structure?.height >=
+                data.structure?.height + data.structure?.y - 1
+        ) {
+            cascadingIndex = i;
+            break;
+        }
+    }
+
+    if (cascadingIndex > 0) {
+        return {
+            baseJson: [{...data,children:[]}, ...data.children.slice(0,cascadingIndex)],
+            cascadingJson: data.children.slice(cascadingIndex),
+        }
+    }
+
     return {
-        baseJson,
-        cascadingJson,
+        baseJson: [{...data,children:[]}, ...data.children],
+        cascadingJson: [],
     }
 }
 

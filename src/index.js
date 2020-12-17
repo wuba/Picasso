@@ -25,7 +25,7 @@ const getSavePath = (fileName) => {
     return savePanel.URL().path();
 }
 
-const parseArtboard = (type) => {
+const parseArtboard = (type, codeType) => {
 
     const document = Document.getSelectedDocument();
 
@@ -46,7 +46,7 @@ const parseArtboard = (type) => {
     }
     UI.message(`当前进度：0%`);
     setTimeout(() => {
-        parseDocument(type, rootPath, (progress) => {
+        parseDocument(type, codeType, rootPath, (progress) => {
             // console.log('当前进度：', progress);
             UI.message(`当前进度：${+((progress*100).toFixed(4))}%`);
         }).then((res) => {
@@ -63,11 +63,19 @@ const parseArtboard = (type) => {
 }
 
 export const parseSelectArtboard = () => {
-    parseArtboard(1);
+    parseArtboard(1,0);
 }
 
 export const parseAllArtboard = () => {
-    parseArtboard(2);
+    parseArtboard(2,0);
+}
+
+export const parseSelectArtboardOperation = () => {
+    parseArtboard(1,1);
+}
+
+export const parseAllArtboardOperation = () => {
+    parseArtboard(2,1);
 }
 
 export const help = () => {

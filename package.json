@@ -1,6 +1,6 @@
 {
   "name": "picasso",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Picasso是58同城推出的一款sketch生成代码插件，可将sketch设计稿自动解析成还原精准，可用度高的前端代码",
   "engines": {
     "sketch": ">=60.0"
@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "skpm-build",
-    "reload": "rimraf ~/Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin && skpm-build --output ../../../../../../../Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin ",
+    "reload": "rimraf ~/Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin && skpm-build --output ../../../../../../Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/picasso.sketchplugin ",
     "watch": "skpm-build --watch",
     "start": "skpm-build --watch",
     "postinstall": "npm run build && skpm-link"
@@ -33,7 +33,7 @@
     "resources/**/*.js"
   ],
   "dependencies": {
-    "@wubafe/picasso-parse": "0.0.6",
+    "@wubafe/picasso-parse": "0.0.9",
     "@skpm/fs": "^0.2.6",
     "@skpm/promise": "^0.1.0",
     "sketch-module-web-view": "^3.1.4"
