@@ -19,6 +19,22 @@
           }
         },
         {
+          "name": "生成RN代码",
+          "identifier": "picasso.parse-rn-select",
+          "script": "./index.js",
+          "handlers": {
+            "run": "parseRNSelectArtboard"
+          }
+        },
+        {
+          "name": "生成RN代码",
+          "identifier": "picasso.parse-rn-all",
+          "script": "./index.js",
+          "handlers": {
+            "run": "parseRNAllArtboard"
+          }
+        },
+        {
           "name": "帮助",
           "identifier": "picasso.help",
           "script": "./index.js",
@@ -33,13 +49,15 @@
             {
                 "title": "选中画板",
                 "items": [
-                    "picasso.parse-select"
+                    "picasso.parse-select",
+                    "picasso.parse-rn-select"
                 ]
             },
             {
                 "title": "全部画板",
                 "items": [
-                    "picasso.parse-all"
+                    "picasso.parse-all",
+                    "picasso.parse-rn-all"
                 ]
             },
             "picasso.help"
