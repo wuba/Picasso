@@ -1,3 +1,10 @@
+/*
+ * @Author: iChengbo
+ * @Date: 2020-12-17 10:04:12
+ * @LastEditors: iChengbo
+ * @LastEditTime: 2020-12-17 14:28:16
+ * @FilePath: /Picasso/src/index.js
+ */
 import UI from 'sketch/ui';
 import { Document } from 'sketch/dom';
 import { parseDocument } from './parseArtboard/index';
@@ -25,7 +32,7 @@ const getSavePath = (fileName) => {
     return savePanel.URL().path();
 }
 
-const parseArtboard = (type) => {
+const parseArtboard = (type, platform) => {
 
     const document = Document.getSelectedDocument();
 
@@ -46,7 +53,7 @@ const parseArtboard = (type) => {
     }
     UI.message(`当前进度：0%`);
     setTimeout(() => {
-        parseDocument(type, rootPath, (progress) => {
+        parseDocument(type, platform, rootPath, (progress) => {
             // console.log('当前进度：', progress);
             UI.message(`当前进度：${+((progress*100).toFixed(4))}%`);
         }).then((res) => {
@@ -68,6 +75,14 @@ export const parseSelectArtboard = () => {
 
 export const parseAllArtboard = () => {
     parseArtboard(2);
+}
+
+export const parseRNSelectArtboard = () => {
+    parseArtboard(1, 'rn');
+}
+
+export const parseRNAllArtboard = () => {
+    parseArtboard(2, 'rn');
 }
 
 export const help = () => {

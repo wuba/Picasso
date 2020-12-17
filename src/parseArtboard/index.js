@@ -3,6 +3,7 @@ import UI from 'sketch/ui';
 import Promise from '@skpm/promise';
 import { picassoArtboardCodeParse } from '@wubafe/picasso-parse';
 import handleWebCode from './handleCode/handleWebCode';
+import handleRNCode from './handleCode/handleRNCode';
 import getImageLayers from './getImageLayers';
 
 /**
@@ -10,7 +11,7 @@ import getImageLayers from './getImageLayers';
  * @param {*} type
  *
  */
-export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath) => new Promise((resolve, reject) => {
+export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath, platform) => new Promise((resolve, reject) => {
     // 未解析，则走解析流程
     const symbolInstanceIds = [];
     // 字体存储
@@ -224,7 +225,11 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
     codeDSL.children = _setImageUrl(codeDSL.children, realSliceObject);
 
     // 代码生成
-    handleWebCode(rootPath, codeDSL);
+    if (platform == 'rn') {
+        handleRNCode(rootPath, codeDSL);
+    } else {
+        handleWebCode(rootPath, codeDSL);
+    }
 
     parseDocument.artProgress += progressSlice * 0.05;
     getProgress(parseDocument.artProgress);
@@ -239,7 +244,7 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
  * @param {*} getProgress 
  * @param {*} sliceSize 
  */
-export const parseArtboardIterator = (artboardList, progressSlice, getProgress, sliceSize, rootPath) => new Promise((resolve, reject) => {
+export const parseArtboardIterator = (artboardList, progressSlice, getProgress, sliceSize, rootPath, platform) => new Promise((resolve, reject) => {
     const results = [];
     const _nextPromise = (index, _artboardList) => {
         if (parseDocument.isCancel) {
@@ -250,7 +255,7 @@ export const parseArtboardIterator = (artboardList, progressSlice, getProgress, 
                 resolve(results);
             }
 
-            parseArtboard(_artboardList[index],progressSlice/_artboardList.length, getProgress, sliceSize, rootPath).then((res) => {
+            parseArtboard(_artboardList[index],progressSlice/_artboardList.length, getProgress, sliceSize, rootPath, platform).then((res) => {
                 results.push(res);
                 _nextPromise(index + 1, _artboardList);
             }).catch((err) => {
@@ -267,7 +272,7 @@ export const parseArtboardIterator = (artboardList, progressSlice, getProgress, 
  * @param {*} type 1 选中 2 all
  * 
  */
-export const parseDocument = (type, rootPath, getProgress = () => {}) => new Promise((resolve, reject) => {
+export const parseDocument = (type, platform, rootPath, getProgress = () => {}) => new Promise((resolve, reject) => {
 
     // 重置参数
     parseDocument.artProgress = 0;
@@ -301,7 +306,7 @@ export const parseDocument = (type, rootPath, getProgress = () => {}) => new Pro
     getProgress(parseDocument.artProgress);
     // 画板解析进度分配
     let progressArtboardSlice = 0.98;
-    parseArtboardIterator(artboards, progressArtboardSlice, getProgress, rootPath).then((res) => {
+    parseArtboardIterator(artboards, progressArtboardSlice, getProgress, rootPath, platform).then((res) => {
         // console.log('解析完成,结果如下:', res);
         getProgress(1);
         resolve(res);
