@@ -164,8 +164,6 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
     // 切片尺寸处理
     artboardJSON.layers = _handleCodeImage(artboardJSON.layers, codeImageMap);
 
-
-    console.log(JSON.stringify(artboardJSON));
     // 代码DSL
     const codeDSL = codeType===1 ? picassoArtboardOperationCodeParse(JSON.parse(JSON.stringify(artboardJSON))) : picassoArtboardCodeParse(JSON.parse(JSON.stringify(artboardJSON)));
 
