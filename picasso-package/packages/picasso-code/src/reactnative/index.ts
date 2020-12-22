@@ -2,8 +2,8 @@
  * @Author: iChengbo
  * @Date: 2020-09-02 11:33:23
  * @LastEditors: iChengbo
- * @LastEditTime: 2020-09-08 18:42:16
- * @FilePath: /picasso-core/packages/picasso-code/src/reactnative/index.ts
+ * @LastEditTime: 2020-12-17 17:26:14
+ * @FilePath: /Picasso/picasso-package/packages/picasso-code/src/reactnative/index.ts
  */
 import { Layer } from '../types';
 import handleClassName from '../handleClassName';
@@ -80,12 +80,13 @@ import {
     SafeAreaView,
     Platform,
     StatusBar,
+    PixelRatio,
 } from 'react-native';
 ${/LinearGradient/.test(jsxCode) ? "import LinearGradient from 'react-native-linear-gradient';" : ""}
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const scaleSize = (size) => size * (SCREEN_WIDTH / 375);
+const scaleSize = (size) => PixelRatio.roundToNearestPixel(size * (SCREEN_WIDTH / 750));
 
 const isIphoneX = () => {
     return Platform.OS === 'ios' &&
@@ -99,7 +100,7 @@ const STATUSBAR_HEIGHT = Platform.select({
     android: StatusBar.currentHeight,
 })
 
-export default class PicasoPage extends Component {
+export default class PicassoPage extends Component {
     constructor(props) {
         super(props);
     }
@@ -131,7 +132,7 @@ const styles = StyleSheet.create(${styleCode})
  * @param { Layer[] } data
  * @param { number } size 画板宽度
  */
-export const picassoRNCode = (data: Layer[]) => {
+export const picassoRNCode = (data: Layer[], size: number) => {
     // class 名称处理
     data = handleClassName(data);
 
@@ -142,7 +143,6 @@ export const picassoRNCode = (data: Layer[]) => {
         colorFormat: ColorFormat.RGBA,
         codeType: CodeType.ReactNative
     });
-    // console.log("哈哈哈哈哈\n",  JSON.stringify(data, null, 2))
     // 生成组件
     const jsxCode = generateRNJSX(data);
     // console.log("生成的组件：", jsxCode)
@@ -162,13 +162,13 @@ export const picassoRNCode = (data: Layer[]) => {
             SafeAreaView,
             Platform,
             StatusBar,
+            PixelRatio,
         } from 'react-native';
         ${/LinearGradient/.test(jsxCode) ? "import LinearGradient from 'react-native-linear-gradient';" : ""}
         
         const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
         
-        const scaleSize = (size) => size * (SCREEN_WIDTH / 375);
-        
+        const scaleSize = (size) => PixelRatio.roundToNearestPixel(size * (SCREEN_WIDTH / ${size}));
         const isIphoneX = () => {
             return Platform.OS === 'ios' &&
                 !Platform.isPad &&
@@ -181,7 +181,7 @@ export const picassoRNCode = (data: Layer[]) => {
             android: StatusBar.currentHeight,
         })
         
-        export default class PicasoPage extends Component {
+        export default class PicassoPage extends Component {
             constructor(props) {
                 super(props);
             }

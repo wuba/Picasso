@@ -2,8 +2,8 @@
  * @Author: iChengbo
  * @Date: 2020-09-02 11:44:55
  * @LastEditors: iChengbo
- * @LastEditTime: 2020-09-08 17:13:39
- * @FilePath: /picasso-core/packages/picasso-code/src/reactnative/generateStyle.ts
+ * @LastEditTime: 2020-12-17 16:53:40
+ * @FilePath: /Picasso/picasso-package/packages/picasso-code/src/reactnative/generateStyle.ts
  */
 let styles = {};
 
@@ -35,6 +35,9 @@ export const generateRNStyle = (data: any) => {
     });
     result = result.replace(/"marginTop": ((\.|\d|\e|\-)+)/g, ($, $1) => {
         return `"marginTop": scaleSize(${$1})`;
+    });
+    result = result.replace(/"fontSize": ((\.|\d|\e|\-)+)/g, ($, $1) => {
+        return `"fontSize": scaleSize(${$1})`;
     });
     return result;
 }

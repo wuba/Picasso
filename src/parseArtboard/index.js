@@ -4,6 +4,7 @@ import Promise from '@skpm/promise';
 import { picassoArtboardCodeParse, picassoArtboardOperationCodeParse } from '@wubafe/picasso-parse';
 import handleWebCode from './handleCode/handleWebCode';
 import handleWeappCode from './handleCode/handleWeappCode';
+import handleRNCode from './handleCode/handleRNCode';
 import getImageLayers from './getImageLayers';
 
 /**
@@ -227,7 +228,7 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
 
     if(codeType === 3) {
         // RN
-        handleWeappCode(rootPath, codeDSL);
+        handleRNCode(rootPath, codeDSL);
     } else if(codeType === 2) {
         // 小程序
         handleWeappCode(rootPath, codeDSL);
