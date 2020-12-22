@@ -1,0 +1,102 @@
+{
+    "compatibleVersion": 3,
+    "bundleVersion": 1,
+    "commands": [
+        {
+          "name": "生成微信小程序代码",
+          "identifier": "picasso.parse-select",
+          "script": "./index.js",
+          "handlers": {
+            "run": "parseSelectArtboard"
+          }
+        },
+        {
+          "name": "生成微信小程序代码",
+          "identifier": "picasso.parse-all",
+          "script": "./index.js",
+          "handlers": {
+            "run": "parseAllArtboard"
+          }
+        },
+        {
+            "name": "生成运营版Web代码",
+            "identifier": "picasso.parse-select-operation",
+            "script": "./index.js",
+            "handlers": {
+                "run": "parseSelectArtboardOperation"
+            }
+        },
+        {
+            "name": "生成运营版Web代码",
+            "identifier": "picasso.parse-all-operation",
+            "script": "./index.js",
+            "handlers": {
+                "run": "parseAllArtboardOperation"
+            }
+        },
+        {
+            "name": "生成小程序代码",
+            "identifier": "picasso.parse-select-weapp",
+            "script": "./index.js",
+            "handlers": {
+                "run": "parseSelectArtboardWeapp"
+            }
+        },
+        {
+            "name": "生成小程序代码",
+            "identifier": "picasso.parse-all-weapp",
+            "script": "./index.js",
+            "handlers": {
+                "run": "parseAllArtboardWeapp"
+            }
+        },
+        {
+            "name": "生成ReactNative代码",
+            "identifier": "picasso.parse-select-rn",
+            "script": "./index.js",
+            "handlers": {
+                "run": "parseSelectArtboardRN"
+            }
+        },
+        {
+            "name": "生成ReactNative代码",
+            "identifier": "picasso.parse-all-rn",
+            "script": "./index.js",
+            "handlers": {
+                "run": "parseAllArtboardRN"
+            }
+        },
+        {
+          "name": "帮助",
+          "identifier": "picasso.help",
+          "script": "./index.js",
+          "handlers": {
+            "run": "help"
+          }
+        }
+      ],
+      "menu": {
+        "title": "毕加索",
+        "items": [
+            {
+                "title": "选中画板",
+                "items": [
+                    "picasso.parse-select",
+                    "picasso.parse-select-operation",
+                    "picasso.parse-select-weapp",
+                    "picasso.parse-select-rn"
+                ]
+            },
+            {
+                "title": "全部画板",
+                "items": [
+                    "picasso.parse-all",
+                    "picasso.parse-all-operation",
+                    "picasso.parse-all-weapp",
+                    "picasso.parse-all-rn"
+                ]
+            },
+            "picasso.help"
+        ]
+      }
+}

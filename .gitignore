@@ -1,8 +1,16 @@
-.idea
-.cache
-.vscode
+# build artefacts
+picasso.sketchplugin
+
+# npm
+node_modules
+.npm
+npm-debug.log
+
+# mac
 .DS_Store
-dist/
-node_modules/
-package-lock.json
-yarn.lock
+
+# WebStorm
+.idea
+
+# sketch
+# sketch-assets

@@ -1,0 +1,5 @@
+node_modules/**
+picasso.sketchplugin/**
+picasso-package/**
+# 忽略自定义的 sketch-module-web-view
+webapp/**

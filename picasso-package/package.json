@@ -1,0 +1,34 @@
+{
+    "name": "root",
+    "private": true,
+    "devDependencies": {
+        "@types/node": "^10.12.15",
+        "lerna": "^3.22.1",
+        "ts-node": "^8.10.2",
+        "ts-node-dev": "1.0.0-pre.54",
+        "typescript": "^3.9.7"
+    },
+    "keywords": [
+        "picasso",
+        "Picasso",
+        "code",
+        "parse",
+        "sketch",
+        "sketchToCode",
+        "设计稿",
+        "代码转换",
+        "设计稿转换代码"
+    ],
+    "author": {
+        "name": "huangwencun",
+        "email": "huangwencun1990@gmail.com"
+    },
+    "bugs": {
+        "url": "https://github.com/wuba/Picasso/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/wuba/Picasso.git"
+    },
+    "license": "MIT"
+}
