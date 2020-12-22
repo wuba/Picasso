@@ -2,7 +2,8 @@ import sketch from 'sketch';
 import UI from 'sketch/ui';
 import Promise from '@skpm/promise';
 import { picassoArtboardCodeParse } from '@wubafe/picasso-parse';
-import handleWebCode from './handleCode/handleWebCode';
+//import handleWebCode from './handleCode/handleWebCode';
+import handleWeappCode from './handleCode/handleWeappCode';
 import getImageLayers from './getImageLayers';
 
 /**
@@ -36,7 +37,7 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
     getProgress(parseDocument.artProgress);
     let symbolGroupsJSON = [];
     // console.log('symbol导出开始：');
-        
+
     if (symbolGroups.length > 0) {
         symbolGroupsJSON = sketch.export(symbolGroups, { formats: 'json', output: false });
     }
@@ -101,7 +102,7 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
 
                 layers[i].layers = [];
                 layers[i].imageUrl = sliceObject[layers[i].do_objectID];
-                
+
             }
 
             if (Array.isArray(layers[i].layers)) {
@@ -161,7 +162,7 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
 
     // 切片处理
     artboardJSON.layers = _handleSlice(artboardJSON.layers, sliceObject);
-    
+
     // 切片尺寸处理
     artboardJSON.layers = _handleCodeImage(artboardJSON.layers, codeImageMap);
     console.log(JSON.stringify(artboardJSON));
@@ -222,7 +223,7 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
     codeDSL.children = _setImageUrl(codeDSL.children, realSliceObject);
 
     // 代码生成
-    handleWebCode(rootPath, codeDSL);
+    handleWeappCode(rootPath, codeDSL);
 
     parseDocument.artProgress += progressSlice * 0.05;
     getProgress(parseDocument.artProgress);
@@ -231,11 +232,11 @@ export const parseArtboard = (artboardItem, progressSlice, getProgress, rootPath
 
 /**
  * 画板解析迭代器
- * @param {*} parseInfo 
- * @param {*} artboardList 
- * @param {*} progressSlice 
- * @param {*} getProgress 
- * @param {*} sliceSize 
+ * @param {*} parseInfo
+ * @param {*} artboardList
+ * @param {*} progressSlice
+ * @param {*} getProgress
+ * @param {*} sliceSize
  */
 export const parseArtboardIterator = (artboardList, progressSlice, getProgress, sliceSize, rootPath) => new Promise((resolve, reject) => {
     const results = [];
@@ -263,7 +264,7 @@ export const parseArtboardIterator = (artboardList, progressSlice, getProgress, 
 /**
  * 文档解析
  * @param {*} type 1 选中 2 all
- * 
+ *
  */
 export const parseDocument = (type, rootPath, getProgress = () => {}) => new Promise((resolve, reject) => {
 
