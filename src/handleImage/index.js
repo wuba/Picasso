@@ -19,11 +19,6 @@ export default (layer) => {
         return true;
     }
 
-    // 如果图层是图片，则导出为图片
-    if (['Image','Shape'] === 'Image') {
-        return true;
-    }
-
     // 不支持的填充，导出为图片
     if (!isSupportedFill(layer)) {
         return true;
