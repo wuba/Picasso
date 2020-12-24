@@ -1,9 +1,10 @@
 {
     "compatibleVersion": 3,
     "bundleVersion": 1,
+    "icon": "icon.png",
     "commands": [
         {
-          "name": "生成微信小程序代码",
+          "name": "生成Web代码",
           "identifier": "picasso.parse-select",
           "script": "./index.js",
           "handlers": {
@@ -11,7 +12,7 @@
           }
         },
         {
-          "name": "生成微信小程序代码",
+          "name": "生成Web代码",
           "identifier": "picasso.parse-all",
           "script": "./index.js",
           "handlers": {
@@ -19,7 +20,7 @@
           }
         },
         {
-            "name": "生成运营版Web代码",
+            "name": "生成Web运营版代码",
             "identifier": "picasso.parse-select-operation",
             "script": "./index.js",
             "handlers": {
@@ -27,7 +28,7 @@
             }
         },
         {
-            "name": "生成运营版Web代码",
+            "name": "生成Web运营版代码",
             "identifier": "picasso.parse-all-operation",
             "script": "./index.js",
             "handlers": {
@@ -35,7 +36,7 @@
             }
         },
         {
-            "name": "生成小程序代码",
+            "name": "生成微信小程序代码",
             "identifier": "picasso.parse-select-weapp",
             "script": "./index.js",
             "handlers": {
@@ -43,7 +44,7 @@
             }
         },
         {
-            "name": "生成小程序代码",
+            "name": "生成微信小程序代码",
             "identifier": "picasso.parse-all-weapp",
             "script": "./index.js",
             "handlers": {

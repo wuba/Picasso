@@ -226,14 +226,14 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
 
     codeDSL.children = _setImageUrl(codeDSL.children, realSliceObject);
 
-    if(codeType === 3) {
-        // RN
-        handleRNCode(rootPath, codeDSL);
-    } else if(codeType === 2) {
-        // 小程序
+    // 小程序
+    if(codeType === 2) {
         handleWeappCode(rootPath, codeDSL);
+    // RN
+    } else if(codeType === 3) {
+        handleRNCode(rootPath, codeDSL);
+    // web代码生成
     } else {
-        // web代码生成
         handleWebCode(rootPath, codeDSL);
     }
 

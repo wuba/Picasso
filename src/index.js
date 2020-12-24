@@ -1,10 +1,3 @@
-/*
- * @Author: iChengbo
- * @Date: 2020-12-17 10:04:12
- * @LastEditors: iChengbo
- * @LastEditTime: 2020-12-17 14:28:16
- * @FilePath: /Picasso/src/index.js
- */
 import UI from 'sketch/ui';
 import { Document } from 'sketch/dom';
 import { parseDocument } from './parseArtboard/index';
@@ -32,11 +25,7 @@ const getSavePath = (fileName) => {
     return savePanel.URL().path();
 }
 
-<<<<<<< HEAD:src/index.js
 const parseArtboard = (type, codeType) => {
-=======
-const parseArtboard = (type, platform) => {
->>>>>>> 0814b8c36402e0c82b4cb19b238bbf50d18ca1e5:picasso-plugin/src/index.js
 
     const document = Document.getSelectedDocument();
 
@@ -57,11 +46,7 @@ const parseArtboard = (type, platform) => {
     }
     UI.message(`当前进度：0%`);
     setTimeout(() => {
-<<<<<<< HEAD:src/index.js
         parseDocument(type, codeType, rootPath, (progress) => {
-=======
-        parseDocument(type, platform, rootPath, (progress) => {
->>>>>>> 0814b8c36402e0c82b4cb19b238bbf50d18ca1e5:picasso-plugin/src/index.js
             // console.log('当前进度：', progress);
             UI.message(`当前进度：${+((progress*100).toFixed(4))}%`);
         }).then((res) => {
@@ -77,6 +62,7 @@ const parseArtboard = (type, platform) => {
     
 }
 
+// web代码普通版
 export const parseSelectArtboard = () => {
     parseArtboard(1,0);
 }
@@ -84,7 +70,7 @@ export const parseSelectArtboard = () => {
 export const parseAllArtboard = () => {
     parseArtboard(2,0);
 }
-
+// web代码运营版
 export const parseSelectArtboardOperation = () => {
     parseArtboard(1,1);
 }
@@ -108,14 +94,6 @@ export const parseSelectArtboardRN = () => {
 
 export const parseAllArtboardRN = () => {
     parseArtboard(2,3);
-}
-
-export const parseRNSelectArtboard = () => {
-    parseArtboard(1, 'rn');
-}
-
-export const parseRNAllArtboard = () => {
-    parseArtboard(2, 'rn');
 }
 
 export const help = () => {

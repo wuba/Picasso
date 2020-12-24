@@ -1,8 +1,8 @@
 {
-  "name": "@picasso/picasso-dsl",
-  "version": "0.0.4",
+  "name": "@wubafe/picasso-dsl",
+  "version": "0.0.5",
   "description": "Picasso-DSL库",
-  "main": "dist/index.js",
+  "main": "dist/picasso-dsl/src/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --respawn test/index.ts",
@@ -13,7 +13,7 @@
   "devDependencies": {
     "@types/node": "^10.12.15",
     "ts-node": "^8.10.2",
-    "ts-node-dev": "^1.0.0-pre.54",
+    "ts-node-dev": "1.0.0-pre.54",
     "typescript": "^3.9.7"
   }
 }

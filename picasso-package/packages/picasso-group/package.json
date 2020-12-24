@@ -1,6 +1,6 @@
 {
-  "name": "@picasso/picasso-group",
-  "version": "0.0.4",
+  "name": "@wubafe/picasso-group",
+  "version": "0.0.5",
   "description": "Picasso特征分组库",
   "main": "dist/picasso-group/src/index.js",
   "scripts": {
@@ -13,7 +13,7 @@
   "devDependencies": {
     "@types/node": "^10.12.15",
     "ts-node": "^8.10.2",
-    "ts-node-dev": "^1.0.0-pre.54",
+    "ts-node-dev": "1.0.0-pre.54",
     "typescript": "^3.9.7"
   }
 }

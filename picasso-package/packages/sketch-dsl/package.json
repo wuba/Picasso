@@ -1,5 +1,5 @@
 {
-  "name": "@picasso/sketch-dsl",
+  "name": "@wubafe/sketch-dsl",
   "version": "0.0.3",
   "description": "Sketch-DSL库",
   "main": "dist/index.js",
@@ -13,7 +13,7 @@
   "devDependencies": {
     "@types/node": "^10.12.15",
     "ts-node": "^8.10.2",
-    "ts-node-dev": "^1.0.0-pre.54",
+    "ts-node-dev": "1.0.0-pre.54",
     "typescript": "^3.9.7"
   }
 }

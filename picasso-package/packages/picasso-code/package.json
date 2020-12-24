@@ -1,5 +1,5 @@
 {
-  "name": "@picasso/picasso-code",
+  "name": "@wubafe/picasso-code",
   "version": "0.0.11",
   "description": "Picasso代码生成库",
   "main": "dist/picasso-code/src/index.js",
@@ -12,9 +12,8 @@
   "author": "huangwencun",
   "devDependencies": {
     "@types/node": "^10.12.15",
-    "@types/node-sass": "^4.11.1",
     "ts-node": "^8.10.2",
-    "ts-node-dev": "^1.0.0-pre.54",
+    "ts-node-dev": "1.0.0-pre.54",
     "typescript": "^3.9.7"
   }
 }
