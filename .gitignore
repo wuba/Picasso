@@ -5,7 +5,7 @@ picasso.sketchplugin
 node_modules
 .npm
 npm-debug.log
-
+package-lock.json
 # mac
 .DS_Store
 
