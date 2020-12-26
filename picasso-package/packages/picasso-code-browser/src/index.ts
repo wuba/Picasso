@@ -17,7 +17,7 @@ export const picassoCode = (
         case CodeType.Weapp:
             return picassoWeappCode(data,size);
         case CodeType.ReactNative:
-            return picassoRNCode(data);
+            return picassoRNCode(data, size);
         default:
             break;
     }
