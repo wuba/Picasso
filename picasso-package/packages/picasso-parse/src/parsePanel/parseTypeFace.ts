@@ -18,10 +18,16 @@ export const parseTypeFace = (layer:SKLayer): TypeFace[] => {
 
     // 分段处理
     const typefaces: TypeFace[] = attributes.map(({location,length,attributes}) => {
-        const {
+        let {
             name: fontFamily, // 获取字体类型
             size: fontSize, // 获取字体大小
         } = attributes.MSAttributedStringFontAttribute?.attributes;
+        /**
+         * fontFamily处理
+         * 1.PingFang-SCPingFang SC 针对PingFang-SC和PingFang SC在web端不生效的问题，进行修正处理
+         * 
+         */
+        fontFamily = fontFamily.replace(/PingFang-SC|PingFang SC/,'PingFangSC');
         // 获取字体重量, 默认 Regular;
         const val = fontFamily.split('-').pop();
         const fontWeight = fontFamily.split('-').length >= 2 && fontWeightTypes.includes(val.toLowerCase()) ? val : '';

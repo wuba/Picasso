@@ -88,7 +88,7 @@ export const exportImage = (layer, sliceSize, rootPath, trimmed = true, groupCon
         'use-id-for-name': true,
         'group-contents-only': groupContentsOnly,
         'save-for-web': true,
-        output: rootPath + '/images',
+        output: rootPath + '/imgs',
     };
 
     try {

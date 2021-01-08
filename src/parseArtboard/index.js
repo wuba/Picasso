@@ -1,6 +1,7 @@
 import sketch from 'sketch';
 import UI from 'sketch/ui';
 import Promise from '@skpm/promise';
+import fs from '@skpm/fs';
 import { picassoArtboardCodeParse, picassoArtboardOperationCodeParse } from '@wubafe/picasso-parse';
 import handleWebCode from './handleCode/handleWebCode';
 import handleWeappCode from './handleCode/handleWeappCode';
@@ -219,11 +220,23 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
     // console.log('realSliceList', realSliceList);
 
     const realSliceObject = {};
+    // 多余图片删除处理
+    // 1.创建新图片文件夹
+    const imagesDir = `${rootPath}/images`;
+    if (!fs.existsSync(imagesDir)) {
+        fs.mkdirSync(imagesDir);
+    }
 
-    realSliceList.forEach(({id, imageLocalPath})=>{
+    realSliceList.forEach(({ id, imageLocalPath }) => {
+        // 2.有用的图片复制过去
+        if (!fs.existsSync(`${rootPath}/images/${imageLocalPath}`)) { 
+            fs.copyFileSync(`${rootPath}/imgs/${imageLocalPath}`,`${rootPath}/images/${imageLocalPath}`);
+        }
         realSliceObject[id] = imageLocalPath;
     });
 
+    // 3.删除无用图片目录
+    fs.rmdirSync(`${rootPath}/imgs`);
     codeDSL.children = _setImageUrl(codeDSL.children, realSliceObject);
 
     // 小程序

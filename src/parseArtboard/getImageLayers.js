@@ -18,7 +18,11 @@ const _getImageLayers = (layers,symbolInstanceIds, fontMap, symbolGroups, codeIm
         
 
         // 切片处理
-        if (!layer.hidden && (layer.type === 'Slice' || (layer.type !== 'Artboard' && layer.type !== 'Shape' && layer.exportFormats?.length > 0))) {
+        if (!layer.hidden &&
+            (layer.type === 'Slice' ||
+            (layer.type === 'SymbolInstance'&&sketchDom.fromNative(SLayer.symbolMaster()).exportFormats?.length > 0) ||
+            (layer.type !== 'Artboard' && layer.type !== 'Shape' && layer.exportFormats?.length > 0))
+        ) {
             try {
                 let trimmed = true;
                 let groupContentsOnly = true;
@@ -65,7 +69,14 @@ const _getImageLayers = (layers,symbolInstanceIds, fontMap, symbolGroups, codeIm
         }
 
         // symbol
-        if (layer.type === 'SymbolInstance' && SLayer.symbolMaster() && SLayer.symbolMaster().children() && SLayer.symbolMaster().children().count() > 1) {
+        if (
+            !layer.hidden &&
+            layer.type === 'SymbolInstance' &&
+            !(layer.exportFormats?.length > 0) &&
+            SLayer.symbolMaster() &&
+            !(sketchDom.fromNative(SLayer.symbolMaster()).exportFormats?.length > 0) &&
+            SLayer.symbolMaster().children() && SLayer.symbolMaster().children().count() > 1
+        ) {
             const symbolChildren = SLayer.symbolMaster().children();
             const tempSymbol = SLayer.duplicate();
             const tempGroup = tempSymbol.detachStylesAndReplaceWithGroupRecursively(true);
