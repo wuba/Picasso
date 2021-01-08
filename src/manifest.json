@@ -68,11 +68,19 @@
             }
         },
         {
-          "name": "帮助",
+          "name": "设计规范",
+          "identifier": "picasso.ui",
+          "script": "./index.js",
+          "handlers": {
+            "run": "ui"
+          }
+        },
+        {
+          "name": "帮助中心",
           "identifier": "picasso.help",
           "script": "./index.js",
           "handlers": {
-            "run": "help"
+              "run": "help"
           }
         }
       ],
@@ -97,6 +105,7 @@
                     "picasso.parse-all-rn"
                 ]
             },
+            "picasso.ui",
             "picasso.help"
         ]
       }

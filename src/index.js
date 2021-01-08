@@ -99,3 +99,7 @@ export const parseAllArtboardRN = () => {
 export const help = () => {
     NSWorkspace.sharedWorkspace().openURL(NSURL.URLWithString('https://github.com/wuba/Picasso'));
 }
+
+export const ui = () => {
+    NSWorkspace.sharedWorkspace().openURL(NSURL.URLWithString('https://picassoui.58.com/%E6%8C%87%E5%8D%97/%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83.html'));
+}
