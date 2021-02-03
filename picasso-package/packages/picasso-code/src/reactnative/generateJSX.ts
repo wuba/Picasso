@@ -2,8 +2,8 @@
  * @Author: iChengbo
  * @Date: 2020-09-02 11:41:52
  * @LastEditors: iChengbo
- * @LastEditTime: 2020-09-08 19:03:13
- * @FilePath: /picasso-core/packages/picasso-code/src/reactnative/generateJSX.ts
+ * @LastEditTime: 2021-02-03 15:45:20
+ * @FilePath: /Picasso/picasso-package/packages/picasso-code/src/reactnative/generateJSX.ts
  */
 
 const RN = {
@@ -24,7 +24,7 @@ function _generateRNJSX(data: any): any {
     for (let i = 0; i < data.length; i++) {
         let record = data[i]
         if (record.type == 'Image' && ((record.children && record.children.length == 0) || !record.children)) {
-            const source = /^http/.test(record.value) ? `{uri: "${record.value}"}` : `require('./images/${record.value}')`;
+            const source = formatImageSource(record.value);
 
             html.push(
                 `<Image style=${
@@ -39,7 +39,7 @@ function _generateRNJSX(data: any): any {
                 // console.log("图片样式：", record.style)
                 // 背景图片
                 if (!!record.style.backgroundImage) {
-                    const bgSource = /^http/.test(record.style.backgroundImage) ? `{uri: "${record.style.backgroundImage}"}` : `require('./images/${record.style.backgroundImage}')`;
+                    const bgSource = formatImageSource(record.style.backgroundImage);
                     html.push(`<${tag} style={${record.addClassName ?
                         `StyleSheet.flatten([styles.${record.addClassName}, styles.${record.className}])`
                         : `styles.${record.className}`}}
@@ -110,42 +110,16 @@ export const generateRNJSX = (data: any) => {
     // return beautifyHtml(JSXCode, { indent_size: 2 })
 }
 
-// export const generateRNJSX = (data: any) => {
-//     // let JSXCode = _generateRNJSX(data)
-//     // return beautifyHtml(JSXCode, { indent_size: 2 })
-//     let html = [];
-//     for (let i = 0; i < data.length; i++) {
-//         let record = data[i];
-//         let tag = 'View';
-//         if (record.type == 'Image') {
-
-//         } else if (record.type == 'Text') {
-
-//         } else {
-//             html.push(`<${tag}>`)
-//         }
-
-//         if (Array.isArray(record.children)) {
-//             html.push(generateRNJSX(record.children));
-//         }
-//         if (['View', 'Text',].includes(record.type)) {
-//             html.push(`</${tag}>`);
-//         }
-//         // switch (record.type) {
-//         //     case 'Image':
-
-//         //         break;
-//         //     case 'Text':
-
-//         //         break;
-//         //     default:
-//         //         const tag = 'View';
-//         //         html.push(`<${tag}> </${tag}>`);
-//         //         if (Array.isArray(record.children)) {
-//         //             html.push(generateRNJSX(record.children));
-//         //         }
-//         //         break;
-//         // }
-//     }
-//     return html.join('\n');
-// }
+/**
+ * 根据图片名称，格式化为 RN Image 标签 source 属性
+ * @param imageName 图片名称
+ */
+function formatImageSource(imageName: string) {
+    let imageSource = ''
+    if (/^http/.test(imageName)) {
+        imageSource = `{uri: "${imageName}"}`
+    } else {
+        imageSource = `require('./images/${imageName}')`.replace(/\@\d+x/, '')
+    }
+    return imageSource
+}
