@@ -67,6 +67,7 @@ export type SKLayer = {
     needsConvertionToNewRoundCorners?: boolean
     hasConvertedToNewRoundCorners?: boolean
     panel?: Panel
+    symbolName?: string
 }
 
 // 类型导出

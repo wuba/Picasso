@@ -13,7 +13,7 @@ export const transWebCode = (data: Layer[],codeData: Layer[]) => {
         data[i].panelData.code = codeData[i].style;
         // 样式复值
         data[i].style = codeData[i].style;
-        if (data[i].type !== 'Text' && Array.isArray(data[i].children)) {
+        if (Array.isArray(data[i].children)) {
             transWebCode(data[i].children,codeData[i].children);
         }
     }

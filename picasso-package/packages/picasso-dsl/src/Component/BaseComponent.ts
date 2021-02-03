@@ -15,4 +15,5 @@ export interface BaseComponent {
     children?: Component[] // 子组件
     value?: string // 内容
     panel?: Panel
+    symbolName?: string
 }

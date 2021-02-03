@@ -12,7 +12,8 @@ const _parseDSL = (sketchData: SKLayer[]):DSL => {
         let dslLayer: Component = {
             type: 'Container',
             id: layer.do_objectID,
-            name: layer.name
+            name: layer.name,
+            symbolName: layer.symbolName || ''
         }
 
         // 面板解析

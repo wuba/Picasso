@@ -33,7 +33,7 @@ export const picassoTrans = (data: Layer[], {
     switch (codeType) {
         case CodeType.WebPx:
             const codeData = formateDslStyle(scaleData);
-            return transWebCode(data,codeData);
+            return transWebCode(data, codeData);
         case CodeType.WebRem:
             // 样式转换px
             const dataPx = formateDslStyle(scaleData);

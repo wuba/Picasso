@@ -11,7 +11,7 @@ const generateBody = (data:Layer[],tab = '') => {
 
             html.push(`${tab}<${tag} class="${record.className}">`);
             record.children.forEach((layer) => {
-                html.push(`${tab}    <span class="${record.className}">`);
+                html.push(`${tab}    <span class="${layer.className}">`);
                 html.push(`${tab}        ${layer.value || ''}`);
                 html.push(`${tab}    </span>`);
             });

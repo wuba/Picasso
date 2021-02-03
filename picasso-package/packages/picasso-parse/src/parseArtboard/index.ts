@@ -9,6 +9,7 @@ import handleSlice from './handleSlice';
 import formatCoordinate from './formatCoordinate';
 import handleSlicePosition from './handleSlicePosition';
 import trimByMask from './trimByMask';
+import handleNotFillLayerOrder from './handleNotFillLayerOrder';
 import { handlePanel } from './handlePanel';
 /**
  * 分别对每个画板进行处理
@@ -36,6 +37,8 @@ export default (layer:SKLayer, type: string): SKLayer => {
     }
     // 过滤隐藏图层
     layers = filterHideLayer(layers);
+    // 处理透明图层顺序
+    layers = handleNotFillLayerOrder(layers);
     // 属性面板解析
     layers = handlePanel(layers);
 

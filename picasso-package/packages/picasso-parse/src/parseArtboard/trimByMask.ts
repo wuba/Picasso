@@ -45,7 +45,8 @@ const calculateMaskIntersection = (parentMask: SKFrame, childMask: SKFrame) => {
 // 定义mask参数类型
 type MaskOptions = {
     flag: boolean,
-    frame: SKFrame
+    frame: SKFrame,
+    baseFrame: SKFrame // 画板剪切板坐标大小
 }
 
 /**
@@ -56,10 +57,10 @@ type MaskOptions = {
  * 1. Artboard是最大的Mask
  * 2. hasClippingMask Mask图层标识
  * 3. shouldBreakMaskChain 中断Mask标识
- * @param layers 
- * @param param1 
+ * @param layers
+ * @param param1
  */
-const _mask = (layers:SKLayer[], { flag = false, frame }: MaskOptions):SKLayer[] => {
+const _mask = (layers:SKLayer[], { flag = false, frame, baseFrame }: MaskOptions): SKLayer[] => {
      
     let currFrame: SKFrame;
     let maskFlag = false;
@@ -78,8 +79,13 @@ const _mask = (layers:SKLayer[], { flag = false, frame }: MaskOptions):SKLayer[]
                 frame = {...currFrame}
             }
             flag = true;
-            // 存在mask的时候用mask进行剪切
-            layers[i].frame = calculateMaskIntersection(frame, layers[i].frame);
+            // 1.切片只被画板剪切
+            if(layers[i]._class==='slice') {
+                layers[i].frame = calculateMaskIntersection(baseFrame, layers[i].frame);
+            } else {
+                // 2.其他图层存在mask的时候用mask进行剪切
+                layers[i].frame = calculateMaskIntersection(frame, layers[i].frame);
+            }
         }
 
         // 是否中断
@@ -90,7 +96,7 @@ const _mask = (layers:SKLayer[], { flag = false, frame }: MaskOptions):SKLayer[]
 
         // 递归子元素
         if (Array.isArray(layers[i].layers)) {
-            layers[i].layers = _mask(layers[i].layers,{ flag, frame });
+            layers[i].layers = _mask(layers[i].layers,{ flag, frame, baseFrame });
         }
     }
 
@@ -108,5 +114,5 @@ const _mask = (layers:SKLayer[], { flag = false, frame }: MaskOptions):SKLayer[]
 
 export default (layers: SKLayer[]): SKLayer[] => {
 
-    return _mask(layers, { flag: true, frame: layers[0].frame });
+    return _mask(layers, { flag: true, frame: layers[0].frame, baseFrame: layers[0].frame});
 }

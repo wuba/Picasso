@@ -23,7 +23,6 @@ export const picassoWebCode = (data: Layer[], size: number) => {
             colorFormat: ColorFormat.RGBA,
             codeType: CodeType.WebPx,
         });
-
         // 生成 body
         const body = generateBody(data, '');
         let scss = '';
