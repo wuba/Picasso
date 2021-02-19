@@ -24,7 +24,7 @@ const getValidValue = (object, key) => {
 
 export const transRNStyle = (data: any) => {
 
-    // console.log("------------------------")
+    console.log("-----------transRNStyle-------------")
     // console.log("data: ", data)
     for (let item of data) {
         // 样式集合
@@ -227,18 +227,18 @@ export const transRNStyle = (data: any) => {
                             break;
 
                         case 'boxShadow':
-                            // console.log("阴影样式", currValue)
-                            if (!!currValue && !!currValue.color && item.type == 'Container') {
+                            if (!!currValue && currValue.length > 0 && !!currValue[0].color && item.type == 'Container') {
                                 style = {
                                     ...style,
-                                    elevation: 5,
+                                    elevation: currValue[0].offsetY,
                                     // 以下属性，仅 IOS 可用
-                                    shadowColor: generateColor(currValue.color),
+                                    shadowColor: generateColor(currValue[0].color),
                                     shadowOffset: {
-                                        width: currValue.offsetX,
-                                        height: currValue.offsetY,
+                                        width: currValue[0].offsetX,
+                                        height: currValue[0].offsetY,
                                     },
-                                    shadowRadius: currValue.blurRadius,
+                                    shadowRadius: currValue[0].blurRadius,
+                                    shadowOpacity: 1
                                 }
                             }
                             break;
