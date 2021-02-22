@@ -33,7 +33,7 @@
     "resources/**/*.js"
   ],
   "dependencies": {
-    "@wubafe/picasso-parse": "0.0.16",
+    "@wubafe/picasso-parse": "0.0.18",
     "@skpm/fs": "^0.2.6",
     "@skpm/promise": "^0.1.0",
     "sketch-module-web-view": "^3.1.4"
