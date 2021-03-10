@@ -1,6 +1,6 @@
 {
   "name": "@wubafe/sketch-dsl",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Sketch-DSL库",
   "main": "dist/index.js",
   "scripts": {

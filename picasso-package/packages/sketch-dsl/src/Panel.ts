@@ -22,7 +22,7 @@ export type Property = {
         height: number // 高度
     }
     opacity: number // 不透明度
-    radius: number // 圆角
+    radius: number[] // 圆角
 }
 
 enum Alignment {

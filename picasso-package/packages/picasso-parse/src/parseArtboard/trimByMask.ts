@@ -60,27 +60,30 @@ type MaskOptions = {
  * @param layers
  * @param param1
  */
-const _mask = (layers:SKLayer[], { flag = false, frame, baseFrame }: MaskOptions): SKLayer[] => {
+const _mask = (layers: SKLayer[], { flag = false, frame, baseFrame }: MaskOptions): SKLayer[] => {
      
     let currFrame: SKFrame;
     let maskFlag = false;
+    const defaultFrame = { ...frame };
 
     // 标记阶段
     for (let i = 0; i < layers.length; i++) {
         // 中断mark, 从本层开始
         if (layers[i].shouldBreakMaskChain) {
             maskFlag = false;
+            // 同时恢复剪刀主体
+            frame = { ...defaultFrame };
         }
 
         if (flag || maskFlag) {
-            if (flag&&maskFlag) {
-                frame = calculateMaskIntersection(frame, currFrame);
-            } else if(maskFlag) {
-                frame = {...currFrame}
+            if (flag && maskFlag) {
+                // frame = calculateMaskIntersection(defaultFrame, currFrame);
+            } else if (maskFlag) {
+                frame = { ...currFrame };
             }
             flag = true;
             // 1.切片只被画板剪切
-            if(layers[i]._class==='slice') {
+            if (layers[i]._class === 'slice') {
                 layers[i].frame = calculateMaskIntersection(baseFrame, layers[i].frame);
             } else {
                 // 2.其他图层存在mask的时候用mask进行剪切
@@ -91,12 +94,14 @@ const _mask = (layers:SKLayer[], { flag = false, frame, baseFrame }: MaskOptions
         // 是否中断
         if (layers[i].hasClippingMask) {
             maskFlag = true;
-            currFrame = layers[i].frame;
+            flag = true;
+            currFrame = { ...layers[i].frame } ;
+            frame = calculateMaskIntersection(defaultFrame, layers[i].frame);
         }
-
+        // console.log('layers[i].name', layers[i].name, layers[i].layers);
         // 递归子元素
         if (Array.isArray(layers[i].layers)) {
-            layers[i].layers = _mask(layers[i].layers,{ flag, frame, baseFrame });
+            layers[i].layers = _mask(layers[i].layers, { flag, frame, baseFrame });
         }
     }
 

@@ -1,5 +1,22 @@
-import { Layer, PanelOptions } from './types';
+import { Layer, PanelOptions,Unit,IOSScale,AndroidScale,WebScale } from './types';
 import { _scale } from './common';
+
+// 转换 Radius
+const transRadius = (radius: number[], scale: IOSScale|AndroidScale|WebScale, unit: Unit) => {
+    // 值相同
+    if (new Set(radius).size === 1) {
+        // 值等于0
+        if (radius[0] === 0) {
+            return '';
+        }
+
+        // 值不等于0
+        return `${_scale(radius[0], scale)}${unit}`
+    }
+
+    // 值不同
+    return radius.map((item: number)=>`${_scale(item, scale)}${unit}`).join(' ');
+}
 
 export const transPanel = (data: Layer[], options : PanelOptions): any => {
     const { scale,unit } = options;
@@ -23,7 +40,7 @@ export const transPanel = (data: Layer[], options : PanelOptions): any => {
                         height: `${_scale(properties.size.height, scale)}${unit}`
                     },
                     opacity: properties.opacity ? `${properties.opacity*100}%`: '',
-                    radius: properties.radius ? `${_scale(properties.radius, scale)}${unit}`: ''
+                    radius: Array.isArray(properties.radius) ? transRadius(properties.radius, scale, unit) : (properties.radius ? `${_scale(properties.radius, scale)}${unit}`: ''), // 兼容老数据类型，TBD
                 },
                 fills,
                 typefaces: typefaces.map(typeface =>{
