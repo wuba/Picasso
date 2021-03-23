@@ -18,7 +18,7 @@ export const picassoArtboardMeatureParse = (layer: SKLayer): Component => {
     // 画板处理
     layer = parseArtboardLayer(layer, 'measure');
     // DSL处理
-    const DSL = parseDSL([layer]);
+    const DSL = parseDSL([layer], 'measure');
     
     return DSL[0];
 }
@@ -37,7 +37,7 @@ export const picassoArtboardCodeParse = (layer: SKLayer): Component => {
     // console.log('22222', JSON.stringify(layer))
     // fs.writeFileSync('./code_dsl_2.json',JSON.stringify(layer,null,2));
     // 1.DSL处理
-    let DSL = parseDSL([layer]);
+    let DSL = parseDSL([layer], 'code');
     // console.log('32222', JSON.stringify(DSL))
     // fs.writeFileSync('./code_dsl_3.json',JSON.stringify(DSL,null,2));
     // 2. 特征分组
@@ -66,7 +66,7 @@ export const picassoArtboardOperationCodeParse = (layer: SKLayer): Component => 
     // 画板处理
     layer = parseArtboardLayer(layer, 'code');
     // 1.DSL处理
-    let DSL = parseDSL([layer]);
+    let DSL = parseDSL([layer], 'code');
     // 2. 运营版布局
     DSL = operationLayout(DSL);
     // 3. 添加className

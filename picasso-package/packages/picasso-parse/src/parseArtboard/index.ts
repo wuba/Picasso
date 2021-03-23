@@ -7,7 +7,6 @@ import handleOpacity from './handleOpacity';
 import fixPosition from './fixPosition';
 import handleSlice from './handleSlice';
 import formatCoordinate from './formatCoordinate';
-import handleSlicePosition from './handleSlicePosition';
 import trimByMask from './trimByMask';
 import handleNotFillLayerOrder from './handleNotFillLayerOrder';
 import { handlePanel } from './handlePanel';
@@ -16,8 +15,8 @@ import { handlePanel } from './handlePanel';
  */
 export default (layer:SKLayer, type: string): SKLayer => {
     let layers = [layer];
-    // border坐标处理(仅代码模式)
-    if (type !== 'measure') {
+    // 代码模式，border坐标处理
+    if (type === 'code') {
         layers = handleBorderCoordinate(layers);
     }
     // 透明度透传
@@ -28,11 +27,8 @@ export default (layer:SKLayer, type: string): SKLayer => {
     layers = fixPosition(layers);
     // Mask剪切处理
     layers = trimByMask(layers);
-    if (type === 'measure') {
-        // 切片排序
-        layers = handleSlicePosition(layers);
-    } else {
-        // 代码模式，处理切片
+    // 代码模式，处理切片
+    if (type === 'code') {
         layers = handleSlice(layers);
     }
     // 过滤隐藏图层

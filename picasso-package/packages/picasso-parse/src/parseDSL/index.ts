@@ -3,7 +3,7 @@ import parseText from './parseText';
 import parseStructure from './parseStructure';
 import parseStyle from './parseStyle';
 import parseImage from './parseImage';
-
+import handleSlicePosition from './handleSlicePosition';
 import filterGroupLayer from './filterGroupLayer';
 
 const _parseDSL = (sketchData: SKLayer[]):DSL => {
@@ -37,15 +37,20 @@ const _parseDSL = (sketchData: SKLayer[]):DSL => {
     return dsl;
 }
 
-export default (sketchData: SKLayer[]): DSL => {
+export default (sketchData: SKLayer[], type: string): DSL => {
     const layers: SKLayer[] = [];
     
     for (let i = 0; i < sketchData.length; i++) {
-        let layer = sketchData[i];
+        const layer = sketchData[i];
+        // 去掉分组
         layer.layers = filterGroupLayer(layer.layers);
+        // 标注模式下，切片进行排序
+        if (type === 'measure') {
+            layer.layers = handleSlicePosition(layer.layers);
+        }
+
         layers.push(layer);
     }
-    const dsl = _parseDSL(layers);
 
-    return dsl;
+    return _parseDSL(layers);
 };
