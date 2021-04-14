@@ -14,6 +14,6 @@ export interface BaseComponent {
     style? : Style // 组件样式
     children?: Component[] // 子组件
     value?: string // 内容
-    panel?: Panel
-    symbolName?: string
+    panel?: Panel // 标注面板
+    symbolName?: string //组件名称
 }

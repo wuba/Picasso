@@ -1,6 +1,6 @@
 {
   "name": "@wubafe/picasso-dsl",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Picasso-DSL库",
   "main": "dist/picasso-dsl/src/index.js",
   "scripts": {

@@ -23,6 +23,9 @@ export type Property = {
     }
     opacity: number // 不透明度
     radius: number[] // 圆角
+    symbolName?: string // 对应组件名称
+    sharedLayerStyleName?: string // 共享图层样式名称
+    sharedTextStyleName?: string // 共享文本样式名称
 }
 
 enum Alignment {

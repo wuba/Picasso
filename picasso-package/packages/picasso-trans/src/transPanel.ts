@@ -41,6 +41,9 @@ export const transPanel = (data: Layer[], options : PanelOptions): any => {
                     },
                     opacity: properties.opacity ? `${properties.opacity*100}%`: '',
                     radius: Array.isArray(properties.radius) ? transRadius(properties.radius, scale, unit) : (properties.radius ? `${_scale(properties.radius, scale)}${unit}`: ''), // 兼容老数据类型，TBD
+                    symbolName: properties.symbolName, // 对应组件名称
+                    sharedLayerStyleName: properties.sharedLayerStyleName, // 共享图层样式名称
+                    sharedTextStyleName: properties.sharedTextStyleName // 共享文本样式名称
                 },
                 fills,
                 typefaces: typefaces.map(typeface =>{

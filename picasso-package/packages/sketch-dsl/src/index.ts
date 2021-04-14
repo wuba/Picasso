@@ -68,6 +68,8 @@ export type SKLayer = {
     hasConvertedToNewRoundCorners?: boolean
     panel?: Panel
     symbolName?: string
+    sharedLayerStyleName?: string
+    sharedTextStyleName?: string
 }
 
 // 类型导出
