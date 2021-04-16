@@ -1,8 +1,8 @@
 import twoPointsDistance from './twoPointsDistance';
 import { SKGradient,SKLayer, RadialGradient,GListItem,SKFillItem } from '../../../../types';
 import {
-    calculateRGB,
-    precisionControl
+    precisionControl,
+    transSketchColor
 } from '../../../../common/utils';
 
 export default (gradient: SKGradient, layer: SKLayer, fillStyle:SKFillItem, contextSettings = 1):RadialGradient => {
@@ -30,12 +30,7 @@ export default (gradient: SKGradient, layer: SKLayer, fillStyle:SKFillItem, cont
             alpha = layer.style.contextSettings.opacity * contextSettings * alpha;
         }
         return {
-            color: {
-                red: calculateRGB(red),
-                green: calculateRGB(green),
-                blue: calculateRGB(blue),
-                alpha: precisionControl(alpha,0.1)
-            },
+            color: transSketchColor({red, green, blue, alpha}),
             position: precisionControl(position,0.01),
         }
     });

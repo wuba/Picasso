@@ -2,8 +2,8 @@ import twoPointsAngle from './twoPointsAngle';
 import twoPointsDistance from './twoPointsDistance';
 import { SKGradient,SKLayer, LinearGradient,GListItem } from '../../../../types';
 import {
-    calculateRGB,
-    precisionControl
+    precisionControl,
+    transSketchColor
 } from '../../../../common/utils';
 
 export default (gradient:SKGradient, layer: SKLayer, contextSettings:number = 1): LinearGradient => {
@@ -185,12 +185,7 @@ export default (gradient:SKGradient, layer: SKLayer, contextSettings:number = 1)
             alpha = layer.style.contextSettings.opacity * contextSettings * alpha;
         }
         return {
-            color: {
-                red: calculateRGB(red),
-                green: calculateRGB(green),
-                blue: calculateRGB(blue),
-                alpha: precisionControl(alpha,0.1)
-            },
+            color: transSketchColor({red, green, blue, alpha}),
             position: precisionControl(position,0.01),
         };
         // return `rgba(${Math.round(red * 255)},${Math.round(green * 255)},${Math.round(blue * 255)},${Math.round(alpha * 100) / 100}) ${Math.round(position * 10000) / 100}%`;

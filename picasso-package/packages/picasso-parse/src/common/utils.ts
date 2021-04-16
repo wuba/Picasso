@@ -48,5 +48,5 @@ export const transSketchColor = ({ red, green, blue, alpha }) => ({
     red: calculateRGB(red),
     green: calculateRGB(green),
     blue: calculateRGB(blue),
-    alpha: precisionControl(alpha,0.1),
+    alpha: precisionControl(alpha,0.01),
 });

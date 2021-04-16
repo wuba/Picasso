@@ -1,5 +1,5 @@
 import { SKLayer, SKShadowItem, BoxShadowItem, TextShadowItem,Style } from '../../types';
-import { calculateRGB, precisionControl } from '../../common/utils';
+import { precisionControl,transSketchColor } from '../../common/utils';
 
 /**
  *  处理阴影
@@ -24,12 +24,7 @@ const getShadowStyle = (shadow: SKShadowItem , layer:SKLayer, type: string = '')
         spread: precisionControl(shadow.spread),
         offsetX: precisionControl(offX),
         offsetY: precisionControl(offY),
-        color: {
-            red: calculateRGB(red),
-            green: calculateRGB(green),
-            blue: calculateRGB(blue),
-            alpha: precisionControl(alpha,0.1),
-        },
+        color: transSketchColor({red, green, blue, alpha}),
     }
 }
 
@@ -51,12 +46,7 @@ const getTextShadowStyle = (shadow: SKShadowItem, layer:SKLayer):TextShadowItem 
         spread: precisionControl(shadow.spread),
         offsetX: precisionControl(offX),
         offsetY: precisionControl(offY),
-        color: {
-            red: calculateRGB(red),
-            green: calculateRGB(green),
-            blue: calculateRGB(blue),
-            alpha: precisionControl(alpha,0.1),
-        }
+        color: transSketchColor({red, green, blue, alpha}),
     }
 }
 

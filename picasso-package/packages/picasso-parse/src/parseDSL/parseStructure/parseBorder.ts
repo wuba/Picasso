@@ -1,4 +1,4 @@
-import { calculateRGB,precisionControl } from '../../common/utils'
+import { precisionControl,transSketchColor } from '../../common/utils'
 import { SKLayer, Border, BorderItem } from '../../types'
 /**
  * 'position': 属性表示 border 设置的位置
@@ -22,12 +22,12 @@ export default (layer:SKLayer): Border => {
             const border: BorderItem = {
                 width: precisionControl(borderStyle.thickness),
                 style: 'solid',
-                color: {
-                    red: calculateRGB(borderStyle.color.red),
-                    green: calculateRGB(borderStyle.color.green),
-                    blue: calculateRGB(borderStyle.color.blue),
-                    alpha: precisionControl(borderAlpha,0.1),
-                },
+                color: transSketchColor({
+                    red: borderStyle.color.red,
+                    green: borderStyle.color.green,
+                    blue: borderStyle.color.blue,
+                    alpha: borderAlpha,
+                }),
             }
 
             return {

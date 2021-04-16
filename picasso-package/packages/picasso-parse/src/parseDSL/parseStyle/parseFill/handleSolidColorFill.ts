@@ -1,6 +1,5 @@
 import {
-    calculateRGB,
-    precisionControl
+    transSketchColor
 } from '../../../common/utils';
 import { SKLayer, SKFillItem, Background } from '../../../types';
 
@@ -17,12 +16,7 @@ export default (fillStyle: SKFillItem, layer:SKLayer): Background => {
     }
     if (alpha > 0) {
         return {
-            color: {
-                red: calculateRGB(red),
-                green: calculateRGB(green),
-                blue: calculateRGB(blue),
-                alpha: precisionControl(alpha,0.1),
-            }
+            color: transSketchColor({red, green, blue, alpha}),
         }
     }
     return {};

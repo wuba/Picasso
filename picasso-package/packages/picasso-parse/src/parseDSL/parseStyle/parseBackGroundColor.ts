@@ -1,4 +1,4 @@
-import { calculateRGB,precisionControl } from '../../common/utils'
+import { transSketchColor } from '../../common/utils'
 import { SKLayer, Background } from '../../types'
 
 export default (layer:SKLayer):Background => {
@@ -14,12 +14,7 @@ export default (layer:SKLayer):Background => {
     }
     if (alpha > 0) {
         return {
-            color: {
-                red: calculateRGB(red),
-                green: calculateRGB(green),
-                blue: calculateRGB(blue),
-                alpha: precisionControl(alpha,0.1),
-            },
+            color: transSketchColor({red, green, blue, alpha}),
         }
     }
     return {}

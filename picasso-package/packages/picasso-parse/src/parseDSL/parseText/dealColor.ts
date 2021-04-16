@@ -1,4 +1,4 @@
-import { calculateRGB,precisionControl } from '../../common/utils';
+import {transSketchColor } from '../../common/utils';
 import { SKLayer, SKColor, TextStyle, SKFillItem } from '../../types';
 import handleSolidColorFill from '../parseStyle/parseFill/handleSolidColorFill';
 
@@ -25,16 +25,11 @@ export default (color:SKColor,layer:SKLayer):TextStyle => {
     //02. 没有填充的时候，使用默认颜色
     let alpha = color.alpha;
     
-    if (layer.style&&layer.style.contextSettings) { // colorStyle 里的 alpha 的值都是 1
+    if (layer.style && layer.style.contextSettings) { // colorStyle 里的 alpha 的值都是 1
         alpha = layer.style.contextSettings.opacity * color.alpha; // 设置透明度
     }
 
     return {
-        color: {
-            alpha: precisionControl(alpha,0.1),
-            red: calculateRGB(color.red),
-            green: calculateRGB(color.green),
-            blue: calculateRGB(color.blue),
-        }
+        color: transSketchColor({ red: color.red, green: color.green, blue: color.blue, alpha }),
     } 
 }
