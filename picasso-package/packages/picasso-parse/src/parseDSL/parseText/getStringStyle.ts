@@ -20,7 +20,7 @@ export default (layer:SKLayer):any[] => {
             if (attrItem._class == 'stringAttribute') {
                 let attributes = attrItem.attributes;
                 let fontStyle = attributes['MSAttributedStringFontAttribute']
-                let colorStyle = attributes['MSAttributedStringColorAttribute']
+                let colorStyle = attributes['MSAttributedStringColorAttribute'] || { red: 0, green: 0, blue: 0, alpha: 1, _class: 'color' };
                 let paragraphStyleObj = attributes['paragraphStyle']
                 let kerning = attributes['kerning']
                 const textStyle:TextStyle = {
@@ -48,7 +48,7 @@ export default (layer:SKLayer):any[] => {
             if (attrItem._class == 'stringAttribute') {
                 let attributes = attrItem.attributes;
                 let fontStyle = attributes['MSAttributedStringFontAttribute']
-                let colorStyle = attributes['MSAttributedStringColorAttribute']
+                let colorStyle = attributes['MSAttributedStringColorAttribute'] || { red: 0, green: 0, blue: 0, alpha: 1, _class: 'color' }
                 let paragraphStyleObj:SKParagraphStyle = attributes['paragraphStyle']
                 let kerning = attributes['kerning']
                 const style = {

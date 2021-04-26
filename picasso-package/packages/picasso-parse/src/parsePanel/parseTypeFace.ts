@@ -31,8 +31,8 @@ export const parseTypeFace = (layer:SKLayer): TypeFace[] => {
         // 获取字体重量, 默认 Regular;
         const val = fontFamily.split('-').pop();
         const fontWeight = fontFamily.split('-').length >= 2 && fontWeightTypes.includes(val.toLowerCase()) ? val : '';
-        // 获取字体颜色
-        const { red,green,blue,alpha } = attributes.MSAttributedStringColorAttribute;
+        // 获取字体颜色 默认：{ red: 0, green: 0,blue: 0,alpha: 1 }
+        const { red,green,blue,alpha } = attributes.MSAttributedStringColorAttribute || { red: 0, green: 0, blue: 0, alpha: 1, _class: 'color' };
         const color = transSketchColor({ red,green,blue,alpha });
         // 获取字间距
         const letterSpacing = attributes.kerning || 0;
