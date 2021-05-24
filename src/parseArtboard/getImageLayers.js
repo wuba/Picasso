@@ -56,10 +56,10 @@ const _getImageLayers = (layers,symbolInstanceIds, fontMap, symbolGroups, codeIm
 
                 // 存储切片信息
                 codeImageMap[layer.id] = {
-                    x: sliceFrame.left(),
-                    y: sliceFrame.top(),
-                    width: sliceFrame.width(),
-                    height: sliceFrame.height(),
+                    x: sliceFrame.left ? sliceFrame.left() : sliceFrame.rect().origin.x, // 兼容v72
+                    y: sliceFrame.top ? sliceFrame.top() : sliceFrame.rect().origin.y, // 兼容v72
+                    width: sliceFrame.width ? sliceFrame.width() : sliceFrame.rect().size.width, // 兼容v72
+                    height: sliceFrame.height ? sliceFrame.height(): sliceFrame.rect().size.height, // 兼容v72
                 };
 
                 _exportLayers.push({ id: layer.id, imageLocalPath });

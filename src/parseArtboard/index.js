@@ -239,6 +239,7 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
     fs.rmdirSync(`${rootPath}/imgs`);
     codeDSL.children = _setImageUrl(codeDSL.children, realSliceObject);
 
+    console.log('codeDSL', JSON.stringify(codeDSL));
     // 小程序
     if(codeType === 2) {
         handleWeappCode(rootPath, codeDSL);

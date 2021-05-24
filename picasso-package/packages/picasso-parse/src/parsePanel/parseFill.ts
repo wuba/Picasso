@@ -2,10 +2,11 @@ import { SKLayer,Fill } from '../types';
 import { transSketchColor } from '../common/utils';
 
 /**
+ * 填充样式解析
  * 0. 画板=>取背景色即可
  * 1. 填充解析
  *   a. 对纯色填充、渐变填充进行了解析。
- *   b. TODO 图片填充及其他填充未进行解析。
+ *   b. 图片填充及其他填充未进行解析。
  *  
  * @param layer
  */
@@ -21,7 +22,9 @@ export const parseFill = (layer: SKLayer): Fill[] => {
     // 2. 其他图层
     const { fills = [] } = layer.style;
 
-    return fills.filter(({ isEnabled, fillType }) => isEnabled&&([0,1].includes(fillType))) // 过滤出纯色、渐变切可用的填充
+    return fills
+         // 过滤出纯色、渐变切可用的填充
+        .filter(({ isEnabled, fillType }) => isEnabled&&([0,1].includes(fillType)))
         .map(({ fillType, color, gradient }) => {
             // 纯色填充
             if (fillType === 0) {
