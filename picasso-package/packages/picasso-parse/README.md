@@ -11,7 +11,7 @@
 ## 使用
 注：安装picasso插件之前，请先安装[sketch](https://www.sketch.com/)
 
-[下载picasso插件](https://github.com/wuba/Picasso/releases/download/v2.0.16/picasso.sketchplugin.zip) => picasso.sketchplugin.zip 解压，双击安装即可，如下：
+[下载picasso插件](https://github.com/wuba/Picasso/releases/download/v2.0.17/picasso.sketchplugin.zip) => picasso.sketchplugin.zip 解压，双击安装即可，如下：
 
 ![1.jpg](https://wos.58cdn.com.cn/IjGfEdCbIlr/ishare/f3c38c05-9051-4b87-b5ad-32439b0dfed71.jpg)
 
