@@ -4,14 +4,14 @@
 > 一款sketch插件，可将sketch设计稿页面自动解析成前端代码。
 ## 简介
 
-[Picasso](https://github.com/wuba/Picasso/releases/download/v2.0.17/picasso.sketchplugin.zip)是58同城推出的一款sketch设计稿解析插件，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
+[Picasso](https://github.com/wuba/Picasso/releases/download/v2.1.0/picasso.sketchplugin.zip)是58同城推出的一款sketch设计稿解析插件，可将sketch设计稿自动解析成还原精准，可用度高的前端代码。
 
 ## 前提
 - Sketch >= 60 [下载Sketch](https://www.sketch.com/)
 ## 使用
 注：安装picasso插件之前，请先安装[sketch](https://www.sketch.com/)
 
-[下载picasso插件](https://github.com/wuba/Picasso/releases/download/v2.0.17/picasso.sketchplugin.zip) => picasso.sketchplugin.zip 解压压缩包，双击安装即可，如下：
+[下载picasso插件](https://github.com/wuba/Picasso/releases/download/v2.1.0/picasso.sketchplugin.zip) => picasso.sketchplugin.zip 解压压缩包，双击安装即可，如下：
 
 ![1.jpg](https://wos.58cdn.com.cn/IjGfEdCbIlr/ishare/f3c38c05-9051-4b87-b5ad-32439b0dfed71.jpg)
 
