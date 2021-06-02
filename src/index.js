@@ -40,7 +40,7 @@ const parseArtboard = (type, codeType) => {
     // 代码存储根目录
     const rootPath = getSavePath(fileName);
 
-    // console.log('rootPath', rootPath);
+    console.log('rootPath', rootPath);
     if (rootPath === '') {
         return UI.message('取消解析');
     }
@@ -54,7 +54,8 @@ const parseArtboard = (type, codeType) => {
             UI.message('解析完成！');
             // 解析完成，打开结果文件目录
             NSWorkspace.sharedWorkspace().activateFileViewerSelectingURLs([NSURL.fileURLWithPath(`${rootPath}/${res[0]&&res[0].name}`)]);
-        }).catch(() => {
+        }).catch((err) => {
+            console.log('111', err);
             UI.message('解析失败！');
         });
     },0);

@@ -217,13 +217,20 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
         return layers;
     };
 
-    // console.log('realSliceList', realSliceList);
+    console.log('realSliceList', realSliceList);
 
     const realSliceObject = {};
     // 多余图片删除处理
     // 1.创建新图片文件夹
     const imagesDir = `${rootPath}/images`;
-    if (!fs.existsSync(imagesDir)) {
+
+    // 创建根目录
+    if (!fs.existsSync(rootPath)) {
+        fs.mkdirSync(rootPath);
+    }
+
+    // 创建图片文件夹
+    if (!fs.existsSync(imagesDir)&&realSliceList.length>0) {
         fs.mkdirSync(imagesDir);
     }
 
@@ -234,12 +241,14 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
         }
         realSliceObject[id] = imageLocalPath;
     });
-
-    // 3.删除无用图片目录
-    fs.rmdirSync(`${rootPath}/imgs`);
+    if (fs.existsSync(`${rootPath}/imgs`)) {
+        // 3.删除无用图片目录
+        fs.rmdirSync(`${rootPath}/imgs`);
+    }
+    
     codeDSL.children = _setImageUrl(codeDSL.children, realSliceObject);
 
-    // console.log('codeDSL', JSON.stringify(codeDSL));
+    console.log('codeDSL', JSON.stringify(codeDSL));
     // 小程序
     if(codeType === 2) {
         handleWeappCode(rootPath, codeDSL);
