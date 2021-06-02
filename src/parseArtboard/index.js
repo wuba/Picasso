@@ -228,7 +228,7 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
     }
 
     // 图片文件夹不存在且有图片需要导出时创建图片文件夹
-    if (!fs.existsSync(imagesDir)&&realSliceList.length>0) {
+    if (!fs.existsSync(imagesDir) && realSliceList.length>0) {
         fs.mkdirSync(imagesDir);
     }
 
