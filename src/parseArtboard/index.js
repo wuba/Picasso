@@ -222,7 +222,7 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
     // 1.创建新图片文件夹
     const imagesDir = `${rootPath}/images`;
 
-    // 如果根目录不存在，则创建根目录
+    // 如果根目录不存在，则创建目录
     if (!fs.existsSync(rootPath)) {
         fs.mkdirSync(rootPath);
     }
