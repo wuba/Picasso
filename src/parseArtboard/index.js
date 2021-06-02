@@ -239,8 +239,9 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
         }
         realSliceObject[id] = imageLocalPath;
     });
+
+    // 3.删除无用图片目录
     if (fs.existsSync(`${rootPath}/imgs`)) {
-        // 3.删除无用图片目录
         fs.rmdirSync(`${rootPath}/imgs`);
     }
     
