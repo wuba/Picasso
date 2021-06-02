@@ -54,8 +54,7 @@ const parseArtboard = (type, codeType) => {
             UI.message('解析完成！');
             // 解析完成，打开结果文件目录
             NSWorkspace.sharedWorkspace().activateFileViewerSelectingURLs([NSURL.fileURLWithPath(`${rootPath}/${res[0]&&res[0].name}`)]);
-        }).catch((err) => {
-            console.log('111', err);
+        }).catch(() => {
             UI.message('解析失败！');
         });
     },0);

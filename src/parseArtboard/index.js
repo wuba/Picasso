@@ -217,8 +217,6 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
         return layers;
     };
 
-    console.log('realSliceList', realSliceList);
-
     const realSliceObject = {};
     // 多余图片删除处理
     // 1.创建新图片文件夹
@@ -229,7 +227,7 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
         fs.mkdirSync(rootPath);
     }
 
-    // 创建图片文件夹
+    // 图片文件夹不存在且有图片需要导出时创建图片文件夹
     if (!fs.existsSync(imagesDir)&&realSliceList.length>0) {
         fs.mkdirSync(imagesDir);
     }
@@ -248,7 +246,6 @@ export const parseArtboard = (artboardItem,codeType, progressSlice, getProgress,
     
     codeDSL.children = _setImageUrl(codeDSL.children, realSliceObject);
 
-    console.log('codeDSL', JSON.stringify(codeDSL));
     // 小程序
     if(codeType === 2) {
         handleWeappCode(rootPath, codeDSL);
