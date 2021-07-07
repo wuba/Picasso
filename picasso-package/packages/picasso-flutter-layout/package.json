@@ -1,0 +1,19 @@
+{
+  "name": "@wubafe/picasso-layout",
+  "version": "0.0.4",
+  "description": "Picasso布局库",
+  "main": "dist/picasso-layout/src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn test/index.ts",
+    "test": "ts-node-dev --respawn test/index.ts"
+  },
+  "author": "huangwencun",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^10.12.15",
+    "ts-node": "^8.10.2",
+    "ts-node-dev": "1.0.0-pre.54",
+    "typescript": "^3.9.7"
+  }
+}
