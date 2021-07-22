@@ -8,7 +8,7 @@ import { SKLayer } from '../types'
  */
 const filterGroupLayer = (layers:SKLayer[],afterLayer:SKLayer[]=[]):SKLayer[] => {
     layers.forEach((layer:SKLayer) => {
-        if (layer._class!=='group') {
+        if (layer._class!=='group' || layer.symbolComponentObject) {
             afterLayer.push({...layer,layers:[]})
         }
         if (Array.isArray(layer.layers)) {

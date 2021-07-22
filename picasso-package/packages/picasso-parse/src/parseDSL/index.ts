@@ -16,6 +16,10 @@ const _parseDSL = (sketchData: SKLayer[]):DSL => {
             symbolName: layer.symbolName || ''
         }
 
+        if (layer.symbolComponentObject) {
+            dslLayer.symbolComponentObject = layer.symbolComponentObject;
+        }
+
         // 面板解析
         dslLayer.panel = layer.panel;
         // 结构解析
