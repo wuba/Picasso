@@ -16,4 +16,9 @@ export interface BaseComponent {
     value?: string // 内容
     panel?: Panel // 标注面板
     symbolName?: string //组件名称
+    symbolComponentObject?: { // 组件映射对象
+        url: string,
+        code_name: string,
+        code_lib_name: string,
+    } 
 }
