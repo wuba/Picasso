@@ -1,39 +1,254 @@
 
 import { Layer } from './types';
 
-export const transIOSCode = (data: Layer[]) => {
+
+/**
+ * DSL=> webStyle 转换方法
+ * @param data
+ */
+export const formateDslStyle = (data: any) => {
+    //let formateDsl = JSON.parse(JSON.stringify(data))
+
+    for (let i = 0; i < data.length; i++) {
+        let style: any = {} // 样式集合
+        const item = data[i];
+        // 处理 structure
+        if (item.structure && Object.keys(item.structure).length) {
+            for (var key in item.structure) {
+                let currValue = item.structure[key]
+                // sketch 设计稿解析过来的没有 margin 和 padding
+                switch (key) {
+                    case 'border':
+                        style = {
+                            ...style,
+                            ...generateProperty(currValue),
+                        }
+                        break
+                    case 'width':
+                        style[key] = `${Math.round(currValue * 100) / 100}px`
+                        break
+                    case 'height':
+                        style[key] = `${Math.round(currValue * 100) / 100}px`
+                        break
+                    case 'x':
+                    case 'y':
+                        if (style.position) {
+                            style[key] = `${Math.round(currValue * 100) / 100}px`
+                        }
+                        break
+                    case 'zIndex':
+                        if (style.position) {
+                            style[toKebabCase(key)] = currValue;
+                        }
+                        break
+                    default:
+                        style[toKebabCase(key)] = generateMargin(currValue);
+                        break
+                }
+            }
+        }
+
+        // 处理 style
+        if (item.style && Object.keys(item.style).length) {
+            for (var key in item.style) {
+                if (
+                    item.style.hasOwnProperty(key) &&
+                    item.style[key] != undefined
+                ) {
+                    let currValue = item.style[key]
+                    switch (key) {
+                        case 'textStyle': // text样式直接放在style里
+                            for (let textKey of Object.keys(currValue)) {
+                                let textVal = currValue[textKey]
+                                // 颜色处理
+                                if (textKey == 'color') {
+                                    textVal = generateColor(textVal)
+                                }
+                                // px处理
+                                if (textKey == 'lineHeight' || textKey == 'fontSize' || textKey == 'textIndent'|| textKey == 'letterSpacing') {
+                                    textVal = `${Math.round(currValue[textKey] * 100) / 100}px`
+                                }
+                                // 其他不处理
+                                style[toKebabCase(textKey)] = textVal
+                            }
+                            break
+                        case 'background': // background样式放到background里
+                            let propertyVal
+                            for (let backgroundKey of Object.keys(currValue)) {
+                                let backgroundVal = currValue[backgroundKey]
+                                if (backgroundKey == 'linearGradient') {
+                                    let { gAngle, gList } = backgroundVal;
+                                    let list = gList.map((ref: any) => {
+                                           return `${generateColor(ref.color)} ${ref.position*100}%`
+                                        });
+                                    list = [...new Set(list)];
+                                    style['background'] = `linear-gradient(${
+                                        Math.round(gAngle * 100) / 100
+                                    }deg, ${list.join(',')})`
+                                } else if (backgroundKey == 'radialGradient') {
+                                    let {
+                                        backgroundVal: any,
+                                        smallRadius,
+                                        largeRadius,
+                                        position,
+                                        gList,
+                                    } = backgroundVal
+                                    let list = gList.map((ref: any) => {
+                                        return `${generateColor(ref.color)} ${ref.position*100}%`
+                                    })
+                                    style['background'] = `radial-gradient(${
+                                        Math.round(smallRadius * 100) / 100
+                                    }px ${
+                                        Math.round(largeRadius * 100) / 100
+                                    }px at ${
+                                        Math.round(position.left * 100) / 100
+                                    }px ${
+                                        Math.round(-position.top * 100) / 100
+                                    }px, ${list.join(',')})`
+                                } else if (typeof backgroundVal == 'object') {
+                                    if (backgroundKey == 'color') {
+                                        propertyVal = generateColor(
+                                            backgroundVal
+                                        )
+                                    } else if (backgroundKey == 'image' && item.type !== 'Image') {
+                                        propertyVal =`url(../images/${backgroundVal.url})`;
+                                    } else { // position、size
+                                        let valList = []
+                                        for (let ref of Object.keys(backgroundVal)) {
+                                            valList.push(
+                                                addPx(backgroundVal[ref])
+                                            )
+                                        }
+                                        propertyVal = valList.join(' ')
+                                    }
+                                    style[`background-${backgroundKey}`] = propertyVal
+                                    // 如果为图片，则背景色无效
+                                    if (item.type==='Image') {
+                                        delete style['background-color']
+                                    }
+                                } else if (backgroundKey == 'repeat') {
+                                    // style[`background-${backgroundKey}`] = backgroundVal
+                                }
+                            }
+                            break
+                        case 'textShadow':
+                        case 'boxShadow':
+                            let shodowList = []
+                            for (let item of currValue) {
+                                let {
+                                    offsetX,
+                                    offsetY,
+                                    spread,
+                                    blurRadius,
+                                    color,
+                                    type,
+                                } = item
+                                shodowList.push(
+                                    type
+                                        ? `${offsetX}px ${offsetY}px ${blurRadius}px ${spread}px ${generateColor(color)} ${type}`
+                                        : `${offsetX}px ${offsetY}px ${blurRadius}px ${spread}px ${generateColor(color)}`
+                                )
+                            }
+                            if (shodowList.length) {
+                                style[toKebabCase(key)] = shodowList.join(', ')
+                            }
+                            break
+                        case 'transform':
+                            let { scale = {}, rotate } = currValue
+                            let transform = []
+                            if (
+                                scale.horizontal != undefined &&
+                                scale.vertical != undefined
+                            ) {
+                                transform.push(`scale(${scale.horizontal},${scale.vertical})`)
+                            }
+                            if (rotate != undefined) {
+                                transform.push(`rotate(${rotate}deg)`)
+                            }
+                            if (transform && transform.length) {
+                                style['transform'] = transform.join(' ')
+                            }
+                            break
+                        case 'borderRadius':
+                            let borderRadius = generateBorderRadius(currValue)
+                            if (borderRadius) {
+                                style['border-radius'] = borderRadius
+                            }
+                            break
+                        case 'zIndex':
+                        case 'fontWeight':
+                            style[key] = currValue
+                            break
+                        case 'lineHeight':
+                            style[toKebabCase(key)] = currValue
+                            break  
+                        case 'width':
+                        case 'height':
+                        case 'marginTop':
+                        case 'marginRight':
+                        case 'marginLeft':
+                        case 'marginBottom':
+                        case 'paddingTop':
+                        case 'paddingRight':
+                        case 'paddingLeft':
+                        case 'paddingBottom':   
+                            typeof currValue == 'string'
+                                ? (style[toKebabCase(key)] = currValue)
+                                : (style[toKebabCase(key)] = `${currValue}px`)
+                            break
+                        default: 
+                            typeof currValue == 'string'
+                                ? (style[toKebabCase(key)] = currValue)
+                                : (style[toKebabCase(key)] = `${currValue}px`)
+                    }
+                }
+            }
+        }
+
+        if (data[i].children && data[i].children.length) {
+            data[i].children = formateDslStyle(data[i].children);
+        }
+        
+    }
+
+    return data
+}
+
+export const transFlutterCode = (data: Layer[]) => {
     for (let i = 0; i < data.length; i++) {
         const { panelData: panel } = data[i];
         const flutterCode = [];
 
         if (data[i].type === "Text") {
             flutterCode.push(
-                "UILabel *label = [[UILabel alloc] init];\r\n"
-                + "label.frame = CGRectMake(" + panel.properties.position.x + "\, " + panel.properties.position.y + "\, "
-                + panel.properties.size.width + "\, " + panel.properties.size.height + ");\r\n"
-                + "label.text = \@\"" + data[i].value + "\";\r\n"
-                + "label.font = [UIFont fontWithName:\@\"" + panel.typefaces[0].fontFamily + "\" size:" + panel.typefaces[0].fontSize + "];\r\n"
-                + "label.textColor = [UIColor colorWithRed:" + panel.typefaces[0].color.red + "/255.0 green:" + panel.typefaces[0].color.red + "/255.0 blue:" + panel.typefaces[0].color.blue + "/255.0 alpha:" + panel.typefaces[0].color.alpha + "/1.0];\r\n"
-            );
-        } else if (data[i].type === "Container"){
-            let bgColorCode = '';
-            const pureColorFill:any = panel.fills.find(item=>item.type===0);
-
-            if (pureColorFill) {
-                bgColorCode = "view.backgroundColor = [UIColor colorWithRed:" + pureColorFill.color.red + "/255.0 green:" + pureColorFill.color.green  + "/255.0 blue:" + pureColorFill.color.blue + "/255.0 alpha:" + pureColorFill.color.alpha + "/1.0]\;\r\n"
-            }
+                "Text( \r\n"
+                + `'${data[i].value}',\r\n`
+                + `softWrap: true,\r\n`
+                + `style: TextStyle( \r\n`
+                + `height: ${data[i].structure.height},\r\n`
+                + `fontSize: ${data[i].style.textStyle.fontSize},\r\n`
+                + `fontFamily: '${data[i].style.textStyle.fontFamily}',\r\n`
+                + `fontWeight: '${data[i].style.textStyle.fontWeight}',\r\n`
+                + `)\r\n`
+            + `)\r\n`);
+        } else if (data[i].type === "Container") {
             flutterCode.push(
-                "UIView *view = [[UIView alloc] init];\r\n"
-                + "view.frame = CGRectMake(" + panel.properties.position.x + "\, " + panel.properties.position.y + "\, "
-                + panel.properties.size.width + "\, " + panel.properties.size.height + ");\r\n"
-                + bgColorCode
-            );
+                "Text( \r\n"
+                + `'${data[i].value}',\r\n`
+                + `softWrap: true,\r\n`
+                + `style: TextStyle( \r\n`
+                + `height: ${data[i].structure.height},\r\n`
+                + `fontSize: ${data[i].style.textStyle.fontSize},\r\n`
+                + `fontFamily: '${data[i].style.textStyle.fontFamily}',\r\n`
+                + `fontWeight: '${data[i].style.textStyle.fontWeight}',\r\n`
+                + `)\r\n`
+            + `)\r\n`);
         }
 
         data[i].panelData.code =  flutterCode.join('');
 
         if (data[i].type !== 'Text' && Array.isArray(data[i].children)) {
-            data[i].children = transIOSCode(data[i].children);
+            data[i].children = transFlutterCode(data[i].children);
         }
     }
     return data;

@@ -2,6 +2,7 @@ import { formateDslStyle, formateDslRemStyle,formatDslRpxStyle } from './formate
 import { transRNStyle } from './transRNStyle';
 import { transAndroidCode } from './transAndroidCode';
 import { transIOSCode } from './transIOSCode';
+import { transFlutterCode } from './transFlutterCode';
 import { transWebCode } from './transWebCode';
 import { transPanel } from './transPanel';
 import { transScale } from './transScale';
@@ -59,6 +60,9 @@ export const picassoTrans = (data: Layer[], {
         case CodeType.Android:
 
             return transAndroidCode(data);
+        case CodeType.Flutter:
+
+            return transFlutterCode(data);
 
         default:
             break;

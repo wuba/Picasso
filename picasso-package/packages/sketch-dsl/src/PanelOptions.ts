@@ -20,6 +20,7 @@ export enum AndroidScale {
 export enum Unit {
     IOS = 'pt',
     Android = 'dp',
+    Flutter = '',
     WebPx = 'px',
     WebRem = 'rem',
     Weapp = 'rpx',
@@ -37,6 +38,7 @@ export enum ColorFormat {
 export enum CodeType {
     IOS = 'ios',
     Android = 'android',
+    Flutter = 'flutter',
     WebPx = 'webpx',
     WebRem = 'webrem',
     Weapp = 'weapp',
