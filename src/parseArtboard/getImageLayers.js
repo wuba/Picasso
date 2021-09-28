@@ -3,6 +3,23 @@ import sketchDom from 'sketch/dom';
 import { isTheClass, find, exportImage, removeLayer, toJSString } from './common';
 import handleImage from '../handleImage/index';
 
+/**
+ * @desc symbol 递归解绑
+ */
+const datachSymbolIterator = (group) => {
+    const instancesList = sketch.find("[type='SymbolInstance']", group) || [];
+
+    if (instancesList.length) {
+        instancesList.forEach((layer) => {
+            layer.detach({ recursively: false });
+        });
+
+        datachSymbolIterator(group);
+    }
+
+    return group;
+};
+
 // 递归查找需求导出为图片的图层
 const _getImageLayers = (layers,symbolInstanceIds, fontMap, symbolGroups, codeImageMap, rootPath, sliceSize, _exportLayers = []) => {
     for (let i = 0; i < layers.length; i++) {
@@ -69,58 +86,64 @@ const _getImageLayers = (layers,symbolInstanceIds, fontMap, symbolGroups, codeIm
         }
 
         // symbol
-        if (
-            !layer.hidden &&
-            layer.type === 'SymbolInstance' &&
-            !(layer.exportFormats?.length > 0) &&
-            SLayer.symbolMaster() &&
-            !(sketchDom.fromNative(SLayer.symbolMaster()).exportFormats?.length > 0) &&
-            SLayer.symbolMaster().children() && SLayer.symbolMaster().children().count() > 1
-        ) {
-            const symbolChildren = SLayer.symbolMaster().children();
-            const tempSymbol = SLayer.duplicate();
-            const tempGroup = tempSymbol.detachStylesAndReplaceWithGroupRecursively(true);
-            const tempSymbolLayers = tempGroup.children().objectEnumerator();
-            let overrides = SLayer.overrides();
-            let idx = 0;
-            let tempSymbolLayer;
-
-            overrides = (overrides) ? overrides.objectForKey(0) : undefined;
-            /* eslint-disable */
-            while (tempSymbolLayer = tempSymbolLayers.nextObject()) {
-            /* eslint-disable */
-                if (isTheClass(tempSymbolLayer, MSSymbolInstance)) {
-                    const symbolMasterObjectID = toJSString(symbolChildren[idx].objectID());
-
-                    if (overrides
-                        && overrides[symbolMasterObjectID]
-                        && !!overrides[symbolMasterObjectID].symbolID
-                    ) {
-                        const changeSymbol = find({
-                            key: '(symbolID != NULL) && (symbolID == %@)',
-                            match: toJSString(overrides[symbolMasterObjectID].symbolID),
-                        }, document.documentData().allSymbols());
-
-                        if (changeSymbol) {
-                            tempSymbolLayer.changeInstanceToSymbol(changeSymbol);
-                        } else {
-                            tempSymbolLayer = undefined;
+        let tempGroup = '';
+        try {
+            if (
+                !layer.hidden &&
+                layer.type === 'SymbolInstance' &&
+                !(layer.exportFormats?.length > 0) &&
+                SLayer.symbolMaster() &&
+                !(sketchDom.fromNative(SLayer.symbolMaster()).exportFormats?.length > 0) &&
+                SLayer.symbolMaster().children() && SLayer.symbolMaster().children().count() > 1
+            ) {
+                const symbolChildren = SLayer.symbolMaster().children();
+                const tempSymbol = SLayer.duplicate();
+                tempGroup = tempSymbol.detachStylesAndReplaceWithGroup();
+                tempGroup = datachSymbolIterator(tempGroup);
+                const tempSymbolLayers = tempGroup.children().objectEnumerator();
+                let overrides = SLayer.overrides();
+                let idx = 0;
+                let tempSymbolLayer;
+    
+                overrides = (overrides) ? overrides.objectForKey(0) : undefined;
+                /* eslint-disable */
+                while (tempSymbolLayer = tempSymbolLayers.nextObject()) {
+                /* eslint-disable */
+                    if (isTheClass(tempSymbolLayer, MSSymbolInstance)) {
+                        const symbolMasterObjectID = toJSString(symbolChildren[idx].objectID());
+    
+                        if (overrides
+                            && overrides[symbolMasterObjectID]
+                            && !!overrides[symbolMasterObjectID].symbolID
+                        ) {
+                            const changeSymbol = find({
+                                key: '(symbolID != NULL) && (symbolID == %@)',
+                                match: toJSString(overrides[symbolMasterObjectID].symbolID),
+                            }, document.documentData().allSymbols());
+    
+                            if (changeSymbol) {
+                                tempSymbolLayer.changeInstanceToSymbol(changeSymbol);
+                            } else {
+                                tempSymbolLayer = undefined;
+                            }
                         }
                     }
+    
+                    idx++;
                 }
-
-                idx++;
+    
+                symbolInstanceIds.push(layer.id);
+                symbolGroups.push(tempGroup);
+                if (Array.isArray(sketchDom.fromNative(tempGroup).layers)) {
+                    _getImageLayers(sketchDom.fromNative(tempGroup).layers, symbolInstanceIds, fontMap, symbolGroups, codeImageMap, rootPath, sliceSize, _exportLayers);
+                }
+    
+                removeLayer(tempGroup);
+            } else if (Array.isArray(layer.layers)) {
+                _getImageLayers(layer.layers, symbolInstanceIds, fontMap, symbolGroups, codeImageMap, rootPath, sliceSize, _exportLayers);
             }
-
-            symbolInstanceIds.push(layer.id);
-            symbolGroups.push(tempGroup);
-            if (Array.isArray(sketchDom.fromNative(tempGroup).layers)) {
-                _getImageLayers(sketchDom.fromNative(tempGroup).layers, symbolInstanceIds, fontMap, symbolGroups, codeImageMap, rootPath, sliceSize, _exportLayers);
-            }
-
+        } catch (error) {
             removeLayer(tempGroup);
-        } else if (Array.isArray(layer.layers)) {
-            _getImageLayers(layer.layers, symbolInstanceIds, fontMap, symbolGroups, codeImageMap, rootPath, sliceSize, _exportLayers);
         }
     }
 

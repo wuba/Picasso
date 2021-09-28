@@ -16,7 +16,7 @@ import { handlePanel } from './handlePanel';
 export default (layer:SKLayer, type: string): SKLayer => {
     let layers = [layer];
     // 代码模式，border坐标处理
-    if (type === 'code') {
+    if (type === 'code' || type === 'lowcode') {
         layers = handleBorderCoordinate(layers);
     }
     // 透明度透传
@@ -28,7 +28,7 @@ export default (layer:SKLayer, type: string): SKLayer => {
     // Mask剪切处理
     layers = trimByMask(layers);
     // 代码模式，处理切片
-    if (type === 'code') {
+    if (type === 'code' || type === 'lowcode') {
         layers = handleSlice(layers);
     }
     // 过滤隐藏图层
