@@ -20,5 +20,11 @@ export interface BaseComponent {
         url: string,
         code_name: string,
         code_lib_name: string,
-    } 
+        component_type?: string
+    },
+    haikuiComponentInfo?: {
+        comId: string,
+        comType: string,
+        groupId: string,
+    }
 }

@@ -74,6 +74,25 @@ export const picassoArtboardOperationCodeParse = (layer: SKLayer): Component => 
     return DSL[0];
 }
 
+/**
+ * @description Picasso Lowcode-海葵组件
+ * @param { SKLayer } layer 当前图层
+ * @returns { Promise<DSL> } 
+ */
+export const picassoArtboardLowcodeParse = (layer: SKLayer): Component => {
+    // 画板处理
+    layer = parseArtboardLayer(layer, 'lowcode');
+    // 1.DSL处理
+    let DSL = parseDSL([layer], 'lowcode');
+    // 2. 特征分组
+    DSL = picassoGroup(DSL);
+    // 3. 布局处理
+    DSL = picassoLayout(DSL);
+    // fs.writeFileSync('./lowcode_dsl.json',JSON.stringify(DSL,null,2));
+
+    return DSL[0];
+}
+
 // 代码生成
 export * from '../../picasso-code-browser/src'
 

@@ -5,6 +5,7 @@ import dealLetterSpacing from './dealLetterSpacing'
 import dealTextDecorate from './dealTextDecorate'
 import {SKLayer,TextStyle,SKParagraphStyle } from '../../types';
 
+// :todo 结合 parseTypeFace
 export default (layer:SKLayer):any[] => {
     // 直接解析text字体样式有字体大小的情况下
     if (layer.attributedString&&layer.attributedString.string && layer.attributedString.attributes) {
@@ -61,6 +62,8 @@ export default (layer:SKLayer):any[] => {
                 }
                 strStyleList.push(style);
             }
+
+            console.log('666666666++++++:', strStyleList);
         }
         return strStyleList;
     }

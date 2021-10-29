@@ -6,13 +6,14 @@ import { SKLayer } from '../types'
  * @param {SKLayer[]} [afterLayer=[]]
  * @returns {SKLayer[]}
  */
-const filterGroupLayer = (layers:SKLayer[],afterLayer:SKLayer[]=[]):SKLayer[] => {
+const filterGroupLayer = (layers:SKLayer[],afterLayer:SKLayer[]=[], type: string):SKLayer[] => {
     layers.forEach((layer:SKLayer) => {
-        if (layer._class!=='group' || layer.symbolComponentObject) {
+        // 非组件 或 是未解绑组件 或 组件解绑之后的组件
+        if (layer._class!=='group' || layer.symbolComponentObject || layer.haikuiComponentInfo) {
             afterLayer.push({...layer,layers:[]})
         }
         if (Array.isArray(layer.layers)) {
-            filterGroupLayer(layer.layers,afterLayer);
+            filterGroupLayer(layer.layers,afterLayer, type);
         }
     })
     return afterLayer;
