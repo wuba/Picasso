@@ -1,5 +1,6 @@
 import { SKLayer,BorderRadius } from '../../types';
 import { precisionControl } from '../../common/utils'
+import * as fs from 'fs';
 /**
  * 计算圆角
  * @param {*} layer 图层

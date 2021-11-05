@@ -72,6 +72,12 @@ export type SKLayer = {
         url: string,
         code_name: string,
         code_lib_name: string,
+        type?: string,
+    },
+    haikuiComponentInfo?: {
+        comId: string,
+        comType: string,
+        groupId: string,
     },
     sharedLayerStyleName?: string
     sharedTextStyleName?: string
