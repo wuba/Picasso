@@ -6,6 +6,8 @@ import parseImage from './parseImage';
 import handleSlicePosition from './handleSlicePosition';
 import filterGroupLayer from './filterGroupLayer';
 
+// import * as fs from 'fs';
+
 const _parseDSL = (sketchData: SKLayer[], type: string):DSL => {
     const dsl: DSL=[];
     sketchData.forEach((layer: SKLayer) => {

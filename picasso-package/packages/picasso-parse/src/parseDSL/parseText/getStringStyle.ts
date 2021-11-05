@@ -62,8 +62,6 @@ export default (layer:SKLayer):any[] => {
                 }
                 strStyleList.push(style);
             }
-
-            console.log('666666666++++++:', strStyleList);
         }
         return strStyleList;
     }
