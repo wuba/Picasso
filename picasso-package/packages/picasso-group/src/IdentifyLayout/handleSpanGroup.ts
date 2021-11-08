@@ -1,5 +1,8 @@
 import { uniqueId } from '../utils';
 import { Layer } from '../types';
+
+// import * as fs from 'fs';
+
 //判断是否为列关系
 function isSpan(item:Layer, beforeItem:Layer) {
     if (
@@ -10,22 +13,28 @@ function isSpan(item:Layer, beforeItem:Layer) {
     ) {
         let centreFlag = true;
         let itemClass = item.children[0].type != 'Text' ? 'notext' : 'text';
-        let beforeItemClass =
-            beforeItem.children[0].type != 'Text' ? 'notext' : 'text';
-        if (itemClass == beforeItemClass) {
+        let beforeItemClass = beforeItem.children[0].type != 'Text' ? 'notext' : 'text';
+        if (itemClass == beforeItemClass) { // ?: 同为文案，或同时不是文案，不判定为列元素
             centreFlag = false;
         }
+    
         for (let i = 0; i < item.children.length; i++) {
             const currItem = item.children[i];
             const currBeforeItem = beforeItem.children[i];
             let currClass = currItem.type != 'Text' ? 'notext' : 'text';
-            if (currClass != itemClass) {
+            if (currClass != itemClass) { // 与该行第一个元素相比较，不相同不判定为列
                 centreFlag = false;
             }
             let beforeClass = currBeforeItem.type != 'Text' ? 'notext' : 'text';
             if (beforeClass != beforeItemClass) {
                 centreFlag = false;
             }
+
+            // 排除多段文案的情况
+            if ((!currItem.id && currClass === 'text') || (!currBeforeItem.id && beforeClass === 'text')) {
+                centreFlag = false;
+            }
+
             if (
                 Math.abs(
                     currItem.structure.x +
@@ -37,6 +46,7 @@ function isSpan(item:Layer, beforeItem:Layer) {
                 centreFlag = false;
             }
         }
+
         return centreFlag;
     } else {
         return false;
@@ -66,6 +76,9 @@ function isTextSpan(item: Layer, beforeItem: Layer) {
         let itemClass = getClass(item.children[0]);
         let beforeItemClass = getClass(beforeItem.children[0]);
         if (itemClass === beforeItemClass) {
+            centreFlag = false;
+        }
+        if ((!item.id && itemClass === 'text') || (!beforeItem.id && beforeItemClass === 'text')) {
             centreFlag = false;
         }
         for (let i = 0; i < item.children.length; i++) {
@@ -103,18 +116,22 @@ function isTextSpan(item: Layer, beforeItem: Layer) {
 export const handleSpanGroup = (data: Layer[]) => {
     if (!data) return data;
     if (data.length > 1) {
-        let totalArr:Layer[][] = [];
-        let itemArr = [data[0]];
+        let totalArr:Layer[][] = []; // 包含列关系和非列关系的所有layer数据
+        let itemArr = [data[0]]; // 存储 没有列关系 或合并在一起的列关系 的数据
         for (let i = 1; i < data.length; i++) {
             const item = data[i];
             const beforeItem = data[i - 1];
+
+            // 直接进入总layer数据列表totalArr: itemArr.length >= 2 或 (!isSpan && !isTextSpan)
+            // 否则判定为列关系，将列关系数组加入到totalArr
             if (!(itemArr.length < 2 && (isSpan(item, beforeItem) || isTextSpan(item, beforeItem)))) {
                 totalArr.push(itemArr);
-                itemArr = [];
+                itemArr = []; // itemArr.length >= 2 时清空
             }
-            itemArr.push(item);
+            itemArr.push(item); // 否则加入当前 item 的数据
         }
-        totalArr.push(itemArr);
+        totalArr.push(itemArr); 
+
         if (totalArr.length > 1) {
             let dataChildren = [];
             for (let j = 0; j < totalArr.length; j++) {

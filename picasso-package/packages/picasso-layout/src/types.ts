@@ -2,7 +2,7 @@ import { BaseComponent,Style } from '../../picasso-dsl/src';
 export * from '../../picasso-dsl/src';
 
 interface LStyle extends Style {
-    width?: number
+    width?: number | string
     height?: number
     left?: number
     top?: number

@@ -25,6 +25,8 @@ import {
     handleContinuousListItem,
 } from './calculateClassName';
 
+import * as fs from 'fs';
+
 /**
  * 布局
  * @param {Layer[]} data
@@ -55,16 +57,19 @@ const handleLayout = (data:Layer[], parent?:Layer) => {
     } else {
         data = handleContinuousListItem(data);
     }
+
+    // fs.writeFileSync('./code_dsl_100.json',JSON.stringify(data,null,2));
+
     switch (true) {
     case parent === undefined:
         data = calculateRow(data);
         break;
     case parent && parent.textContainer: //一行文本多个样式不走布局
         break;
-    case parent && parent._class == "text":
+    case parent && parent._class == "text": // 父元素是文本，子元素接对定位（目前没有进到这里）
         data = handleParentIsText(data, parent);
         break;
-    case isLabelList(data, parent):
+    case isLabelList(data, parent): // 标签列表，目前多段文本会走此处
         data = layoutLabelList(data, parent);
         break;
     case isBlock(data):
@@ -76,11 +81,14 @@ const handleLayout = (data:Layer[], parent?:Layer) => {
     default:
         break;
     }
+
     if (parent) {
         markIsOnlyText(data, parent);
     }
+
     //使用绝对定位的布局
     data = handleOverlap(dataIsPositionLayout, parent, data);
+
     //递归子集
     if (Array.isArray(data)) {
         for (let i = 0; i < data.length; i++) {
@@ -101,6 +109,9 @@ const handleLayout = (data:Layer[], parent?:Layer) => {
             }
         }
     }
+
+    // fs.writeFileSync('./code_dsl_103.json',JSON.stringify(data,null,2));
+
     return data;
 };
 
