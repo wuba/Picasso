@@ -24,10 +24,10 @@ export default (text:any,layer:SKLayer):Text => {
 
     // 默认取第一个文本样式
     const style = getStringStyle(layer)[0];
-    if (style.pos) {
+    if (style && style.pos) {
         delete style.pos;
     }
-    text.style.textStyle = style;
+    text.style.textStyle = style || {};
 
     // 多段文本处理
     if (Array.isArray(strStyleList) && strStyleList.length > 1) {
