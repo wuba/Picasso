@@ -48,6 +48,7 @@ export const isLabelList = (data, parent) => {
         return false;
     }
     data = sort(data);
+
     try {
         let count = 0;
         for (let i = 0; i < data.length; i++) {
@@ -60,6 +61,7 @@ export const isLabelList = (data, parent) => {
                 count++;
             }
         }
+
         if (count == data.length) { // 父元素宽度扩展
             parent.structure.width += data[1].structure.x - data[0].structure.x - data[0].structure.width
             parent.style.width += data[1].structure.x - data[0].structure.x - data[0].structure.width

@@ -64,7 +64,8 @@ export const utils = {
         for (let i = 1; i < data.length; i++) {
             if (
                 data[i].structure.y == data[i - 1].structure.y &&
-                Math.abs(data[i].structure.x - data[i - 1].structure.x - data[i - 1].structure.width - space) > 4
+                Math.abs(data[i].structure.x - data[i - 1].structure.x - data[i - 1].structure.width - space) > 4 ||
+                (!data[i].structure.x && data[i].structure.x !== 0)
             ) {
                 flag = false;
                 break;

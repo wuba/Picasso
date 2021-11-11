@@ -46,7 +46,7 @@ const calculateBorderRadius = (layer:SKLayer):BorderRadius=> {
     }
 
     // 按照比例计算
-    let radius:number;
+    let radius:number = 0;
 
     if (layer.layers && layer.layers.length && layer.layers[0].fixedRadius) {
         radius = layer.layers[0].fixedRadius > layer.frame.height / 2 ? layer.frame.height / 2 : layer.layers[0].fixedRadius;

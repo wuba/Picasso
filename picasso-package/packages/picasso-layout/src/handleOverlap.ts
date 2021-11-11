@@ -35,7 +35,7 @@ const handleOverlap = (dataIsPositionLayout:Layer[], parent:Layer, data:Layer[])
         dataIsPositionLayout[i].style.position = 'absolute';
         dataIsPositionLayout[i].style['left'] = dataIsPositionLayout[i].structure.x - parent.structure.x - parentBorderLeftWidth;
         dataIsPositionLayout[i].style['top'] = dataIsPositionLayout[i].structure.y - parent.structure.y - parentBorderTopWidth;
-        dataIsPositionLayout[i].style['width'] = dataIsPositionLayout[i].structure.width;
+        dataIsPositionLayout[i].style['width'] = dataIsPositionLayout[i].structure.width || 'auto';
         dataIsPositionLayout[i].style['height'] = dataIsPositionLayout[i].structure.height;
     }
 

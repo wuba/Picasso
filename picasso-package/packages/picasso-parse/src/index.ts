@@ -19,7 +19,8 @@ export const picassoArtboardMeatureParse = (layer: SKLayer): Component => {
     layer = parseArtboardLayer(layer, 'measure');
     // DSL处理
     const DSL = parseDSL([layer], 'measure');
-    
+    // fs.writeFileSync('./meature_dsl_result.json',JSON.stringify(DSL,null,2));
+
     return DSL[0];
 }
 

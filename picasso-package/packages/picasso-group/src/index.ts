@@ -40,19 +40,23 @@ export default ( dsl: DSL ) => {
         // fs.writeFileSync('./code_dsl_93.json',JSON.stringify(dsl,null,2));
         // 列合并
         dsl = handleSpanGroup(dsl);
+        // fs.writeFileSync('./code_dsl_94.json',JSON.stringify(dsl,null,2));
         // 多label标签识别
         dsl = handleLabelList(dsl);
+        // fs.writeFileSync('./code_dsl_95.json',JSON.stringify(dsl,null,2));
         // 同一行中依据元素的聚合特性进行合并
         dsl = handleMergeItem(dsl);
+        // fs.writeFileSync('./code_dsl_96.json',JSON.stringify(dsl,null,2));
         // 处理冗余结构
         dsl = handleLayer(dsl);
+        // fs.writeFileSync('./code_dsl_97.json',JSON.stringify(dsl,null,2));
         // 样式修正处理
         dsl = styleFix(dsl);
 
         return dsl;
     })
 
-    // fs.writeFileSync('./code_dsl_94.json',JSON.stringify(baseJson,null,2));
+    // fs.writeFileSync('./code_dsl_98.json',JSON.stringify(baseJson,null,2));
     if (Array.isArray(cascadingJson)&&cascadingJson.length>0) {
         // 弹窗
         cascadingJson =cascadingJson.map(item => {
