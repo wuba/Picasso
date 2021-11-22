@@ -1,6 +1,6 @@
 {
   "name": "@wubafe/picasso-trans",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Picasso转换库",
   "main": "dist/picasso-trans/src/index.js",
   "scripts": {

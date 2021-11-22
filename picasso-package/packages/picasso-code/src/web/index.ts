@@ -1,3 +1,4 @@
+// import * as fs from 'fs'
 import { Layer } from '../types';
 import generateScss from './generateScss';
 import generateCSS from './generateCSS';
@@ -147,14 +148,20 @@ export const picassoWebCode = (data: Layer[], size: number) => {
             colorFormat: ColorFormat.RGBA,
             codeType: CodeType.WebPx,
         });
+        // fs.writeFileSync('./test/web_code_dsl_1.json', JSON.stringify(data, null,2));
 
         // 生成 body
         const body = generateBody(data,'');
+        // fs.writeFileSync('./test/web_code_body.json', JSON.stringify(body, null,2));
+
         let scss = '';
         // 生成scss
         scss += generateScss(data,size);
+        // fs.writeFileSync('./test/web_code_scss.json', JSON.stringify(scss, null,2));
+
         // 生成css
         const css = generateCSS(data, size, platform);
+        // fs.writeFileSync('./test/web_code_css.json', JSON.stringify(css, null,2));
 
         return {
             scss,
