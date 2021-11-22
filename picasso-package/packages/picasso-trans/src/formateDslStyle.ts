@@ -1,3 +1,4 @@
+// import * as fs from 'fs'
 import {
     generateProperty,
     generateColor,
@@ -128,6 +129,9 @@ export const formateDslStyle = (data: any) => {
                                         Math.round(gAngle * 100) / 100
                                     }deg, ${list.join(',')})`
                                 } else if (backgroundKey == 'radialGradient') {
+                                    // background-image: radial-gradient(shape size at top left, start-color, ..., last-color);
+                                    // background-image: radial-gradient(4.47rem 2rem at 1rem 2rem, red 5%, green 15%, blue 60%)
+
                                     let {
                                         backgroundVal: any,
                                         smallRadius,
@@ -246,6 +250,8 @@ export const formateDslStyle = (data: any) => {
                 }
             }
         }
+
+        // fs.writeFileSync(`./test/style_${item.name}.json`, JSON.stringify(style, null,2));
 
         // css 排序
         data[i].style = cssOrder(style);

@@ -1,13 +1,28 @@
 
 
-// 处理阴影
-const formatShadowPxToRem = (styleVal:any, remScale:any) => {
+// 处理text阴影
+const formatTextShadowPxToRem = (styleVal:any, remScale:any) => {
     let styleValArr = styleVal.split('px');
     const tailArr= styleValArr.splice(4, styleValArr.length - 4)
     styleValArr = styleValArr.map(item => {
         return `${Math.round(+item.split('px')[0] * 100 / remScale) /100 }rem`
     })
     styleValArr = styleValArr.concat(tailArr);
+    return styleValArr.join(' ');
+}
+
+// 处理box阴影
+const formatBoxShadowPxToRem = (styleVal:any, remScale:any) => {
+    let styleValArr = styleVal.split(' ');
+
+    styleValArr = styleValArr.map(item => {
+        if (item.endsWith('px')) {
+            return `${Math.round(+item.split('px')[0] * 100 / remScale) /100 }rem`
+        }
+
+        return item;
+    })
+
     return styleValArr.join(' ');
 }
 
@@ -20,7 +35,7 @@ const formatBGPxToRem = (styleVal: any, remScale: any) => {
     return styleValArr.join(' ');
 }
 
-// 处理背景
+// 渐变背景处理
 const formatBGradientPxToRem = (styleVal: any, remScale: any) => {
     let stylePxArr = styleVal.split(',');
     const tailArr= stylePxArr.splice(1, stylePxArr.length - 1)
@@ -32,8 +47,11 @@ const formatBGradientPxToRem = (styleVal: any, remScale: any) => {
         }
         return item
     })
+
     stylePxArr[0]= `radial-gradient(${stylePxArr[0]}`
-    const styleValArr = stylePxArr.concat(tailArr)
+
+    const styleRemArr = [stylePxArr.join(' ')];
+    const styleValArr = styleRemArr.concat(tailArr)
     // styleValArr = styleValArr.map(itemFirst => {
     //     if (itemFirst.includes('px')) {
     //         const splitStyle = itemFirst.split(' ');
@@ -105,12 +123,18 @@ export const dslPxtoRem = (styleObj: any, remScale: any) => {
             ) {
                 styleVal = formatBGradientPxToRem(styleVal, remScale);
             }
-            // 边框阴影、文字阴影
+            // 文字阴影
+            if (
+                styleKey.includes('text-shadow')
+            ) {
+                styleVal = formatTextShadowPxToRem(styleVal, remScale);
+            }
+            // 边框阴影
             if (
                 styleKey.includes('box-shadow') ||
                 styleKey.includes('text-shadow')
             ) {
-                styleVal = formatShadowPxToRem(styleVal, remScale);
+                styleVal = formatBoxShadowPxToRem(styleVal, remScale);
             }
         }
         styleObj[styleKey] = styleVal;

@@ -23,9 +23,6 @@ const getValidValue = (object, key) => {
 }
 
 export const transRNStyle = (data: any) => {
-
-    console.log("-----------transRNStyle-------------")
-    // console.log("data: ", data)
     for (let item of data) {
         // 样式集合
         let style: any = {};
@@ -116,7 +113,6 @@ export const transRNStyle = (data: any) => {
             for (var key in item.style) {
                 if (item.style.hasOwnProperty(key) && item.style[key] != undefined) {
                     let currValue = item.style[key];
-                    // console.log("样式：", key)
                     switch (key) {
                         case 'marginTop':
                         case 'marginRight':
