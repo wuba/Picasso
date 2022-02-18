@@ -18,26 +18,23 @@ const _parseDSL = (sketchData: SKLayer[], type: string):DSL => {
             symbolName: layer.symbolName || ''
         }
 
-        // 组件
+        // 海葵组件
         if (type === 'lowcode') {
             dslLayer.type = 'View';
-
-            // 被解绑的组件
-            if (layer.haikuiComponentInfo) {
-                dslLayer.haikuiComponentInfo = layer.haikuiComponentInfo;
-            }
         }
 
-        if (type !== 'lowcode') {
-            // 组件跳转信息
-            if (layer.symbolComponentObject) {
-                dslLayer.symbolComponentObject = layer.symbolComponentObject;
-            }
-
-            // 面板解析
-            dslLayer.panel = layer.panel;
+        // 组件跳转信息
+        if (layer.symbolComponentObject) {
+            dslLayer.symbolComponentObject = layer.symbolComponentObject;
         }
 
+        // 被解绑的组件
+        if (layer.haikuiComponentInfo) {
+            dslLayer.haikuiComponentInfo = layer.haikuiComponentInfo;
+        }
+
+        // 面板解析
+        dslLayer.panel = layer.panel;
         // 结构解析
         dslLayer.structure = { ...dslLayer.structure, ...parseStructure(layer) };
         // 样式解析
