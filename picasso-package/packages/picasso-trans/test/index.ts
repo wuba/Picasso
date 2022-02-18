@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+// import * as fs from 'fs';
 import * as path from 'path';
 
 import codeDsl from './code_dsl';
@@ -16,7 +16,7 @@ const codeTranDsl = decodeMeatureTrans(codeDsl);
 // const dsl = decodeCodeTrans(codeDsl);
 // fs.writeFileSync(path.join(__dirname,'./code_trans_dsl2.json'), JSON.stringify(dsl,null,2));
 console.log('标注数据解码完成!');
-fs.writeFileSync(path.join(__dirname,'./code_trans_dsl.json'), JSON.stringify(codeTranDsl,null,2));
+// fs.writeFileSync(path.join(__dirname,'./code_trans_dsl.json'), JSON.stringify(codeTranDsl,null,2));
 
 // 颜色转换
 // 例子02: 

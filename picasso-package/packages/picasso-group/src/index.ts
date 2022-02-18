@@ -23,6 +23,7 @@ import styleFix from './styleFix';
 export default ( dsl: DSL ) => {
     let { baseJson, cascadingJson } = handleCascading(dsl[0]);
     // console.log('12222', JSON.stringify(layer))
+    // fs.writeFileSync('./code_dsl_90.json',JSON.stringify(dsl,null,2));
     [ baseJson, cascadingJson] = [baseJson,cascadingJson].map(dsl=>{
         if (dsl.length===0) {
             return []

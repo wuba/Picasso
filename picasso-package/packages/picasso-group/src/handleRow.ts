@@ -278,7 +278,8 @@ const handleRow = (data:Layer[], parent?:Layer) => {
         return data;
     }
     //让高度最大的元素放在最前面
-    data = data.sort((a, b) => b.structure.height - a.structure.height);
+    // data = data.sort((a, b) => b.structure.height - a.structure.height);
+
     //处理进行分行
     //同行的元素外面加一个Row容器
     // 结构调整data
@@ -318,6 +319,7 @@ const handleRow = (data:Layer[], parent?:Layer) => {
     //         assignRowList.push(rowArr);
     //     }
     // }
+
     let assignRowList = [];
     for (let i = 0; i < data.length; i++) {
         let flag = true;
@@ -336,6 +338,7 @@ const handleRow = (data:Layer[], parent?:Layer) => {
             assignRowList.push([data[i]]);
         }
     }
+
     /**
      * 分行完成后，给属于同一行的加容器
      * 同时给容器赋值x,y,width,height
@@ -424,9 +427,12 @@ const handleRow = (data:Layer[], parent?:Layer) => {
             }
         }
     }
+
     // data = [...data,...positionList];
-    data = rowList.sort((a, b) => a.structure.y - b.structure.y);
+    
+    // data = rowList.sort((a, b) => a.structure.y - b.structure.y);
     data = handleMerge(data);
+
     //递归处理children
     for (let i = 0; i < data.length; i++) {
         if (Array.isArray(data[i].children) && data[i].children.length > 0) {

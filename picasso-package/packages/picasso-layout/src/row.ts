@@ -11,6 +11,8 @@ import {
 } from './const';
 import { Layer } from './types';
 
+// import * as fs from 'fs';
+
 /**
  * 规则
  * 1.父元素width不为auto
@@ -272,33 +274,54 @@ const layoutBetweenItemList = (data: Layer[], parent: Layer) => {
 /**
  * 行布局
  */
+// export const isRow = (data) => {
+//     let flag = true;
+//     if (Array.isArray(data) && data.length > 1) {
+//         data = data.sort((a, b) => a.structure.x - b.structure.x);
+//         for (let i = 0; i < data.length; i++) {
+//             const item = data[i];
+//             flag = false;
+//             for (let j = i; j < data.length; j++) {
+//                 const itemJ = data[j];
+//                 if (
+//                     (item.structure.y <= itemJ.structure.y && itemJ.structure.y < item.structure.y + item.structure.width) ||
+//                     (itemJ.structure.y <= item.structure.y && item.structure.y < itemJ.structure.y + itemJ.structure.width)
+//                 ) {
+//                     flag = true;
+//                 }
+//             }
+//         }
+//     }
+//     return flag;
+// }
 export const isRow = (data) => {
     let flag = true;
     if (Array.isArray(data) && data.length > 1) {
-        data = data.sort((a, b) => a.structure.x - b.structure.x);
-        for (let i = 0; i < data.length; i++) {
-            const item = data[i];
-            flag = false;
-            for (let j = i; j < data.length; j++) {
-                const itemJ = data[j];
+        let dataTemp = JSON.parse(JSON.stringify(data));
+        dataTemp = dataTemp.sort((a, b) => a.structure.x - b.structure.x);
+        for (let i = 0; i < dataTemp.length; i++) {
+            const item = dataTemp[i];
+            flag = false; // 除非其中有元素跟任何一个都不是一行，否则只要有能拍到一行的元素就都进行行处理
+            for (let j = i; j < dataTemp.length; j++) {
+                const itemJ = dataTemp[j];
                 if (
-                    (item.structure.y <= itemJ.structure.y && itemJ.structure.y < item.structure.y + item.structure.width) ||
-                    (itemJ.structure.y <= item.structure.y && item.structure.y < itemJ.structure.y + itemJ.structure.width)
+                    (item.structure.y <= itemJ.structure.y && itemJ.structure.y < item.structure.y + item.structure.height) ||
+                    (itemJ.structure.y <= item.structure.y && item.structure.y < itemJ.structure.y + itemJ.structure.height)
                 ) {
                     flag = true;
                 }
             }
         }
     }
+
     return flag;
 }
 
 
 export const layoutRow = (data, parent) => {
     if (Array.isArray(data) && data.length > 1) {
-        data = data.sort((a, b) => a.structure.x - b.structure.x);
+        // data = data.sort((a, b) => a.structure.x - b.structure.x);
         if (parent) {
-
             if (!parent.style) {
                 parent.style = {};
             }
@@ -314,7 +337,7 @@ export const layoutRow = (data, parent) => {
             if (isEqualBolck(data, parent)) {
                 return layoutEqualBlock(data, parent);
             }
-            // // 子元素组合位于父元素中间位置， 所有子元素垂直方向上居中
+            // 子元素组合位于父元素中间位置， 所有子元素垂直方向上居中
             if (isimgTextCeneter(data, parent)) {
                 return layoutImgTextCeneter(data, parent);
             }
