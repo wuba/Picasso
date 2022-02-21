@@ -65,7 +65,7 @@ export const generateBorderRadius = (obj: any) => {
     if (typeof obj == 'string') return obj
     if (typeof obj == 'object') {
         let values = Object.values(obj)
-        if (!values.length|| !values[0]) return ''
+        if (!values.length || (!values[0] && !values[1] && !values[2] && !values[3])) return ''
         if (values.length == 4 && new Set(values).size === 1) {
             return typeof obj.topLeft === 'string' ? obj.topLeft : `${obj.topLeft}px`
         }

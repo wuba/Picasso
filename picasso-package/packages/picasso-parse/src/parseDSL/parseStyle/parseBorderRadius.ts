@@ -6,6 +6,7 @@ import { precisionControl } from '../../common/utils'
  * @param {*} layer 图层
  *  pointRadiusBehaviour: 1 round Corners
  *  pointRadiusBehaviour: 2 smooth Corners
+ *  四个角顺序：左上、右上、右下、左下
  */
 const calculateBorderRadius = (layer:SKLayer):BorderRadius=> {
     if (layer.points && layer.points.length !== 4) { // 不是 4 个锚点组成的不计算圆角
