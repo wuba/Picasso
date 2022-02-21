@@ -39,6 +39,8 @@ const _parseDSL = (sketchData: SKLayer[], type: string):DSL => {
         dslLayer.structure = { ...dslLayer.structure, ...parseStructure(layer) };
         // 样式解析
         dslLayer.style = { ...dslLayer.style, ...parseStyle(layer) };
+        // fs.writeFileSync(`./${layer.name}_code_dsl.json`, JSON.stringify(dslLayer.style,null,2));
+
         // 文本处理
         dslLayer = parseText(dslLayer,layer)
         // 图片处理
