@@ -25,7 +25,7 @@ import {
     handleContinuousListItem,
 } from './calculateClassName';
 
-import * as fs from 'fs';
+// import * as fs from 'fs';
 
 /**
  * 布局
@@ -58,7 +58,7 @@ const handleLayout = (data:Layer[], parent?:Layer) => {
         data = handleContinuousListItem(data);
     }
 
-    // fs.writeFileSync('./code_dsl_100.json',JSON.stringify(data,null,2));
+    // fs.writeFileSync('./code_dsl_101.json',JSON.stringify(data,null,2));
 
     switch (true) {
     case parent === undefined:
@@ -88,6 +88,7 @@ const handleLayout = (data:Layer[], parent?:Layer) => {
 
     //使用绝对定位的布局
     data = handleOverlap(dataIsPositionLayout, parent, data);
+    // fs.writeFileSync('./code_dsl_102.json',JSON.stringify(data,null,2));
 
     //递归子集
     if (Array.isArray(data)) {

@@ -7,4 +7,8 @@ export type Transform = {
     vertical?: number // 竖直缩放比例
   }
   rotate?: number // 旋转角度
+  translate?: {
+      x?: number
+      y?: number
+  } 
 }
