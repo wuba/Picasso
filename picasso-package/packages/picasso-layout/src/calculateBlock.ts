@@ -9,8 +9,7 @@ import { Layer } from './types';
  * @returns
  */
 const calculateBlock = (data: Layer[], parent: Layer) => {
-
-    data = data.sort((a, b) => a.structure.y - b.structure.y);
+    // data = data.sort((a, b) => a.structure.y - b.structure.y);
     //边框处理
     const pBorderWidth = parent.structure?.border?.top?.width || 0;
     for (let i = 0; i < data.length; i++) {
@@ -59,6 +58,13 @@ const calculateBlock = (data: Layer[], parent: Layer) => {
                 data[i].style.marginTop = paddingTop;
                 parent.style.paddingTop = 0.1;
             }
+        }
+
+        // 解决margin为负数遮挡问题
+        if (data[i].style.marginTop < 0) {
+            data[i].style.position = 'relative';
+        //     data[i].style.transform ={...data[i].style.transform, translate: {y: data[i].style.marginTop}}
+        //     delete data[i].style.marginTop;
         }
     }
     return data;

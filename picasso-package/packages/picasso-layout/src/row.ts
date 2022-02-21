@@ -62,11 +62,19 @@ const layoutTowSpan = (data: Layer[], parent: Layer) => {
             ...firstItem.style,
             marginTop: firstItem.structure.y - parent.structure.y
         };
+        // 解决margin为负数遮挡问题
+        if (firstItem.style.marginTop < 0) {
+            firstItem.style.position = 'relative';
+        }
 
         secondItem.style = {
             ...secondItem.style,
             marginTop: secondItem.structure.y - parent.structure.y
         };
+        // 解决margin为负数遮挡问题
+        if (secondItem.style.marginTop < 0) {
+            secondItem.style.position = 'relative';
+        }
     }
 
     firstItem.style = {
@@ -154,7 +162,14 @@ const layoutImgTextCeneter = (data: Layer[], parent: Layer) => {
                 ...item.style,
                 marginTop: item.structure.y - parent.structure.y
             }
+
+            // 解决margin为负数遮挡问题
+            if (item.style.marginTop < 0) {
+                item.style.position = 'relative';
+            }
         }
+
+        
     }
 
     secondItem.style = {
@@ -243,6 +258,10 @@ const layoutBetweenItemList = (data: Layer[], parent: Layer) => {
                 ...data[i].style,
                 marginTop: data[i].structure.y - parent.structure.y
             };
+            // 解决margin为负数遮挡问题
+            if (data[i].style.marginTop < 0) {
+                data[i].style.position = 'relative';
+            }
         }
     }
     //第一个元素
@@ -369,6 +388,10 @@ export const layoutRow = (data, parent) => {
                         ...data[i].style,
                         marginTop: data[i].structure.y - parent.structure.y
                     };
+                    // 解决margin为负数遮挡问题
+                    if (data[i].style.marginTop < 0) {
+                        data[i].style.position = 'relative';
+                    }
                 }
             }
 

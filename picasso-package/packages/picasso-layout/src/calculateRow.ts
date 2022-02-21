@@ -31,6 +31,11 @@ const calculateRow = (data: Layer[]) => {
                 data[i].style.marginTop = 0;
             }
         }
+
+        // 解决margin为负数遮挡问题
+        if (data[i].style.marginTop < 0) {
+            data[i].style.position = 'relative';
+        }
     }
     return data;
 };

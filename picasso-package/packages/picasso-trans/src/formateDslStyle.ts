@@ -200,7 +200,7 @@ export const formateDslStyle = (data: any) => {
                             }
                             break
                         case 'transform':
-                            let { scale = {}, rotate } = currValue
+                            let { scale = {}, rotate, translate = {} } = currValue
                             let transform = []
                             if (
                                 scale.horizontal != undefined &&
@@ -210,6 +210,9 @@ export const formateDslStyle = (data: any) => {
                             }
                             if (rotate != undefined) {
                                 transform.push(`rotate(${rotate}deg)`)
+                            }
+                            if (translate && (translate.x || translate.y)) {
+                                transform.push(`translate(${translate.x || 0}px, ${translate.y || 0}px)`)
                             }
                             if (transform && transform.length) {
                                 style['transform'] = transform.join(' ')
