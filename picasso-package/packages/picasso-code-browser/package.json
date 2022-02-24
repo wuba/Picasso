@@ -1,6 +1,6 @@
 {
   "name": "@wubafe/picasso-code-browser",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Picasso代码生成库，仅代码生成，不包括代码文件生成",
   "main": "dist/picasso-code-browser/src/index.js",
   "scripts": {
