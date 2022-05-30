@@ -59,7 +59,7 @@ const parseArtboard = (type, codeType) => {
             UI.message('解析失败！');
         });
     },0);
-    
+
 }
 
 // web代码普通版

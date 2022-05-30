@@ -28,7 +28,9 @@
 - web运营版：采用绝对定位布局、代码还原度高；适用于运营活动页、静态页。
 - 微信小程序：生成微信小程序代码。
 - ReactNative：生成ReactNative代码。
-## 开发
+
+## 开发说明
+
 ``` sh
   # 插件目录
   cd picasso
@@ -40,5 +42,15 @@
   npm run build
 ```
 ## 贡献
-欢迎参与picasso项目的开发建设和讨论。
-> 提交 pull request 之前请先提 [Issue 讨论].
+
+阅读我们的[贡献指南](https://github.com/wuba/Picasso/wiki/%E8%B4%A1%E7%8C%AE%E6%8C%87%E5%8D%97)，让我们一起构建一个更好的 Picasso。
+
+您可以将任何想法作为[拉取请求](https://github.com/wuba/Picasso/pulls)或[GitHub 问题](https://github.com/wuba/Picasso/issues)提交。
+
+如果您想改进代码，请参考上述 [开发说明](#开发说明) 。
+
+如果您是协作者，请按照我们的[Pull Request 原则使用](https://github.com/wuba/Picasso/wiki/PR-%E8%A7%84%E8%8C%83)[协作者模板](https://github.com/wuba/Picasso/compare)创建 Pull Request 。
+
+## 技术讨论
+
+欢迎参与Picasso项目的开发建设和讨论，[点击这里](https://github.com/wuba/Picasso/issues/26)进群讨论。
