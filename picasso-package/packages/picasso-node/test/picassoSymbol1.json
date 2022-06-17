@@ -1,0 +1,521 @@
+{
+    "0e1C_SMJZB": {
+        "instanceChildId": "Y3YffzvdiT",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "xDlitf6EgFAW33G5AK4f_",
+        "type": "symbolInstanceChild",
+        "id": "0e1C_SMJZB",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "Y4YmbbYV9m": {
+        "instanceChildId": "aXYaR7jj7t",
+        "changeVals": {
+            "fillPath": [],
+            "linePath": [
+                "M14,0L28,0L28,28L0,28L0,14"
+            ]
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "E495593D-CC50-4ED3-BD3F-6B70F63F3059",
+        "type": "symbolInstanceChild",
+        "id": "Y4YmbbYV9m",
+        "closestParentId": "0hAupqle_r"
+    },
+    "azr_srCTju": {
+        "changeVals": {},
+        "isSymbol": true,
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "FEB94FCF-8BC8-4A55-8813-CE359166B240",
+        "type": "symbolInstanceChild",
+        "id": "azr_srCTju",
+        "closestParentId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F"
+    },
+    "IFF0nSU-2o": {
+        "instanceChildId": "LlESC3WNOe",
+        "changeVals": {
+            "fillPath": [
+                "M8.69,1.82C8.83,1.68 8.81,1.44 8.65,1.33C7.41,0.46 5.94,0 4.41,0C2.87,0 1.38,0.47 0.14,1.36C-0.03,1.47 -0.05,1.71 0.09,1.85L4.15,5.91L4.61,5.91L8.69,1.82Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "1A32FD14-3F76-4691-AB58-435BEC0801D8",
+        "type": "symbolInstanceChild",
+        "id": "IFF0nSU-2o",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "HabVt1RxD6": {
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "7AE254AD-10AC-4E07-9777-7D58E2453DC3",
+        "type": "symbolInstanceChild",
+        "id": "HabVt1RxD6",
+        "closestParentId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F"
+    },
+    "m2Vit_-M4T": {
+        "instanceChildId": "mRmCObFSv8",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "351B5B95-950D-4068-8E7C-F5D9EE76D77B",
+        "type": "symbolInstanceChild",
+        "id": "m2Vit_-M4T",
+        "closestParentId": "azr_srCTju"
+    },
+    "k0TQftoQg9": {
+        "instanceChildId": "01VsgWwjX8",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "6003F5EC-25A4-4DC9-A742-D410ED5E5C12",
+        "type": "symbolInstanceChild",
+        "id": "k0TQftoQg9",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "K0tWwJlYRN": {
+        "instanceChildId": "RdDGjRylKo",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "D739C022-CBE1-4847-A390-9AB0003FD461",
+        "type": "symbolInstanceChild",
+        "id": "K0tWwJlYRN",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "Raqbs83Gep": {
+        "changeVals": {
+            "fillPath": [
+                "M0,88L750,88L750,0L0,0L0,88Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "94302AE8-519B-46EC-9083-8D981675E8EE",
+        "type": "symbolInstanceChild",
+        "id": "Raqbs83Gep",
+        "closestParentId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F"
+    },
+    "y6oQ6ijP9H": {
+        "instanceChildId": "GVYL-Lrgsp",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "868CA8C4-3D85-4442-B589-4D78561E85B3",
+        "type": "symbolInstanceChild",
+        "id": "y6oQ6ijP9H",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "xiwJcOCboG": {
+        "instanceChildId": "Fy6VKFA1VF",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "4A0FAC6C-6C6F-435B-A8C9-C86584678AB7",
+        "type": "symbolInstanceChild",
+        "id": "xiwJcOCboG",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "gbOiZjnq7v": {
+        "instanceChildId": "DeXm8SVNrD",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "424B2669-C4C7-4860-BF62-5206650536B8",
+        "type": "symbolInstanceChild",
+        "id": "gbOiZjnq7v",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "3M6Lfr7e5s": {
+        "changeVals": {
+            "fillPath": [
+                "M0,88L76,88L76,0L0,0L0,88Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "C96B3350-55A0-4700-9FAE-AC7A55F34783",
+        "type": "symbolInstanceChild",
+        "id": "3M6Lfr7e5s",
+        "closestParentId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F"
+    },
+    "YOStarT9tO": {
+        "instanceChildId": "9DXQvn86qR",
+        "changeVals": {
+            "fillPath": [],
+            "linePath": [
+                "M14,0L0,14L14,28"
+            ]
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "C2213152-4ABB-47CB-9FBF-21BCCF5BF4E6",
+        "type": "symbolInstanceChild",
+        "id": "YOStarT9tO",
+        "closestParentId": "azr_srCTju"
+    },
+    "xCFp47ItGm": {
+        "instanceChildId": "Fz0yfT_uUC",
+        "changeVals": {
+            "fillPath": [
+                "M0,5L0,18C0,20.76 2.24,23 5,23L39,23C41.76,23 44,20.76 44,18L44,5C44,2.24 41.76,0 39,0L5,0C2.24,0 0,2.24 0,5Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "69106CAC-C4BB-4AB4-97F7-1CDEE9F23E35",
+        "type": "symbolInstanceChild",
+        "id": "xCFp47ItGm",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "OT_NNyQTOW": {
+        "instanceChildId": "jhTvaVLbUJ",
+        "changeVals": {
+            "fillPath": [
+                "M0,40L40,40L40,0L0,0L0,40Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "750B0266-8C2F-4065-828B-3EF893AB7023",
+        "type": "symbolInstanceChild",
+        "id": "OT_NNyQTOW",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "dwG2zpFkdU": {
+        "instanceChildId": "WjyqjEYU8v",
+        "changeVals": {
+            "fillPath": [],
+            "linePath": [
+                "M14,0L0,14"
+            ]
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "1EBB403E-DF75-4E8F-B87B-C128FF49442A",
+        "type": "symbolInstanceChild",
+        "id": "dwG2zpFkdU",
+        "closestParentId": "0hAupqle_r"
+    },
+    "wyTk3g0Y_s": {
+        "instanceChildId": "VLLtvuToJw",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "8DD833D4-26A1-4831-BEFD-E92CCA31DA7B",
+        "type": "symbolInstanceChild",
+        "id": "wyTk3g0Y_s",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "hEMbwr8SUX": {
+        "instanceChildId": "zF2hZ0Ekqi",
+        "changeVals": {
+            "fillPath": [
+                "M0,4.02L2.44,6.47L2.88,6.49C4.8,4.94 7.19,4.1 9.68,4.1C12.16,4.1 14.53,4.93 16.45,6.47L16.88,6.44L19.33,3.99L19.3,3.52C16.61,1.24 13.23,0 9.68,0C6.12,0 2.72,1.25 0.02,3.55L0,4.02Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "0CFBBA2A-D075-4E59-BB0A-24B6FEDFE31A",
+        "type": "symbolInstanceChild",
+        "id": "hEMbwr8SUX",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "zou7ZJNfbn": {
+        "instanceChildId": "4xY2TK8gc4",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "8ADB5DBB-C86C-47F1-912C-0EC189F00705",
+        "type": "symbolInstanceChild",
+        "id": "zou7ZJNfbn",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "WjQreZHuPe": {
+        "instanceChildId": "hybGRzc1Bm",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "EF519384-685E-4CC3-AB3F-3A46BD3E382A",
+        "type": "symbolInstanceChild",
+        "id": "WjQreZHuPe",
+        "closestParentId": "0hAupqle_r"
+    },
+    "K_kOkCKyDq": {
+        "instanceChildId": "zXAvVzzyzv",
+        "changeVals": {
+            "fillPath": [
+                "M0,6.5C0,7.05 0.45,7.5 1,7.5L5,7.5C5.55,7.5 6,7.05 6,6.5L6,1C6,0.45 5.55,0 5,0L1,0C0.45,0 0,0.45 0,1Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "4BD45AA3-A84B-4A3D-AF09-E65061C21EE6",
+        "type": "symbolInstanceChild",
+        "id": "K_kOkCKyDq",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "RV1M8_KEit": {
+        "instanceChildId": "zBmJ3JlVgW",
+        "changeVals": {
+            "fillPath": [
+                "M0,40L54,40L54,0L0,0L0,40Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "FFD924FC-2143-40DF-AB9D-83A3CBC62E48",
+        "type": "symbolInstanceChild",
+        "id": "RV1M8_KEit",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "ORLLWg14z4": {
+        "instanceChildId": "JtiZ29QWRc",
+        "changeVals": {
+            "fillPath": [
+                "M0,15.5C0,16.05 0.45,16.5 1,16.5L5,16.5C5.55,16.5 6,16.05 6,15.5L6,1C6,0.45 5.55,0 5,0L1,0C0.45,0 0,0.45 0,1Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "8E59159D-A015-4030-922E-DC2E43D66A4C",
+        "type": "symbolInstanceChild",
+        "id": "ORLLWg14z4",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "Zqkr4zar7T": {
+        "instanceChildId": "3YUtoWBUEU",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "0A08B848-4427-487B-A4A3-FD03F75333A7",
+        "type": "symbolInstanceChild",
+        "id": "Zqkr4zar7T",
+        "closestParentId": "azr_srCTju"
+    },
+    "CGa1EhTHZB": {
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "7971BF8A-7AB8-4590-A370-F9C64D2056E7",
+        "type": "symbolInstanceChild",
+        "id": "CGa1EhTHZB",
+        "closestParentId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F"
+    },
+    "c-nEwJtA4f": {
+        "changeVals": {},
+        "isSymbol": true,
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "B47AFE5A-DBEB-4253-A228-97D09B4A007A",
+        "type": "symbolInstanceChild",
+        "id": "c-nEwJtA4f",
+        "closestParentId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F"
+    },
+    "j7Ul4ZxbHg": {
+        "instanceChildId": "Sa85eDKqOQ",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "5D4C9708-02DB-4E48-B36C-9E182F269519",
+        "type": "symbolInstanceChild",
+        "id": "j7Ul4ZxbHg",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "OOGk9EyG6k": {
+        "instanceChildId": "QkXJ_1IVWu",
+        "changeVals": {
+            "fillPath": [
+                "M2.44,8.66L2.88,8.67C6.23,5.72 10.52,4.1 15.02,4.1C19.5,4.1 23.77,5.71 27.12,8.65L27.56,8.63L30,6.19L29.99,5.72C25.87,2.03 20.58,0 15.02,0C9.44,0 4.14,2.04 0.01,5.75L0,6.22L2.44,8.66Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "4A48DECB-DEC9-48E5-AA6A-7E31AFCD7DBA",
+        "type": "symbolInstanceChild",
+        "id": "OOGk9EyG6k",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "u8yoy9Ft5b": {
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "8628264F-FBF0-4959-A78E-EBFF90ED3B07",
+        "type": "symbolInstanceChild",
+        "id": "u8yoy9Ft5b",
+        "closestParentId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F"
+    },
+    "8Cg-T7vibO": {
+        "instanceChildId": "yqxZgRVuYi",
+        "changeVals": {
+            "fillPath": [
+                "M0,40L40,40L40,0L0,0L0,40Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "CC9D1515-66D0-4EE2-BE81-BAF24D39C378",
+        "type": "symbolInstanceChild",
+        "id": "8Cg-T7vibO",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "ynuMIC1MvI": {
+        "instanceChildId": "INKBgrsl3N",
+        "changeVals": {
+            "fillPath": [
+                "M0,8.66C1.49,7.8 2.5,6.18 2.5,4.33C2.5,2.48 1.49,0.86 0,0L0,8.66Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "21370A59-08CC-45DD-817D-94455DC51ABF",
+        "type": "symbolInstanceChild",
+        "id": "ynuMIC1MvI",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "7iQ-K3cgie": {
+        "instanceChildId": "lmhmwwfRlr",
+        "changeVals": {
+            "fillPath": [
+                "M0,88L750,88L750,0L0,0L0,88Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "C5452329-77FE-45E1-89A1-990660EBF6CD",
+        "type": "symbolInstanceChild",
+        "id": "7iQ-K3cgie",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "LFaygSYCBQ": {
+        "instanceChildId": "Ol9_8tSRr5",
+        "changeVals": {
+            "fillPath": [
+                "M0,3L0,16C0,17.66 1.34,19 3,19L37,19C38.66,19 40,17.66 40,16L40,3C40,1.34 38.66,0 37,0L3,0C1.34,0 0,1.34 0,3Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "7DA80559-982A-4D2F-A88F-0B474A35FC19",
+        "type": "symbolInstanceChild",
+        "id": "LFaygSYCBQ",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "XG8wo1RDAV": {
+        "instanceChildId": "5IgxPDToDL",
+        "changeVals": {
+            "fillPath": [
+                "M0,2L0,13C0,14.1 0.9,15 2,15L34,15C35.1,15 36,14.1 36,13L36,2C36,0.9 35.1,0 34,0L2,0C0.9,0 0,0.9 0,2Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "21513C46-9FC0-4305-A9BD-A12C098B780D",
+        "type": "symbolInstanceChild",
+        "id": "XG8wo1RDAV",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "0hAupqle_r": {
+        "changeVals": {},
+        "isSymbol": true,
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "B226C9D2-815E-47AB-A3EA-9A9B60CDA91E",
+        "type": "symbolInstanceChild",
+        "id": "0hAupqle_r",
+        "closestParentId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F"
+    },
+    "G45VQmznsO": {
+        "instanceChildId": "lcUjU1kxHZ",
+        "changeVals": {
+            "fillPath": [
+                "M0,10.5C0,11.05 0.45,11.5 1,11.5L5,11.5C5.55,11.5 6,11.05 6,10.5L6,1C6,0.45 5.55,0 5,0L1,0C0.45,0 0,0.45 0,1Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "0A5D8937-8E1C-4196-8741-D5FD8FFA7F32",
+        "type": "symbolInstanceChild",
+        "id": "G45VQmznsO",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "lVZlmkhE0S": {
+        "instanceChildId": "VPcDB7JMzf",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "2E8FE2B3-1862-4FF0-9F57-DB3D94067F49",
+        "type": "symbolInstanceChild",
+        "id": "lVZlmkhE0S",
+        "closestParentId": "0hAupqle_r"
+    },
+    "jsiXAEorlh": {
+        "instanceChildId": "xFAMeR0Euc",
+        "changeVals": {
+            "fillPath": [
+                "M0,20C0,20.55 0.45,21 1,21L5,21C5.55,21 6,20.55 6,20L6,1C6,0.45 5.55,0 5,0L1,0C0.45,0 0,0.45 0,1Z"
+            ],
+            "linePath": []
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "13791719-D295-45CC-8F47-9B6AB408F243",
+        "type": "symbolInstanceChild",
+        "id": "jsiXAEorlh",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "aYisr0J1j_": {
+        "instanceChildId": "KJHuGSxM9d",
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "899A664D-79CE-48A5-A9C4-A016BCC38734",
+        "type": "symbolInstanceChild",
+        "id": "aYisr0J1j_",
+        "closestParentId": "c-nEwJtA4f"
+    },
+    "q16Yg0fPRx": {
+        "instanceChildId": "dJu9lS5oHs",
+        "changeVals": {
+            "fillPath": [],
+            "linePath": [
+                "M0,0L10,0L10,10"
+            ]
+        },
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "D1909160-3B8F-43B7-BC9F-EC5816E39896",
+        "type": "symbolInstanceChild",
+        "id": "q16Yg0fPRx",
+        "closestParentId": "0hAupqle_r"
+    },
+    "jmds6sWd7Y": {
+        "changeVals": {},
+        "symbolInstanceId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F",
+        "exportOptions": [],
+        "baseId": "57A8BB25-DBED-4A92-9EC1-1A65D692F7E9",
+        "type": "symbolInstanceChild",
+        "id": "jmds6sWd7Y",
+        "closestParentId": "3E77CBD4-2FC5-40A0-9CCE-96D075A35A9F"
+    }
+}
