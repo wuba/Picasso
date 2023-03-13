@@ -11,6 +11,7 @@ package-lock.json
 
 # WebStorm
 .idea
+.history
 
 # sketch
 # sketch-assets
