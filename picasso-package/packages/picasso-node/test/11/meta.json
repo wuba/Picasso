@@ -1,0 +1,33 @@
+{
+    "commit": "c15154da262fec16d564d4f1d3ca7ad858a3f2ed",
+    "pagesAndArtboards": {
+        "78626ADA-1A66-4E6E-A0AE-566E1256DA3E": {
+            "name": "Page 1",
+            "artboards": {
+                "0F4FCE1E-1B7B-45CD-A268-947124162EED": {
+                    "name": "企业专区M-无资料"
+                },
+                "EE5D6083-4813-419B-860D-7BEA11813DC7": { "name": "企业专区PC" }
+            }
+        }
+    },
+    "version": 136,
+    "compatibilityVersion": 99,
+    "app": "com.bohemiancoding.sketch3",
+    "autosaved": 0,
+    "variant": "NONAPPSTORE",
+    "coeditCompatibilityVersion": 136,
+    "created": {
+        "commit": "c15154da262fec16d564d4f1d3ca7ad858a3f2ed",
+        "appVersion": "80.1",
+        "build": 134476,
+        "app": "com.bohemiancoding.sketch3",
+        "coeditCompatibilityVersion": 136,
+        "compatibilityVersion": 99,
+        "version": 136,
+        "variant": "NONAPPSTORE"
+    },
+    "saveHistory": ["NONAPPSTORE.134476"],
+    "appVersion": "80.1",
+    "build": 134476
+}
