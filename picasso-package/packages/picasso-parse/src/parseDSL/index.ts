@@ -15,7 +15,8 @@ const _parseDSL = (sketchData: SKLayer[], type: string):DSL => {
             type: 'Container',
             id: layer.do_objectID,
             name: layer.name,
-            symbolName: layer.symbolName || ''
+            symbolName: layer.symbolName || '',
+            groupBreadcrumb: layer.groupBreadcrumb || []
         }
 
         // 海葵组件
@@ -58,11 +59,12 @@ const _parseDSL = (sketchData: SKLayer[], type: string):DSL => {
 
 export default (sketchData: SKLayer[], type: string): DSL => {
     const layers: SKLayer[] = [];
-    
     for (let i = 0; i < sketchData.length; i++) {
         const layer = sketchData[i];
+
+        layer.groupBreadcrumb = [{id: layer.do_objectID, name: layer.name}];
         // 去掉分组
-        layer.layers = filterGroupLayer(layer.layers, [], type);
+        layer.layers = filterGroupLayer(layer.layers, [], type, [{id: layer.do_objectID, name: layer.name}]);
         // 标注模式下，切片进行排序
         if (type === 'measure') {
             layer.layers = handleSlicePosition(layer.layers);

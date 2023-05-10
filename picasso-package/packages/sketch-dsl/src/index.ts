@@ -69,18 +69,19 @@ export type SKLayer = {
     panel?: Panel
     symbolName?: string
     symbolComponentObject?: {
-        url: string,
-        code_name: string,
-        code_lib_name: string,
-        type?: string,
-    },
+        url: string
+        code_name: string
+        code_lib_name: string
+        type?: string
+    }
     haikuiComponentInfo?: {
-        comId: string,
-        comType: string,
-        groupId: string,
-    },
+        comId: string
+        comType: string
+        groupId: string
+    }
     sharedLayerStyleName?: string
     sharedTextStyleName?: string
+    groupBreadcrumb?: { id: string; name: string }[]
 }
 
 // 类型导出
