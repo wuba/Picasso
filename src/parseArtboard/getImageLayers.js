@@ -32,7 +32,7 @@ const _getImageLayers = (layers,symbolInstanceIds, fontMap, symbolGroups, codeIm
             fontMap[layer.id] = new String(layer.sketchObject?.fontPostscriptName()).toString();
             /* eslint-disable */
         }
-        
+
 
         // 切片处理
         if (!layer.hidden &&
@@ -104,14 +104,14 @@ const _getImageLayers = (layers,symbolInstanceIds, fontMap, symbolGroups, codeIm
                 let overrides = SLayer.overrides();
                 let idx = 0;
                 let tempSymbolLayer;
-    
+
                 overrides = (overrides) ? overrides.objectForKey(0) : undefined;
                 /* eslint-disable */
                 while (tempSymbolLayer = tempSymbolLayers.nextObject()) {
                 /* eslint-disable */
                     if (isTheClass(tempSymbolLayer, MSSymbolInstance)) {
                         const symbolMasterObjectID = toJSString(symbolChildren[idx].objectID());
-    
+
                         if (overrides
                             && overrides[symbolMasterObjectID]
                             && !!overrides[symbolMasterObjectID].symbolID
@@ -120,7 +120,7 @@ const _getImageLayers = (layers,symbolInstanceIds, fontMap, symbolGroups, codeIm
                                 key: '(symbolID != NULL) && (symbolID == %@)',
                                 match: toJSString(overrides[symbolMasterObjectID].symbolID),
                             }, document.documentData().allSymbols());
-    
+
                             if (changeSymbol) {
                                 tempSymbolLayer.changeInstanceToSymbol(changeSymbol);
                             } else {
@@ -128,16 +128,16 @@ const _getImageLayers = (layers,symbolInstanceIds, fontMap, symbolGroups, codeIm
                             }
                         }
                     }
-    
+
                     idx++;
                 }
-    
+
                 symbolInstanceIds.push(layer.id);
                 symbolGroups.push(tempGroup);
                 if (Array.isArray(sketchDom.fromNative(tempGroup).layers)) {
                     _getImageLayers(sketchDom.fromNative(tempGroup).layers, symbolInstanceIds, fontMap, symbolGroups, codeImageMap, rootPath, sliceSize, _exportLayers);
                 }
-    
+
                 removeLayer(tempGroup);
             } else if (Array.isArray(layer.layers)) {
                 _getImageLayers(layer.layers, symbolInstanceIds, fontMap, symbolGroups, codeImageMap, rootPath, sliceSize, _exportLayers);

@@ -15,3 +15,8 @@ package-lock.json
 
 # sketch
 # sketch-assets
+.github
+.cursor
+.claude
+CLAUDE.md
+

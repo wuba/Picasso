@@ -10,6 +10,7 @@ import { Panel } from './Panel'
  */
 export type SKLayer = {
     _class: string // 图层类型
+    groupBehavior?: number // 组行为:{ Default: 0, Frame: 1, Graphic: 2 }
     booleanOperation?: number
     isFixedToViewport?: boolean
     do_objectID: string // 图层ID

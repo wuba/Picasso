@@ -18,10 +18,11 @@ const filterGroupLayer = (
             ...groupBreadcrumb,
             { id: layer.do_objectID, name: layer.name },
         ]
-
         // 非组件 或 是未解绑组件 或 组件解绑之后的组件
         if (
             layer._class !== 'group' ||
+            // 组行为:{ Default: 0, Frame: 1, Graphic: 2 }
+            [1, 2].includes(layer.groupBehavior) ||
             layer.symbolComponentObject ||
             layer.haikuiComponentInfo
         ) {
