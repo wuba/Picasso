@@ -19,7 +19,7 @@
     "dev": "skpm-build --watch --output ../../../../../../Library/ApplicationSupport/com.bohemiancoding.sketch3/Plugins/hotwheels.sketchplugin ",
     "watch": "skpm-build --watch",
     "start": "skpm-build --watch",
-    "postinstall": "npm run build && skpm-link"
+    "postinstall": "npm run build -- --no-cache && skpm-link"
   },
   "devDependencies": {
     "@skpm/builder": "^0.7.4",
@@ -33,9 +33,10 @@
     "resources/**/*.js"
   ],
   "dependencies": {
-    "@wubafe/picasso-parse": "0.0.42",
+    "@babel/runtime": "^7.28.6",
     "@skpm/fs": "^0.2.6",
     "@skpm/promise": "^0.1.0",
+    "@wubafe/picasso-parse": "0.0.42",
     "sketch-module-web-view": "^3.1.4"
   },
   "author": "huangwencun <huangwencun1990@gmail.com>",
