@@ -38,7 +38,7 @@
     "@skpm/promise": "^0.1.0",
     "sketch-module-web-view": "^3.1.4"
   },
-  "author": "huangwencun <huangwencun1990@gmail.com>",
+  "author": "sunilwang <ahwangshu@qq.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wuba/Picasso.git"
