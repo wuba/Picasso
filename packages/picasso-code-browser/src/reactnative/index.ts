@@ -3,7 +3,7 @@
  * @Date: 2020-09-02 11:33:23
  * @LastEditors: iChengbo
  * @LastEditTime: 2020-12-24 15:10:07
- * @FilePath: /Picasso/picasso-package/packages/picasso-code-browser/src/reactnative/index.ts
+ * @FilePath: /Picasso/packages/picasso-code-browser/src/reactnative/index.ts
  */
 import { Layer } from '../types';
 import handleClassName from '../handleClassName';

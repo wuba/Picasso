@@ -3,7 +3,7 @@
  * @Date: 2020-09-02 11:44:55
  * @LastEditors: iChengbo
  * @LastEditTime: 2020-12-24 15:17:23
- * @FilePath: /Picasso/picasso-package/packages/picasso-code-browser/src/reactnative/generateStyle.ts
+ * @FilePath: /Picasso/packages/picasso-code-browser/src/reactnative/generateStyle.ts
  */
 let styles = {};
 

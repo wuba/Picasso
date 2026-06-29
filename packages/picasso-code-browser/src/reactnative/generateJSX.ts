@@ -3,7 +3,7 @@
  * @Date: 2020-09-02 11:41:52
  * @LastEditors: iChengbo
  * @LastEditTime: 2021-02-03 15:45:08
- * @FilePath: /Picasso/picasso-package/packages/picasso-code-browser/src/reactnative/generateJSX.ts
+ * @FilePath: /Picasso/packages/picasso-code-browser/src/reactnative/generateJSX.ts
  */
 
 const RN = {

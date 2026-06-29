@@ -1,14 +1,15 @@
 {
-  "name": "@wubafe/picasso-layout",
-  "version": "0.0.4",
-  "description": "Picasso布局库",
-  "main": "dist/picasso-layout/src/index.js",
+  "name": "@wubafe/picasso-group",
+  "version": "0.0.5",
+  "private": true,
+  "description": "Picasso特征分组库（内部包，已被 picasso-parse 内联，不单独发布）",
+  "main": "dist/picasso-group/src/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --respawn test/index.ts",
     "test": "ts-node-dev --respawn test/index.ts"
   },
-  "author": "huangwencun",
+  "author": "sunilwang <ahwangshu@qq.com>",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^10.12.15",

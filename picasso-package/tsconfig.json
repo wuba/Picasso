@@ -1,9 +1,0 @@
-{
-    "compilerOptions": {
-        "lib": ["dom", "es2017"],
-        "module": "commonjs",
-        "target": "es6",
-        "experimentalDecorators": true,
-        "downlevelIteration": true
-    }
-}

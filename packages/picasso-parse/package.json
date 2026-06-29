@@ -24,10 +24,7 @@
         "代码转换",
         "设计稿转换代码"
     ],
-    "author": {
-        "name": "huangwencun",
-        "email": "huangwencun1990@gmail.com"
-    },
+    "author": "sunilwang <ahwangshu@qq.com>",
     "bugs": {
         "url": "https://github.com/wuba/Picasso/issues"
     },
