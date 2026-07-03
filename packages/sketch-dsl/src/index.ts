@@ -82,7 +82,16 @@ export type SKLayer = {
     }
     sharedLayerStyleName?: string
     sharedTextStyleName?: string
-    groupBreadcrumb?: { id: string; name: string }[]
+    groupBreadcrumb?: { id: string; name: string; stableId?: string }[]
+    textBehaviour?: number // 文本框行为：0 auto-width / 1 auto-height / 2 fixed
+    symbolID?: string // symbolInstance / symbolMaster 的组件 ID
+    overrideValues?: any[] // symbolInstance 的 override 原始值（导出 A 携带）
+    // —— annotateStableIds 注入字段（未注入时不存在，消费方必须条件读取） ——
+    stableId?: string // 原稿 do_objectID 的确定性短哈希（Symbol 展开子树内为复合路径）
+    contentHash?: string // 节点归一化属性哈希（不含 children）
+    subtreeHash?: string // Merkle：hash(contentHash + 有序 children.subtreeHash)
+    restoreComponentKey?: string // RestoreDSL components 字典 key（master symbolID 短哈希）
+    restoreOverrides?: { [key: string]: any } // override path 可读化后的键值
 }
 
 // 类型导出

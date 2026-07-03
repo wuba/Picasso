@@ -66,6 +66,22 @@ const rnCode = picassoCode([dsl], artboardJSON.frame.width, CodeType.ReactNative
 
 所有函数签名一致：`(layer: SKLayer) => Component`，返回 Picasso 中间 DSL 的根节点。
 
+### RestoreDSL（结构保真中间表示，0.0.45 新增）
+
+与上述四个函数不同，RestoreDSL 相关 API 是**多输入签名**（三导出管线）：
+
+| 函数 | 用途 |
+| --- | --- |
+| `annotateStableIds(exportB, exportA?, mastersC?)` | 把 `stableId` / `contentHash` / `subtreeHash` 原地注入解绑副本树（导出 B）。注入后再喂给四种存量 DSL 解析方法，产物即携带同一批稳定 ID（条件透传，未注入的老输入产出逐字节不变） |
+| `picassoArtboardRestoreParse(exportA, exportB, mastersC?, options?)` | 三份输入合并（ID 回填 + components 组装 + overrides 解析），产出 RestoreDSL：结构保真（1:1 镜像图层树）、值归一化、无布局推断 |
+
+- `exportA`：原始画板 JSON（`sketch.export` 直接导出，do_objectID 持久稳定）
+- `exportB`：解绑 Symbol 后的副本画板 JSON（几何精确的展开树）
+- `mastersC`：画板引用到的 symbolMaster JSON 列表（可缺省，components 字典降级）
+- `options`：`{ sketchVersion, pluginVersion, documentId, generatedAt, componentsOmitted, componentSources }`
+
+推荐调用顺序：三导出 → `annotateStableIds` → 四种存量 DSL 与 `picassoArtboardRestoreParse` 消费同一棵注入后的树。
+
 ### 代码生成（DSL → 文本）
 
 | 函数 | 输出 |

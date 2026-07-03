@@ -88,6 +88,13 @@ export const picassoArtboardLowcodeParse = (layer: SKLayer): Component => {
     return DSL[0];
 }
 
+/**
+ * RestoreDSL（结构保真中间表示）解析 + 稳定 ID 注入。
+ * 注意：picassoArtboardRestoreParse 签名与上述四个方法不同（三份导出输入），见 README。
+ */
+export { picassoArtboardRestoreParse, annotateStableIds } from './parseRestoreDSL';
+export * from './parseRestoreDSL/restoreTypes';
+
 // 代码生成
 export * from '../../picasso-code-browser/src'
 

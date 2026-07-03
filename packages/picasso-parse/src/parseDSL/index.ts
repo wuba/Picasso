@@ -19,6 +19,18 @@ const _parseDSL = (sketchData: SKLayer[], type: string):DSL => {
             groupBreadcrumb: layer.groupBreadcrumb || []
         }
 
+        // 稳定 ID / 内容指纹透传（annotateStableIds 注入后才存在）。
+        // 必须条件写入：源字段缺失时不落 key，保证未注入的老输入产出逐字节不变（向后兼容护栏）
+        if (layer.stableId !== undefined) {
+            dslLayer.stableId = layer.stableId;
+        }
+        if (layer.contentHash !== undefined) {
+            dslLayer.contentHash = layer.contentHash;
+        }
+        if (layer.subtreeHash !== undefined) {
+            dslLayer.subtreeHash = layer.subtreeHash;
+        }
+
         // 海葵组件
         if (type === 'lowcode') {
             dslLayer.type = 'View';
@@ -62,9 +74,14 @@ export default (sketchData: SKLayer[], type: string): DSL => {
     for (let i = 0; i < sketchData.length; i++) {
         const layer = sketchData[i];
 
-        layer.groupBreadcrumb = [{id: layer.do_objectID, name: layer.name}];
+        // 面包屑条目条件携带 stableId（组会被拍平不成节点，面包屑是被压 group 稳定 ID 的唯一存身处）
+        const rootCrumb: { id: string; name: string; stableId?: string } = { id: layer.do_objectID, name: layer.name };
+        if (layer.stableId !== undefined) {
+            rootCrumb.stableId = layer.stableId;
+        }
+        layer.groupBreadcrumb = [rootCrumb];
         // 去掉分组
-        layer.layers = filterGroupLayer(layer.layers, [], type, [{id: layer.do_objectID, name: layer.name}]);
+        layer.layers = filterGroupLayer(layer.layers, [], type, [rootCrumb]);
         // 标注模式下，切片进行排序
         if (type === 'measure') {
             layer.layers = handleSlicePosition(layer.layers);

@@ -27,5 +27,9 @@ export interface BaseComponent {
         comType: string
         groupId: string
     }
-    groupBreadcrumb?: { id: string; name: string }[] //Symbol group 面包屑
+    groupBreadcrumb?: { id: string; name: string; stableId?: string }[] //Symbol group 面包屑
+    // —— 稳定 ID / 内容指纹（annotateStableIds 注入后透传，未注入时不落 key） ——
+    stableId?: string
+    contentHash?: string
+    subtreeHash?: string
 }
