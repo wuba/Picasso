@@ -1,0 +1,19 @@
+{
+  "name": "@wubafe/picasso-code-browser",
+  "version": "0.0.6",
+  "private": true,
+  "description": "Picasso代码生成库，仅代码生成，不包括代码文件生成（内部包，已被 picasso-parse 内联，不单独发布）",
+  "main": "dist/picasso-code-browser/src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn test/index.ts",
+    "test": "ts-node-dev --respawn test/index.ts"
+  },
+  "author": "sunilwang <ahwangshu@qq.com>",
+  "devDependencies": {
+    "@types/node": "^10.12.15",
+    "ts-node": "^8.10.2",
+    "ts-node-dev": "1.0.0-pre.54",
+    "typescript": "^3.9.7"
+  }
+}

@@ -1,22 +1,66 @@
-# build artefacts
+# ─── 构建产物 ─────────────────────────────────
 picasso.sketchplugin
+packages/*/dist
+packages/*/types
 
-# npm
+# ─── 依赖与锁文件 ────────────────────────────
 node_modules
 .npm
-npm-debug.log
 package-lock.json
-# mac
+yarn.lock
+pnpm-lock.yaml
+
+# ─── 日志 ────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── 缓存 ────────────────────────────────────
+.cache
+.parcel-cache
+.eslintcache
+.stylelintcache
+.tsbuildinfo
+*.tsbuildinfo
+
+# ─── 运行时与覆盖率 ────────────────────────────
+coverage
+.nyc_output
+*.pid
+*.seed
+*.pid.lock
+
+# ─── 环境变量 ─────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── 操作系统 ─────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
 
-# WebStorm
+# ─── 编辑器 / IDE ─────────────────────────────
 .idea
+.vscode
+*.swp
+*.swo
+*~
 .history
+.project
+.classpath
 
-# sketch
-# sketch-assets
+# ─── AI 工具临时文件 ─────────────────────────
 .github
 .cursor
 .claude
 CLAUDE.md
-
+.aider*

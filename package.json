@@ -33,12 +33,12 @@
     "resources/**/*.js"
   ],
   "dependencies": {
-    "@wubafe/picasso-parse": "0.0.42",
+    "@wubafe/picasso-parse": "0.0.44",
     "@skpm/fs": "^0.2.6",
     "@skpm/promise": "^0.1.0",
     "sketch-module-web-view": "^3.1.4"
   },
-  "author": "huangwencun <huangwencun1990@gmail.com>",
+  "author": "sunilwang <ahwangshu@qq.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wuba/Picasso.git"
