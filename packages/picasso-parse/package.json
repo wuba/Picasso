@@ -1,10 +1,14 @@
 {
     "name": "@wubafe/picasso-parse",
-    "version": "0.0.43",
+    "version": "0.0.44",
     "description": "Picasso解析库",
     "main": "dist/picasso-parse/src/index.js",
+    "publishConfig": {
+        "access": "public"
+    },
     "scripts": {
         "build": "tsc",
+        "prepublishOnly": "npm run build",
         "test": "ts-node-dev --respawn test/index.ts"
     },
     "devDependencies": {
