@@ -5,7 +5,7 @@
  */
 import { SKLayer } from '../types';
 import sha1 from './sha1';
-import { RestoreNode, RestoreFrame } from './restoreTypes';
+import { RestoreNode, RestoreFrame, RestoreFill } from './restoreTypes';
 import {
     round2,
     restoreTypeOf,
@@ -44,7 +44,23 @@ const uniformSpacing = (children: RestoreNode[], direction: 'horizontal' | 'vert
     return undefined;
 };
 
-const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null): RestoreNode => {
+/**
+ * 无 stableId（exportA 缺省 / 配对失败降级）时的兜底 id：B 侧 do_objectID 短哈希。
+ * 与 shortHashOf 同策略做树内查重：碰撞先延长 12 位，仍冲突（仅 do_objectID 缺失/重复时可能）追加序号，
+ * 保证单棵 RestoreDSL 树内 id 唯一——消费方普遍按 id 建索引，重复 id 会静默覆盖丢节点。
+ */
+const fallbackNodeId = (layer: SKLayer, usedIds: { [id: string]: boolean }): string => {
+    const full = sha1(layer.do_objectID || '');
+    let id = full.slice(0, 8);
+    if (usedIds[id]) id = full.slice(0, 12);
+    let candidate = id;
+    let n = 2;
+    while (usedIds[candidate]) candidate = `${id}-${n++}`;
+    return candidate;
+};
+
+const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, usedIds?: { [id: string]: boolean }): RestoreNode => {
+    const used = usedIds || {};
     const abs: RestoreFrame = {
         x: round2(layer.frame.x),
         y: round2(layer.frame.y),
@@ -56,8 +72,10 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null): Re
         : { x: 0, y: 0, w: abs.w, h: abs.h };
 
     const type = restoreTypeOf(layer);
+    const id: string = (layer as any).stableId || fallbackNodeId(layer, used);
+    used[id] = true;
     const node: RestoreNode = {
-        id: (layer as any).stableId || sha1(layer.do_objectID || '').slice(0, 8),
+        id,
         type,
         name: layer.name,
         frame: rel,
@@ -80,13 +98,25 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null): Re
 
     const borderRadius = borderRadiusToRestore(layer);
     if (borderRadius) node.borderRadius = borderRadius;
-    const fills = fillsToRestore(layer);
+    let fills = fillsToRestore(layer);
     // 画板背景色（Sketch 存在 backgroundColor 字段而非 style.fills，丢了整页底色就全白）
     if (type === 'artboard' && layer.hasBackgroundColor && layer.backgroundColor) {
         const bg = colorToHex(layer.backgroundColor);
-        if (bg) fills.unshift({ color: bg });
+        // concat 建新数组：fillsToRestore 返回值有缓存（normalize.ts memo），禁止原地 unshift
+        if (bg) fills = ([{ color: bg }] as RestoreFill[]).concat(fills);
     }
-    if (fills.length) node.fills = fills;
+    if (fills.length) {
+        // Sketch 的普通编组没有背景填充语义——组上的 fills 是「子图标着色（tint）」，
+        // 渲染成背景会出现色块（例：展开箭头组的 #999999 灰方块）。
+        // shapeGroup（布尔运算形状）的 fills 才是真实填充，须区分落 key；
+        // 其余类型（rect/oval/path/text/artboard…）维持 fills 原语义。
+        if (type === 'group' && layer._class !== 'shapeGroup') {
+            node.tint = fills;
+        } else {
+            node.fills = fills;
+        }
+    }
+    if (layer._class === 'shapeGroup') node.shapeGroup = true;
     const borders = bordersToRestore(layer);
     if (borders.length) node.borders = borders;
     const shadows = shadowsToRestore(layer.style && layer.style.shadows);
@@ -118,6 +148,18 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null): Re
             if (firstAlign !== 'left' && runs.every(run => (run.align || 'left') === firstAlign)) {
                 node.align = firstAlign;
             }
+            // 行高兜底：设计师未显式设置行高时 runs 无 lineHeight，而 Sketch 实际按
+            // CoreText 字体默认行高渲染，消费方（尤其 LLM）拿不到该值只能猜（1.2/1.5 倍必错）。
+            // 单行自适应文本的 frame 高度就是 Sketch 实算行高（PingFang 实测 28→40、32→45、24→33），
+            // 直接采信；多行用 1.4 倍近似（PingFang 系实测区间 1.375~1.44 的中值）。
+            // 不回写 runs：runs 参与 contentHash 与 styleToken 关联（textStyleKey），改了会双双破坏。
+            const firstRun = runs[0];
+            if (firstRun.lineHeight === undefined && typeof firstRun.size === 'number'
+                && node.textResizing !== 'fixed') {
+                node.effectiveLineHeight = rel.h <= firstRun.size * 1.9
+                    ? rel.h
+                    : Math.round(firstRun.size * 1.4);
+            }
         }
     }
 
@@ -138,10 +180,11 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null): Re
 
     // diff 支撑
     if ((layer as any).contentHash) node.contentHash = (layer as any).contentHash;
+    if ((layer as any).styleHash) node.styleHash = (layer as any).styleHash;
     if ((layer as any).subtreeHash) node.subtreeHash = (layer as any).subtreeHash;
 
     if (type !== 'text' && Array.isArray(layer.layers) && layer.layers.length > 0) {
-        node.children = layer.layers.map((child: SKLayer) => mapNode(child, { x: abs.x, y: abs.y }));
+        node.children = layer.layers.map((child: SKLayer) => mapNode(child, { x: abs.x, y: abs.y }, used));
     }
 
     // Smart Layout 透传（spacing 依赖已映射子节点的几何，最后算）

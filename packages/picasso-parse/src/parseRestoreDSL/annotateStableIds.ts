@@ -11,14 +11,24 @@
  * A 中 symbolInstance（叶子）对应 B 中展开 group（子树）处进入复合 ID 模式：
  * `实例短id/master图层短id`（嵌套实例继续链式追加），与 Sketch override path 格式同构。
  *
- * 结构不同构的兜底：子节点数不一致时按 name+_class 顺序贪心配对，
- * 配不上的 B 节点不写 stableId（内容指纹 contentHash/subtreeHash 仍然注入），绝不抛错中断上传。
+ * 结构不同构的兜底：子节点数不一致（或逐位 name/_class 对不齐）时按 name+_class 顺序贪心配对，
+ * 配不上的 B 节点不写 stableId（内容指纹 contentHash/subtreeHash 仍然注入），绝不抛错中断上传；
+ * 配对失败会累计进统计并挂到 exportB.restorePairingStats（条件写入），供插件端观测告警。
  *
  * 同时注入 restoreComponentKey / restoreOverrides（RestoreDSL 组装 Symbol 信息用；
  * 对四种存量 DSL 是多余字段，parseDSL 按白名单建节点不会带出）。
  */
 import { SKLayer } from '../types';
-import { createShortHashContext, shortHashOf, annotateHashes, ShortHashContext } from './hash';
+import { createShortHashContext, shortHashOf, annotateHashes, contentHashOf, ShortHashContext } from './hash';
+
+export type PairingStats = {
+    // B 侧配不上 A 侧的节点数（其整棵子树无 stableId，仅内容指纹兜底；不含被跳过的后代）
+    unpaired: number;
+    // 前 N 个配对失败节点的路径（stableId 前缀/图层名），定位用
+    unpairedPaths: string[];
+};
+
+const UNPAIRED_PATH_LIMIT = 50;
 
 type AnnotateContext = {
     hash: ShortHashContext;
@@ -26,6 +36,8 @@ type AnnotateContext = {
     masterBySymbolID: { [symbolID: string]: SKLayer };
     // 原稿 UUID → 图层名（override path 可读化）
     nameByUUID: { [uuid: string]: string };
+    // 配对失败是静默降级，必须留观测口：注入结束后条件挂到 exportB.restorePairingStats
+    stats: PairingStats;
 };
 
 const collectNames = (layer: SKLayer, ctx: AnnotateContext): void => {
@@ -42,25 +54,66 @@ const isCompatible = (aClass: string, bClass: string): boolean => {
 };
 
 /**
- * 子节点配对：数量一致按 index 硬配（快路径，覆盖绝大多数画板）；
- * 不一致时按 (name, class 兼容) 做保持顺序的贪心匹配。
+ * 子节点配对：数量一致且逐位 name/_class 兼容时按 index 硬配（快路径，覆盖绝大多数画板）；
+ * 否则先按 (name, contentHash 全等) 配——内容跟人走，同名兄弟 z 序调换也不会错位注入
+ * （靠 annotateStableIds 里 hash 先于配对注入保证 A/B 两侧 contentHash 可用）；
+ * 剩余节点再按 (name, class 兼容) 做保持顺序的贪心兜底（override 改过内容的节点 hash
+ * 已不同，按 name 保序配是对的）。
+ * index 硬配前必须逐位校验——复合模式下 A 侧是 master 定义树、B 侧是实例化解绑组，
+ * 两者来源不同（override 换组件可能改变子节点），盲配会给不相关节点注入错误 stableId。
  */
 const pairChildren = (aChildren: SKLayer[], bChildren: SKLayer[]): (SKLayer | undefined)[] => {
     if (aChildren.length === bChildren.length) {
-        return bChildren.map((_b, i) => aChildren[i]);
+        // 同名兄弟的重名计数：重名 + 同 class + 两侧 hash 均在但不等 → 疑似 z 序调换，
+        // 踢出快路径交给下方 hash 轮跨顺序找回正主（名字唯一时 hash 不等只是内容被改，index 硬配仍正确）
+        const nameCount: { [name: string]: number } = {};
+        aChildren.forEach((a) => { nameCount[a.name] = (nameCount[a.name] || 0) + 1; });
+        const indexAligned = bChildren.every((b, i) => {
+            const a = aChildren[i];
+            if (a.name !== b.name || !isCompatible(a._class, b._class)) return false;
+            if (nameCount[a.name] > 1 && a._class === b._class) {
+                // A 侧用只读计算（不污染输入树），B 侧读已注入值
+                const bHash = (b as any).contentHash;
+                if (bHash && contentHashOf(a) !== bHash) return false;
+            }
+            return true;
+        });
+        if (indexAligned) {
+            return bChildren.map((_b, i) => aChildren[i]);
+        }
     }
-    const paired: (SKLayer | undefined)[] = [];
-    let cursor = 0;
-    bChildren.forEach((b) => {
-        let match: SKLayer | undefined;
-        for (let i = cursor; i < aChildren.length; i++) {
-            if (aChildren[i].name === b.name && isCompatible(aChildren[i]._class, b._class)) {
-                match = aChildren[i];
-                cursor = i + 1;
+    const paired: (SKLayer | undefined)[] = new Array(bChildren.length);
+    const aTaken: boolean[] = new Array(aChildren.length);
+
+    // 第一轮：name + contentHash 全等——跨顺序找正主（z 序调换场景），故从头扫描不保序；
+    // 同名同 hash 多胞胎（视觉等价节点）靠 aTaken 按出现顺序领取
+    bChildren.forEach((b, bi) => {
+        const bHash = (b as any).contentHash;
+        if (!bHash) return;
+        for (let i = 0; i < aChildren.length; i++) {
+            if (aTaken[i]) continue;
+            if (aChildren[i].name === b.name
+                && contentHashOf(aChildren[i]) === bHash
+                && isCompatible(aChildren[i]._class, b._class)) {
+                paired[bi] = aChildren[i];
+                aTaken[i] = true;
                 break;
             }
         }
-        paired.push(match);
+    });
+
+    // 第二轮：剩余（内容被改、无 hash 线索的节点）按 (name, class 兼容) 从头扫描贪心——
+    // aTaken 保证不重复领取；同名者按两侧出现顺序对位（无证据时假定顺序未变）
+    bChildren.forEach((b, bi) => {
+        if (paired[bi]) return;
+        for (let i = 0; i < aChildren.length; i++) {
+            if (aTaken[i]) continue;
+            if (aChildren[i].name === b.name && isCompatible(aChildren[i]._class, b._class)) {
+                paired[bi] = aChildren[i];
+                aTaken[i] = true;
+                break;
+            }
+        }
     });
     return paired;
 };
@@ -116,11 +169,7 @@ const pairWalk = (aNode: SKLayer, bNode: SKLayer, prefix: string, ctx: AnnotateC
             const master = symbolID ? ctx.masterBySymbolID[symbolID] : undefined;
             if (master && Array.isArray(master.layers) && Array.isArray(bNode.layers)) {
                 // 复合模式：A 侧换成 master 定义树，前缀 = 实例路径
-                const paired = pairChildren(master.layers, bNode.layers);
-                bNode.layers.forEach((bChild, i) => {
-                    const aChild = paired[i];
-                    if (aChild) pairWalk(aChild, bChild, stableId, ctx);
-                });
+                pairAndWalk(master.layers, bNode.layers, stableId, ctx);
             }
             // master 缺失（Library 外部库 / 降级）：展开树子节点无 stableId，仅内容指纹兜底
         }
@@ -130,10 +179,22 @@ const pairWalk = (aNode: SKLayer, bNode: SKLayer, prefix: string, ctx: AnnotateC
     const aChildren = Array.isArray(aNode.layers) ? aNode.layers : [];
     const bChildren = Array.isArray(bNode.layers) ? bNode.layers : [];
     if (!bChildren.length) return;
+    pairAndWalk(aChildren, bChildren, prefix, ctx);
+};
+
+/** 配对 + 递归下钻；配不上的 B 节点计入 ctx.stats（其整棵子树无 stableId，仅内容指纹兜底） */
+const pairAndWalk = (aChildren: SKLayer[], bChildren: SKLayer[], prefix: string, ctx: AnnotateContext): void => {
     const paired = pairChildren(aChildren, bChildren);
     bChildren.forEach((bChild, i) => {
         const aChild = paired[i];
-        if (aChild) pairWalk(aChild, bChild, prefix, ctx);
+        if (aChild) {
+            pairWalk(aChild, bChild, prefix, ctx);
+        } else {
+            ctx.stats.unpaired++;
+            if (ctx.stats.unpairedPaths.length < UNPAIRED_PATH_LIMIT) {
+                ctx.stats.unpairedPaths.push(prefix ? `${prefix}/${bChild.name}` : bChild.name);
+            }
+        }
     });
 };
 
@@ -158,6 +219,7 @@ export const annotateStableIds = (exportB: SKLayer, exportA?: SKLayer, mastersC?
         hash: createShortHashContext(),
         masterBySymbolID: {},
         nameByUUID: {},
+        stats: { unpaired: 0, unpairedPaths: [] },
     };
 
     if (Array.isArray(mastersC)) {
@@ -170,11 +232,26 @@ export const annotateStableIds = (exportB: SKLayer, exportA?: SKLayer, mastersC?
     }
     if (exportA) collectNames(exportA, ctx);
 
-    if (exportA) {
-        pairWalk(exportA, exportB, '', ctx);
+    // 内容指纹先于配对注入：pairChildren 的 name+contentHash 全等轮依赖 A/B（及复合模式下
+    // master/B）两侧 hash 可比，否则同名兄弟在贪心兜底轮会按顺序错位注入 stableId。
+    // B / masters 原地注入（文档化行为）；A 侧配对时用 contentHashOf 只读计算，不污染输入。
+    annotateHashes(exportB);
+    if (Array.isArray(mastersC)) {
+        mastersC.forEach((master) => {
+            if (master) annotateHashes(master);
+        });
     }
 
-    // master 定义树也注入稳定 ID + 内容指纹（components[*].tree 消费）
+    if (exportA) {
+        pairWalk(exportA, exportB, '', ctx);
+        // 配对失败可观测性：条件挂到 B 根（同构画板不写此 key，产物不受影响），
+        // 插件端可据此上报/告警，避免「部分节点静默缺 stableId」无从定位
+        if (ctx.stats.unpaired > 0) {
+            (exportB as any).restorePairingStats = ctx.stats;
+        }
+    }
+
+    // master 定义树也注入稳定 ID（components[*].tree 消费；hash 已在配对前注入）
     if (Array.isArray(mastersC)) {
         mastersC.forEach((master) => {
             if (!master) return;
@@ -183,12 +260,8 @@ export const annotateStableIds = (exportB: SKLayer, exportA?: SKLayer, mastersC?
                 (master as any).restoreComponentKey = shortHashOf((master as any).symbolID, ctx.hash);
             }
             annotateMasterTree(master, ctx);
-            annotateHashes(master);
         });
     }
-
-    // 内容指纹与映射无关，整树后序注入（A 缺失时仍可用作 diff 兜底）
-    annotateHashes(exportB);
 
     return exportB;
 };

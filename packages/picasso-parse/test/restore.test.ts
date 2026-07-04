@@ -13,7 +13,15 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { picassoArtboardMeatureParse, picassoArtboardRestoreParse, annotateStableIds } from '../src';
+// 新导出必须走包主入口 import：src/index.ts 是点名导出制，直接引内部路径会漏掉
+// 「parseRestoreDSL/index.ts 导出了但主入口没透传」这类断链
+import {
+    picassoArtboardMeatureParse,
+    picassoArtboardRestoreParse,
+    annotateStableIds,
+    assessRestoreDiffability,
+    toRenderProfile,
+} from '../src';
 import sha1 from '../src/parseRestoreDSL/sha1';
 
 let passed = 0;
@@ -120,7 +128,7 @@ const makeExportB = (a: any): any => {
     assert(restoreText.indexOf('"visible":true') === -1, 'RestoreDSL：不含 visible:true 缺省 key');
     assert(restoreText.indexOf('"rotation":0') === -1, 'RestoreDSL：不含 rotation:0 缺省 key');
     assert(restoreText.indexOf('"opacity":1') === -1, 'RestoreDSL：不含 opacity:1 缺省 key');
-    assert(restore.schemaVersion === '1.1', 'RestoreDSL：schemaVersion = 1.1');
+    assert(restore.schemaVersion === '1.2', 'RestoreDSL：schemaVersion = 1.2');
     assert(restore.meta.units === 'pt', 'RestoreDSL：meta.units = pt');
     assert(!!restore.artboard.absFrame, 'RestoreDSL：根节点携带 absFrame');
     assert(restore.artboard.frame.x === 0 && restore.artboard.frame.y === 0, 'RestoreDSL：根节点坐标归零');
@@ -254,6 +262,116 @@ const makeExportB = (a: any): any => {
         '1.1：attributes 为空时从图层级 textStyle 兜底合成 runs',
     );
     assert(textNode.runs![0].len === 'iPhone 15'.length, '1.1：兜底 run 覆盖整段文本');
+}
+
+// ---------- 8. [1.2] 新增行为 ----------
+{
+    const mkRect = (id: string, name: string, hex: [number, number, number], x: number): any => ({
+        _class: 'rectangle',
+        do_objectID: id,
+        name,
+        isVisible: true,
+        frame: { _class: 'rect', x, y: 0, width: 40, height: 40 },
+        style: {
+            _class: 'style',
+            fills: [{ _class: 'fill', isEnabled: true, fillType: 0, color: { _class: 'color', red: hex[0], green: hex[1], blue: hex[2], alpha: 1 } }],
+        },
+    });
+    const exportA: any = {
+        _class: 'artboard',
+        do_objectID: 'A2-ROOT',
+        name: '画板2',
+        isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 200 },
+        layers: [
+            mkRect('A2-R1', '矩形', [1, 0, 0], 0),   // 红
+            mkRect('A2-R2', '矩形', [0, 0, 1], 50),  // 蓝
+            {
+                _class: 'group',
+                do_objectID: 'A2-G1',
+                name: '图标组',
+                isVisible: true,
+                frame: { _class: 'rect', x: 100, y: 0, width: 40, height: 40 },
+                style: {
+                    _class: 'style',
+                    fills: [{ _class: 'fill', isEnabled: true, fillType: 0, color: { _class: 'color', red: 0.6, green: 0.6, blue: 0.6, alpha: 1 } }],
+                },
+                layers: [mkRect('A2-R3', '子形状', [0, 0, 0], 0)],
+            },
+            {
+                _class: 'text',
+                do_objectID: 'A2-T1',
+                name: '无行高文本',
+                isVisible: true,
+                frame: { _class: 'rect', x: 0, y: 100, width: 100, height: 20 },
+                attributedString: { _class: 'attributedString', string: '测试', attributes: [] },
+                style: {
+                    _class: 'style',
+                    textStyle: {
+                        _class: 'textStyle',
+                        encodedAttributes: {
+                            MSAttributedStringFontAttribute: { _class: 'fontDescriptor', attributes: { name: 'PingFangSC-Regular', size: 14 } },
+                        },
+                    },
+                },
+            },
+        ],
+    };
+
+    // —— 同名兄弟 z 序调换：stableId 必须跟内容走，不得按 index 错位注入 ——
+    const exportB: any = deepCopy(exportA);
+    let n = 0;
+    const rewrite = (node: any): void => { node.do_objectID = `B2-${n++}`; (node.layers || []).forEach(rewrite); };
+    rewrite(exportB);
+    const tmp = exportB.layers[0];
+    exportB.layers[0] = exportB.layers[1];
+    exportB.layers[1] = tmp; // 蓝红调换
+    annotateStableIds(exportB, deepCopy(exportA));
+    assert(exportB.layers[0].stableId === sha1('A2-R2').slice(0, 8), '1.2 配对：z 序调换后蓝矩形仍拿到 A2-R2 的 stableId');
+    assert(exportB.layers[1].stableId === sha1('A2-R1').slice(0, 8), '1.2 配对：z 序调换后红矩形仍拿到 A2-R1 的 stableId');
+    assert(!!exportB.styleHash && exportB.styleHash.length === 8, '1.2：annotate 注入 styleHash');
+
+    // —— styleHash 几何解耦：仅移动 → contentHash 变、styleHash 不变 ——
+    const moved: any = deepCopy(exportA);
+    moved.layers[0].frame.x = 200;
+    annotateStableIds(moved);
+    const orig: any = deepCopy(exportA);
+    annotateStableIds(orig);
+    assert(orig.layers[0].contentHash !== moved.layers[0].contentHash, '1.2 styleHash：移动后 contentHash 变化');
+    assert(orig.layers[0].styleHash === moved.layers[0].styleHash, '1.2 styleHash：移动后 styleHash 不变');
+
+    // —— RestoreDSL 1.2 字段 ——
+    const restore = picassoArtboardRestoreParse(deepCopy(exportA), deepCopy(exportA), undefined, { generatedAt: 'fixed' });
+    const kids = restore.artboard.children!;
+    const groupNode = kids.filter(k => k.name === '图标组')[0];
+    assert(!!groupNode.tint && !groupNode.fills, '1.2 tint：普通编组 fills 落 tint 不落 fills');
+    const textNode = kids.filter(k => k.name === '无行高文本')[0];
+    assert(textNode.effectiveLineHeight === 20, '1.2 行高兜底：单行无行高文本 effectiveLineHeight = frame 高');
+    assert(textNode.runs![0].lineHeight === undefined, '1.2 行高兜底：不回写 runs（保护 hash 与 styleToken）');
+    const rectNode = kids.filter(k => k.name === '矩形')[0];
+    assert(!!rectNode.fills && !rectNode.tint, '1.2 tint：形状节点 fills 语义不变');
+    assert(!!rectNode.styleHash, '1.2：RestoreDSL 节点透传 styleHash');
+
+    // —— toRenderProfile 精简视图 ——
+    const lean = toRenderProfile(restore);
+    const leanText = JSON.stringify(lean);
+    assert(leanText.indexOf('"contentHash"') === -1 && leanText.indexOf('"subtreeHash"') === -1
+        && leanText.indexOf('"styleHash"') === -1, '1.2 renderProfile：剥离三 hash');
+    assert(Object.keys(lean.components).length === 0, '1.2 renderProfile：components 清空');
+    assert(JSON.stringify(restore).indexOf('"contentHash"') > -1, '1.2 renderProfile：输入不被修改');
+
+    // —— assessRestoreDiffability ——
+    const same = assessRestoreDiffability(restore, restore);
+    assert(same.verdict === 'same-artboard' && same.stableIdOverlap === 1, '1.2 diffability：同版判定 same-artboard');
+    const dup = toRenderProfile(restore); // 借精简视图当"复制画板"样本：id 保留原值,先手工抹掉
+    const wipeIds = (node: any): void => { node.id = 'X' + node.id; (node.children || []).forEach(wipeIds); };
+    wipeIds(dup.artboard);
+    // 复制画板：id 全变、内容不变 —— 需要 hash 在位，用原 restore 深拷贝再抹 id
+    const dup2 = JSON.parse(JSON.stringify(restore));
+    wipeIds(dup2.artboard);
+    const dupReport = assessRestoreDiffability(restore, dup2);
+    assert(dupReport.verdict === 'duplicated-artboard', '1.2 diffability：id 全变内容同源判定 duplicated-artboard');
+    assert(dupReport.stableIdOverlap === 0 && dupReport.contentHashOverlap === 1, '1.2 diffability：overlap 数值正确');
 }
 
 console.log(`\nrestore.test: ${passed} passed, ${failed} failed`);

@@ -5,7 +5,13 @@
   "description": "RestoreDSL 输出格式规范（schemaVersion 1.1，导出侧自 @wubafe/picasso-parse 0.0.45-beta.0 起实现）。1.1 相对 1.0 为纯增量变更：所有新增字段均可选，1.0 产物必须原样通过本 Schema 校验。缺省值省略原则：visible:true / rotation:0 / opacity:1 / verticalAlign:'top' / 空数组一律不写。带 [1.1+] 标记的字段为本版新增；$comment 中带 [2.0 讨论] 的为破坏性变更备选项，仅记录不生效。",
   "$comment": "维护约定：本文件与 restoreTypes.ts、RESTORE_SCHEMA_VERSION 同步更新（只加字段升 minor，破坏性变更原则上禁止）。校验方式示例：python3 -m jsonschema 或 ajv validate -s restore-dsl.schema.json -d xxx_restore.json。",
   "type": "object",
-  "required": ["schemaVersion", "meta", "designTokens", "components", "artboard"],
+  "required": [
+    "schemaVersion",
+    "meta",
+    "designTokens",
+    "components",
+    "artboard"
+  ],
   "properties": {
     "schemaVersion": {
       "type": "string",
@@ -14,7 +20,10 @@
     },
     "meta": {
       "type": "object",
-      "required": ["parserVersion", "units"],
+      "required": [
+        "parserVersion",
+        "units"
+      ],
       "properties": {
         "parserVersion": {
           "type": "string",
@@ -22,12 +31,20 @@
         },
         "units": {
           "type": "string",
-          "enum": ["pt"],
+          "enum": [
+            "pt"
+          ],
           "description": "所有几何数值的单位。当前恒为 pt（Sketch 逻辑点）。"
         },
-        "sketchVersion": { "type": "string" },
-        "pluginVersion": { "type": "string" },
-        "documentId": { "type": "string" },
+        "sketchVersion": {
+          "type": "string"
+        },
+        "pluginVersion": {
+          "type": "string"
+        },
+        "documentId": {
+          "type": "string"
+        },
         "generatedAt": {
           "type": "string",
           "description": "ISO 8601 时间戳。"
@@ -40,6 +57,10 @@
           "type": "string",
           "format": "uri",
           "description": "[1.1+] 相对路径图片资源的基地址。所有 image.url / fills[].image.url 若非绝对 URL，必须能以 assetsBaseUrl 为基址解析；导出侧应保证二者必居其一，禁止输出无法解析的本地相对路径（1.0 已知缺陷：偶发 images/xxx.png 相对路径且无基址，消费方无法获取）。"
+        },
+        "assetsScale": {
+          "type": "number",
+          "description": "[1.2+] 切图统一导出倍率（image.scale 缺省时的全局值）。"
         }
       }
     },
@@ -51,10 +72,18 @@
           "type": "object",
           "additionalProperties": {
             "type": "object",
-            "required": ["value", "usages"],
+            "required": [
+              "value",
+              "usages"
+            ],
             "properties": {
-              "value": { "$ref": "#/definitions/hexColor" },
-              "usages": { "type": "integer", "minimum": 1 }
+              "value": {
+                "$ref": "#/definitions/hexColor"
+              },
+              "usages": {
+                "type": "integer",
+                "minimum": 1
+              }
             }
           },
           "$comment": "key 约定自动命名 color-N。"
@@ -63,13 +92,27 @@
           "type": "object",
           "additionalProperties": {
             "type": "object",
-            "required": ["usages"],
+            "required": [
+              "usages"
+            ],
             "properties": {
-              "usages": { "type": "integer", "minimum": 1 },
-              "font": { "type": "string", "description": "PostScript 字体名。" },
-              "size": { "type": "number" },
-              "color": { "$ref": "#/definitions/hexColor" },
-              "lineHeight": { "type": "number" },
+              "usages": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "font": {
+                "type": "string",
+                "description": "PostScript 字体名。"
+              },
+              "size": {
+                "type": "number"
+              },
+              "color": {
+                "$ref": "#/definitions/hexColor"
+              },
+              "lineHeight": {
+                "type": "number"
+              },
               "sourceName": {
                 "type": "string",
                 "description": "[1.1+] Sketch 共享文本样式原名（如 '08 辅助信息 24/1 Default/...'）。1.0 中共享样式名直接做 key、与自动命名 text-N 混杂；1.1 起（已实现）key 统一为 text-N，原名落此字段。"
@@ -85,14 +128,26 @@
       "description": "组件（symbolMaster）定义表，key 为 componentKey（短哈希）。权威语义：实例节点的内联 children 是渲染权威（已应用实例 overrides 后的展开结果）；本表的 tree 是组件原始定义，仅用于复用分析、跨画板去重与 diff，渲染器不应直接消费（除非实例未内联 children 且 meta.componentsOmitted 为 false）。",
       "additionalProperties": {
         "type": "object",
-        "required": ["name", "symbolID", "source"],
+        "required": [
+          "name",
+          "symbolID",
+          "source"
+        ],
         "properties": {
-          "name": { "type": "string", "description": "Sketch 组件全名（含分组路径，'/' 分隔）。" },
-          "symbolID": { "type": "string", "description": "Sketch symbolID（UUID）。" },
+          "name": {
+            "type": "string",
+            "description": "Sketch 组件全名（含分组路径，'/' 分隔）。"
+          },
+          "symbolID": {
+            "type": "string",
+            "description": "Sketch symbolID（UUID）。"
+          },
           "source": {
             "type": "string",
             "description": "组件来源。local = 当前文档；其他值预留（如共享库名）。",
-            "examples": ["local"]
+            "examples": [
+              "local"
+            ]
           },
           "tree": {
             "$ref": "#/definitions/node",
@@ -102,7 +157,11 @@
       }
     },
     "artboard": {
-      "allOf": [{ "$ref": "#/definitions/node" }],
+      "allOf": [
+        {
+          "$ref": "#/definitions/node"
+        }
+      ],
       "description": "画板根节点。树内所有 absFrame 均为画板坐标（根节点恒为 x:0,y:0）。根节点通常带 image（整板截图），供还原对比，不参与渲染。"
     }
   },
@@ -114,30 +173,61 @@
     },
     "frame": {
       "type": "object",
-      "required": ["x", "y", "w", "h"],
+      "required": [
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
       "properties": {
-        "x": { "type": "number" },
-        "y": { "type": "number" },
-        "w": { "type": "number", "minimum": 0 },
-        "h": { "type": "number", "minimum": 0 }
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "minimum": 0
+        },
+        "h": {
+          "type": "number",
+          "minimum": 0
+        }
       },
       "additionalProperties": false
     },
     "gradient": {
       "type": "object",
-      "required": ["type", "from", "to", "stops"],
+      "required": [
+        "type",
+        "from",
+        "to",
+        "stops"
+      ],
       "properties": {
-        "type": { "type": "string", "enum": ["linear", "radial", "angular"] },
+        "type": {
+          "type": "string",
+          "enum": [
+            "linear",
+            "radial",
+            "angular"
+          ]
+        },
         "from": {
           "type": "array",
-          "items": { "type": "number" },
+          "items": {
+            "type": "number"
+          },
           "minItems": 2,
           "maxItems": 2,
           "description": "起点 [x, y]，节点 frame 的单位坐标（0..1 可越界），y 轴向下。linear 为渐变轴起点；radial 为圆心。"
         },
         "to": {
           "type": "array",
-          "items": { "type": "number" },
+          "items": {
+            "type": "number"
+          },
           "minItems": 2,
           "maxItems": 2,
           "description": "终点 [x, y]，语义同 from。radial 时 from→to 距离为半径。"
@@ -147,10 +237,19 @@
           "minItems": 2,
           "items": {
             "type": "object",
-            "required": ["color", "position"],
+            "required": [
+              "color",
+              "position"
+            ],
             "properties": {
-              "color": { "$ref": "#/definitions/hexColor" },
-              "position": { "type": "number", "minimum": 0, "maximum": 1 }
+              "color": {
+                "$ref": "#/definitions/hexColor"
+              },
+              "position": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
             }
           }
         }
@@ -163,18 +262,43 @@
           "type": "string",
           "description": "绝对 URL（https），或相对 meta.assetsBaseUrl 可解析的相对路径。二者必居其一，禁止输出孤立的本地相对路径。"
         },
-        "w": { "type": "number" },
-        "h": { "type": "number" },
-        "mode": { "type": "string", "description": "填充模式（对应 Sketch patternFillType 归一化值，如 fill/fit/stretch/tile）。" }
+        "svgUrl": {
+          "type": "string",
+          "description": "[1.2+] 同一切图的矢量（SVG）版本 URL，与 url（PNG）同时导出时写入（插件端注入）。补登记：1.1 产物已存在此字段但 schema 缺失。"
+        },
+        "w": {
+          "type": "number"
+        },
+        "h": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "number",
+          "description": "[1.2+] 位图导出倍率（如 2 表示 @2x：像素尺寸 = pt 尺寸 x 2）。缺省时取 meta.assetsScale。"
+        },
+        "frame": {
+          "$ref": "#/definitions/frame",
+          "description": "[1.2+] 位图实际渲染范围（画板绝对坐标，pt）。切图画布 = 内容 bounds（含阴影/模糊 bleed），可能大于节点 frame 且偏移不对称；消费方必须按本字段摆放位图，缺失时才回退到节点 frame。"
+        },
+        "mode": {
+          "type": "string",
+          "description": "填充模式（对应 Sketch patternFillType 归一化值，如 fill/fit/stretch/tile）。"
+        }
       }
     },
     "fill": {
       "type": "object",
       "description": "填充。color / gradient / image 三选一（同层多填充按数组顺序自下而上叠加）。",
       "properties": {
-        "color": { "$ref": "#/definitions/hexColor" },
-        "gradient": { "$ref": "#/definitions/gradient" },
-        "image": { "$ref": "#/definitions/imageRef" },
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "gradient": {
+          "$ref": "#/definitions/gradient"
+        },
+        "image": {
+          "$ref": "#/definitions/imageRef"
+        },
         "token": {
           "type": "string",
           "description": "[1.1+] 指向 designTokens.colors 的 key（如 'color-3'），建立节点与 token 的正向关联。"
@@ -183,52 +307,127 @@
     },
     "border": {
       "type": "object",
-      "required": ["thickness", "position"],
+      "required": [
+        "thickness",
+        "position"
+      ],
       "properties": {
-        "thickness": { "type": "number", "minimum": 0 },
+        "thickness": {
+          "type": "number",
+          "minimum": 0
+        },
         "position": {
           "type": "string",
-          "enum": ["inside", "center", "outside"],
+          "enum": [
+            "inside",
+            "center",
+            "outside"
+          ],
           "description": "描边相对路径的位置。注意 CSS border 仅能表达 inside（配合 box-sizing:border-box）；center/outside 的消费方需用 box-shadow/outline 近似或自行换算 frame。",
           "$comment": "[2.0 讨论] 面向 web 还原时导出侧预换算为 inside + 调整 frame。"
         },
-        "color": { "$ref": "#/definitions/hexColor" },
-        "gradient": { "$ref": "#/definitions/gradient" },
-        "dash": { "type": "array", "items": { "type": "number" } }
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "gradient": {
+          "$ref": "#/definitions/gradient"
+        },
+        "dash": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
       }
     },
     "shadow": {
       "type": "object",
-      "required": ["color", "x", "y", "blur", "spread"],
+      "required": [
+        "color",
+        "x",
+        "y",
+        "blur",
+        "spread"
+      ],
       "properties": {
-        "color": { "$ref": "#/definitions/hexColor" },
-        "x": { "type": "number" },
-        "y": { "type": "number" },
-        "blur": { "type": "number", "minimum": 0 },
-        "spread": { "type": "number" }
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "blur": {
+          "type": "number",
+          "minimum": 0
+        },
+        "spread": {
+          "type": "number"
+        }
       }
     },
     "textRun": {
       "type": "object",
-      "required": ["from", "len"],
+      "required": [
+        "from",
+        "len"
+      ],
       "properties": {
-        "from": { "type": "integer", "minimum": 0, "description": "起始字符下标（按 UTF-16 code unit，与 text 字段切片一致）。" },
-        "len": { "type": "integer", "minimum": 0 },
-        "font": { "type": "string", "description": "PostScript 字体名（如 58SmileFont-Bold）。" },
-        "fontFamily": { "type": "string", "description": "字体族名（如 58SmileFont / PingFang SC），供消费方做 font-family fallback。" },
-        "fontWeight": { "type": "integer", "minimum": 100, "maximum": 900 },
-        "italic": { "type": "boolean" },
-        "size": { "type": "number" },
-        "color": { "$ref": "#/definitions/hexColor" },
-        "lineHeight": { "type": "number", "description": "行高（pt 绝对值，非倍数）。缺省时消费方按字体默认行高处理。" },
-        "letterSpacing": { "type": "number" },
+        "from": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "起始字符下标（按 UTF-16 code unit，与 text 字段切片一致）。"
+        },
+        "len": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "font": {
+          "type": "string",
+          "description": "PostScript 字体名（如 58SmileFont-Bold）。"
+        },
+        "fontFamily": {
+          "type": "string",
+          "description": "字体族名（如 58SmileFont / PingFang SC），供消费方做 font-family fallback。"
+        },
+        "fontWeight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 900
+        },
+        "italic": {
+          "type": "boolean"
+        },
+        "size": {
+          "type": "number"
+        },
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "lineHeight": {
+          "type": "number",
+          "description": "行高（pt 绝对值，非倍数）。缺省时消费方按字体默认行高处理。"
+        },
+        "letterSpacing": {
+          "type": "number"
+        },
         "align": {
           "type": "string",
-          "enum": ["left", "right", "center", "justify"],
+          "enum": [
+            "left",
+            "right",
+            "center",
+            "justify"
+          ],
           "description": "水平对齐。段落属性挂在 run 级是 1.0 的历史设计，1.1 起优先消费节点级 align，run 级仅作兼容回退。",
           "$comment": "[2.0 讨论] 从 run 级移除。"
         },
-        "decoration": { "type": "string", "description": "文本装饰（如 underline / line-through）。" },
+        "decoration": {
+          "type": "string",
+          "description": "文本装饰（如 underline / line-through）。"
+        },
         "styleToken": {
           "type": "string",
           "description": "[1.1+] 指向 designTokens.textStyles 的 key，建立 run 与文本样式 token 的正向关联。"
@@ -237,25 +436,52 @@
     },
     "constraints": {
       "type": "object",
-      "required": ["pin", "fixedWidth", "fixedHeight"],
+      "required": [
+        "pin",
+        "fixedWidth",
+        "fixedHeight"
+      ],
       "properties": {
         "pin": {
           "type": "object",
-          "required": ["left", "right", "top", "bottom"],
+          "required": [
+            "left",
+            "right",
+            "top",
+            "bottom"
+          ],
           "properties": {
-            "left": { "type": "boolean" },
-            "right": { "type": "boolean" },
-            "top": { "type": "boolean" },
-            "bottom": { "type": "boolean" }
+            "left": {
+              "type": "boolean"
+            },
+            "right": {
+              "type": "boolean"
+            },
+            "top": {
+              "type": "boolean"
+            },
+            "bottom": {
+              "type": "boolean"
+            }
           }
         },
-        "fixedWidth": { "type": "boolean" },
-        "fixedHeight": { "type": "boolean" }
+        "fixedWidth": {
+          "type": "boolean"
+        },
+        "fixedHeight": {
+          "type": "boolean"
+        }
       }
     },
     "node": {
       "type": "object",
-      "required": ["id", "type", "name", "frame", "absFrame"],
+      "required": [
+        "id",
+        "type",
+        "name",
+        "frame",
+        "absFrame"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -263,20 +489,44 @@
         },
         "type": {
           "type": "string",
-          "enum": ["artboard", "group", "rect", "oval", "path", "text", "image", "slice"],
+          "enum": [
+            "artboard",
+            "group",
+            "rect",
+            "oval",
+            "path",
+            "text",
+            "image",
+            "slice"
+          ],
           "description": "节点类型。shapePath/triangle/star/polygon 等矢量类统一归为 path；symbolInstance/symbolMaster/shapeGroup 归为 group。"
         },
-        "name": { "type": "string", "description": "Sketch 图层名。仅用于 diff 模糊配对与调试，不参与 contentHash。" },
+        "name": {
+          "type": "string",
+          "description": "Sketch 图层名。仅用于 diff 模糊配对与调试，不参与 contentHash。"
+        },
         "frame": {
-          "allOf": [{ "$ref": "#/definitions/frame" }],
+          "allOf": [
+            {
+              "$ref": "#/definitions/frame"
+            }
+          ],
           "description": "相对最近坐标参照祖先的 frame（Sketch 原始值，参照系不保证是直接父节点）。消费方应一律使用 absFrame 定位。",
           "$comment": "[2.0 讨论] 要么保证严格相对直接父节点，要么移除本字段。"
         },
         "absFrame": {
-          "allOf": [{ "$ref": "#/definitions/frame" }],
+          "allOf": [
+            {
+              "$ref": "#/definitions/frame"
+            }
+          ],
           "description": "所属树根坐标系下的绝对 frame：artboard 树内为画板坐标，components[].tree 内为组件本地坐标（树根恒为 x:0,y:0）。rotation 非 0 时记录的是未旋转时的 frame。"
         },
-        "visible": { "type": "boolean", "default": true, "description": "缺省 true 省略。" },
+        "visible": {
+          "type": "boolean",
+          "default": true,
+          "description": "缺省 true 省略。"
+        },
         "rotation": {
           "type": "number",
           "default": 0,
@@ -289,33 +539,84 @@
           "default": 1,
           "description": "缺省 1 省略。注意 opacity:0 的节点会被显式输出（多为热区/占位），消费方不应丢弃其子树。"
         },
-        "constraints": { "$ref": "#/definitions/constraints" },
+        "constraints": {
+          "$ref": "#/definitions/constraints"
+        },
         "stack": {
           "type": "object",
-          "required": ["direction"],
+          "required": [
+            "direction"
+          ],
           "properties": {
-            "direction": { "type": "string", "enum": ["horizontal", "vertical"] },
-            "spacing": { "type": "number" }
+            "direction": {
+              "type": "string",
+              "enum": [
+                "horizontal",
+                "vertical"
+              ]
+            },
+            "spacing": {
+              "type": "number"
+            }
           },
           "description": "Smart Layout 堆叠信息（若有）。"
         },
         "borderRadius": {
           "type": "array",
-          "items": { "type": "number", "minimum": 0 },
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
           "minItems": 4,
           "maxItems": 4,
           "description": "四角圆角 [左上, 右上, 右下, 左下]（与 CSS border-radius 四值顺序一致）。"
         },
-        "fills": { "type": "array", "items": { "$ref": "#/definitions/fill" } },
-        "borders": { "type": "array", "items": { "$ref": "#/definitions/border" } },
-        "shadows": { "type": "array", "items": { "$ref": "#/definitions/shadow" } },
-        "innerShadows": { "type": "array", "items": { "$ref": "#/definitions/shadow" } },
+        "fills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fill"
+          }
+        },
+        "tint": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fill"
+          },
+          "description": "[1.2+] 普通编组（非 shapeGroup）上的填充是「子图标着色提示」而非背景——渲染成背景会出现色块。1.2 起这类 fills 落本字段，group 节点的 fills 字段仅剩 shapeGroup 真填充一种含义。"
+        },
+        "borders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/border"
+          }
+        },
+        "shadows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/shadow"
+          }
+        },
+        "innerShadows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/shadow"
+          }
+        },
         "blur": {
           "type": "object",
-          "required": ["type", "radius"],
+          "required": [
+            "type",
+            "radius"
+          ],
           "properties": {
-            "type": { "type": "string", "description": "gaussian / background / motion / zoom。" },
-            "radius": { "type": "number", "minimum": 0 }
+            "type": {
+              "type": "string",
+              "description": "gaussian / background / motion / zoom。"
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0
+            }
           }
         },
         "svgPath": {
@@ -324,57 +625,106 @@
         },
         "windingRule": {
           "type": "string",
-          "enum": ["evenodd", "nonzero"],
+          "enum": [
+            "evenodd",
+            "nonzero"
+          ],
           "default": "evenodd",
           "description": "[1.1+] svgPath 的填充规则。1.0 未导出，消费方只能猜测（Sketch 常用 evenodd）；1.1 起显式输出，缺省 evenodd 省略。"
         },
         "booleanOperation": {
           "type": "string",
-          "enum": ["union", "subtract", "intersect", "difference"],
+          "enum": [
+            "union",
+            "subtract",
+            "intersect",
+            "difference"
+          ],
           "description": "[1.1+] 该节点参与父级布尔运算的运算符。1.0 丢失此信息导致无 fill 的减形 path 成为不可还原的死数据；1.1 实现取「保留本字段由消费方合成」策略（导出侧预合并为单一 svgPath 留作后续优化）。注意布尔组首个子节点通常无运算符（作为基形）。"
+        },
+        "shapeGroup": {
+          "type": "boolean",
+          "description": "[1.2+] 布尔运算形状组标记：type 仍为 group，但 fills 为真实填充、children 为参与布尔运算的子路径。缺省 false 省略。"
         },
         "flip": {
           "type": "object",
           "properties": {
-            "x": { "type": "boolean" },
-            "y": { "type": "boolean" }
+            "x": {
+              "type": "boolean"
+            },
+            "y": {
+              "type": "boolean"
+            }
           },
           "description": "[1.1+] 镜像翻转（Sketch isFlippedHorizontal / isFlippedVertical）。x = 水平翻转，y = 垂直翻转，仅有翻转时输出（CSS 对应 transform: scaleX(-1) / scaleY(-1)，围绕节点中心）。1.0 丢失此信息导致翻转图标方向错误。"
         },
-        "text": { "type": "string", "description": "text 节点的完整字符串。" },
+        "text": {
+          "type": "string",
+          "description": "text 节点的完整字符串。"
+        },
         "textResizing": {
           "type": "string",
-          "enum": ["auto-width", "auto-height", "fixed"],
+          "enum": [
+            "auto-width",
+            "auto-height",
+            "fixed"
+          ],
           "description": "文本框行为（Sketch textBehaviour）。auto-width = 单行不换行、宽度随内容；auto-height = 固定宽度自动换行增高；fixed = 宽高全固定。1.0 中源数据缺 textBehaviour 时省略——消费方在缺失设计字体、fallback 字体量宽偏大时无法判断是否允许换行，导致布局破坏；1.1 起导出侧应尽力必写（text 节点）。"
         },
         "verticalAlign": {
           "type": "string",
-          "enum": ["top", "middle", "bottom"],
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ],
           "default": "top",
           "description": "文本垂直对齐。缺省 top 省略。"
         },
         "align": {
           "type": "string",
-          "enum": ["left", "right", "center", "justify"],
+          "enum": [
+            "left",
+            "right",
+            "center",
+            "justify"
+          ],
           "description": "[1.1+] 节点级段落水平对齐（取自 run 级 align 的归一：全段一致时上提）。消费方优先取本字段，缺失时回退 runs[0].align。"
         },
         "runs": {
           "type": "array",
-          "items": { "$ref": "#/definitions/textRun" },
+          "items": {
+            "$ref": "#/definitions/textRun"
+          },
           "description": "富文本分段。runs 的 [from, from+len) 区间应完整覆盖 text 且互不重叠。"
         },
+        "effectiveLineHeight": {
+          "type": "number",
+          "description": "[1.2+] runs 无显式 lineHeight 时的有效行高（pt）。单行自适应文本取 frame 高（即 Sketch 按字体默认行高实算的值），多行按 1.4x 字号近似；textResizing=fixed 不写。消费方取值顺序：run.lineHeight ?? effectiveLineHeight ?? 字体默认。"
+        },
         "image": {
-          "allOf": [{ "$ref": "#/definitions/imageRef" }],
+          "allOf": [
+            {
+              "$ref": "#/definitions/imageRef"
+            }
+          ],
           "description": "位图内容。image 节点必有；group 节点带 image 表示该组已整组导出为切图（见 renderHint）；artboard 根节点带 image 为整板截图（仅供对比）。"
         },
         "renderHint": {
           "type": "string",
-          "enum": ["image", "vector"],
+          "enum": [
+            "image",
+            "vector"
+          ],
           "description": "[1.1+] 带 image 的 group 的渲染意图，由导出侧判定逻辑（handleImage / 纯矢量原子组整组导出）直接落数据：image = 矢量子树不可精确还原（含布尔运算丢失、遮罩、不规则样式），必须用切图渲染，children 仅供结构分析；vector = 切图仅为冗余快照，优先矢量渲染。1.0 缺此字段时消费方只能按'有 image 即用切图'的保守策略。"
         },
         "rasterizeReason": {
           "type": "string",
-          "enum": ["slice", "irregular-vector", "export-format"],
+          "enum": [
+            "slice",
+            "irregular-vector",
+            "export-format"
+          ],
           "description": "[1.1+] 整组切图的判定原因：slice = 设计师显式放置切片；irregular-vector = 不规则矢量（handleIregularLayer 判定）；export-format = 图层自带 exportFormats。供还原质量归因与 handleJudge 边界回归用。"
         },
         "componentKey": {
@@ -390,6 +740,10 @@
           "pattern": "^[0-9a-f]{8,12}$",
           "description": "节点自身样式内容指纹（不含 name、绝对坐标与 children），用于跨版本 diff 的节点配对。"
         },
+        "styleHash": {
+          "type": "string",
+          "description": "[1.2+] 无几何内容指纹：contentSignature 去掉 frame 后的 sha1 前 8 位。与 contentHash 组成两轮 diff 接力——contentHash 全等=未变；仅 styleHash 全等=移动未改样式（moved）。"
+        },
         "subtreeHash": {
           "type": "string",
           "pattern": "^[0-9a-f]{8,12}$",
@@ -397,22 +751,64 @@
         },
         "children": {
           "type": "array",
-          "items": { "$ref": "#/definitions/node" },
+          "items": {
+            "$ref": "#/definitions/node"
+          },
           "description": "子节点，数组顺序即 z 序（靠前的在下层）。"
         }
       },
       "allOf": [
         {
-          "if": { "properties": { "type": { "const": "text" } }, "required": ["type"] },
-          "then": { "required": ["text", "runs"] }
+          "if": {
+            "properties": {
+              "type": {
+                "const": "text"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "text",
+              "runs"
+            ]
+          }
         },
         {
-          "if": { "properties": { "type": { "const": "path" } }, "required": ["type"] },
-          "then": { "required": ["svgPath"] }
+          "if": {
+            "properties": {
+              "type": {
+                "const": "path"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "svgPath"
+            ]
+          }
         },
         {
-          "if": { "properties": { "type": { "const": "image" } }, "required": ["type"] },
-          "then": { "required": ["image"] }
+          "if": {
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "image"
+            ]
+          }
         }
       ]
     }

@@ -13,6 +13,7 @@ import filterHideLayer from '../parseArtboard/filterHideLayer';
 import annotateStableIds from './annotateStableIds';
 import mapNode from './mapNode';
 import aggregateDesignTokens from './designTokens';
+import { textStyleKey } from './normalize';
 import {
     RestoreDSL,
     RestoreMetaOptions,
@@ -25,6 +26,9 @@ import {
 
 export { annotateStableIds };
 export * from './restoreTypes';
+export { assessRestoreDiffability } from './diffability';
+export type { DiffabilityReport, DiffabilityVerdict } from './diffability';
+export { toRenderProfile } from './renderProfile';
 
 const deepCopy = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
@@ -50,8 +54,7 @@ const linkTokens = (root: RestoreNode, tokens: RestoreDesignTokens): void => {
     if (tokens.textStyles) {
         Object.keys(tokens.textStyles).forEach((name) => {
             const entry = tokens.textStyles![name];
-            const key = `${entry.font || ''}|${entry.size !== undefined ? entry.size : ''}|${entry.color || ''}|${entry.lineHeight !== undefined ? entry.lineHeight : ''}`;
-            styleTokenByKey[key] = name;
+            styleTokenByKey[textStyleKey(entry)] = name;
         });
     }
 
@@ -62,7 +65,7 @@ const linkTokens = (root: RestoreNode, tokens: RestoreDesignTokens): void => {
             }
         });
         (node.runs || []).forEach((run) => {
-            const key = `${run.font || ''}|${run.size !== undefined ? run.size : ''}|${run.color || ''}|${run.lineHeight !== undefined ? run.lineHeight : ''}`;
+            const key = textStyleKey(run);
             if (styleTokenByKey[key]) {
                 run.styleToken = styleTokenByKey[key];
             }
@@ -97,8 +100,12 @@ export const picassoArtboardRestoreParse = (
 ): RestoreDSL => {
     const opts = options || {};
 
-    // 幂等注入：已注入（有 contentHash）则跳过，保证与四种存量 DSL 消费同一批 stableId/hash
-    if (!(exportB as any).contentHash) {
+    // 幂等注入：已注入则跳过，保证与四种存量 DSL 消费同一批 stableId/hash。
+    // 只查 B 根 contentHash 不够——若调用方复用已注入的 B 树但传入了新的（未注入）mastersC，
+    // 新 masters 缺 restoreComponentKey 会被下方 components 组装静默整体丢弃，故一并校验
+    const mastersAnnotated = !Array.isArray(mastersC)
+        || mastersC.every((master: any) => !master || !master.symbolID || !!master.restoreComponentKey);
+    if (!(exportB as any).contentHash || !mastersAnnotated) {
         annotateStableIds(exportB, exportA, mastersC);
     }
 
@@ -111,6 +118,8 @@ export const picassoArtboardRestoreParse = (
 
     // —— components 字典（symbolMaster 定义树） ——
     const components: { [key: string]: RestoreComponentDef } = {};
+    const tokenSourceTrees: SKLayer[] = [prepared];
+    const componentTrees: RestoreNode[] = [];
     if (Array.isArray(mastersC)) {
         mastersC.forEach((master: any) => {
             if (!master || !master.symbolID || !master.restoreComponentKey) return;
@@ -122,14 +131,18 @@ export const picassoArtboardRestoreParse = (
             const preparedMaster = prepareTree(master);
             if (preparedMaster) {
                 def.tree = mapNode(preparedMaster, null);
+                tokenSourceTrees.push(preparedMaster);
+                componentTrees.push(def.tree);
             }
             components[master.restoreComponentKey] = def;
         });
     }
 
-    // —— designTokens（在预处理后的可见树上聚合，随后回写节点级反向关联） ——
-    const designTokens = aggregateDesignTokens(prepared);
+    // —— designTokens（画板 + 组件定义树统一聚合，再对两侧回写节点级反向关联，
+    //    保证同一 hex/文本样式在 artboard 树与 components[*].tree 中 token 归属一致） ——
+    const designTokens = aggregateDesignTokens(tokenSourceTrees);
     linkTokens(artboard, designTokens);
+    componentTrees.forEach(tree => linkTokens(tree, designTokens));
 
     // —— meta ——
     const meta: RestoreDSL['meta'] = {

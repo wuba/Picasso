@@ -1,11 +1,11 @@
 /**
- * designTokens 聚合：全画板去重汇总。
+ * designTokens 聚合：画板 + 组件定义树去重汇总。
  * 一期实现「共享样式名 + 高频值聚合」两个来源；Color Variables（swatches）为文档级数据，
  * 画板级导出取不到变量名，降级为高频值自动命名（color-1 / text-1 按使用频次排序）。
  */
 import { SKLayer } from '../types';
 import { RestoreDesignTokens } from './restoreTypes';
-import { colorToHex, textRunsToRestore } from './normalize';
+import { fillsToRestore, bordersToRestore, textRunsToRestore, textStyleKey } from './normalize';
 
 const COLOR_LIMIT = 24;
 const TEXT_STYLE_LIMIT = 16;
@@ -21,26 +21,21 @@ type TextStat = {
 };
 
 const collect = (layer: SKLayer, colors: { [hex: string]: ColorStat }, texts: { [key: string]: TextStat }): void => {
-    const style = layer.style;
     const bumpColor = (hex?: string): void => {
         if (!hex) return;
         if (!colors[hex]) colors[hex] = { value: hex, usages: 0 };
         colors[hex].usages++;
     };
 
-    if (style) {
-        (style.fills || []).forEach((fill: any) => {
-            if (fill && fill.isEnabled && fill.fillType === 0) bumpColor(colorToHex(fill.color));
-        });
-        (style.borders || []).forEach((border: any) => {
-            if (border && border.isEnabled && border.fillType !== 1) bumpColor(colorToHex(border.color));
-        });
-    }
+    // 与 mapNode 输出同源取色（fillsToRestore 已把 fill 级 contextSettings.opacity 并入 alpha 段），
+    // 保证登记进 token 表的 hex 与节点 fills[].color 完全一致，linkTokens 查表才能命中
+    fillsToRestore(layer).forEach((fill) => bumpColor(fill.color));
+    bordersToRestore(layer).forEach((border) => bumpColor(border.color));
 
     if (layer._class === 'text' && layer.attributedString) {
         textRunsToRestore(layer).forEach((run) => {
             bumpColor(run.color);
-            const key = `${run.font || ''}|${run.size || ''}|${run.color || ''}|${run.lineHeight || ''}`;
+            const key = textStyleKey(run);
             if (!texts[key]) {
                 texts[key] = {
                     font: run.font,
@@ -63,10 +58,11 @@ const collect = (layer: SKLayer, colors: { [hex: string]: ColorStat }, texts: { 
     }
 };
 
-export const aggregateDesignTokens = (artboard: SKLayer): RestoreDesignTokens => {
+/** @param trees 参与聚合的树列表（画板 + 各组件定义树），单树入参兼容保留 */
+export const aggregateDesignTokens = (trees: SKLayer | SKLayer[]): RestoreDesignTokens => {
     const colorStats: { [hex: string]: ColorStat } = {};
     const textStats: { [key: string]: TextStat } = {};
-    collect(artboard, colorStats, textStats);
+    (Array.isArray(trees) ? trees : [trees]).forEach(tree => collect(tree, colorStats, textStats));
 
     const tokens: RestoreDesignTokens = {};
 

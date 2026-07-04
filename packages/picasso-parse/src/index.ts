@@ -91,8 +91,14 @@ export const picassoArtboardLowcodeParse = (layer: SKLayer): Component => {
 /**
  * RestoreDSL（结构保真中间表示）解析 + 稳定 ID 注入。
  * 注意：picassoArtboardRestoreParse 签名与上述四个方法不同（三份导出输入），见 README。
+ *
+ * assessRestoreDiffability：跨版本 diff 前置判定（复制画板检测），服务端 diff 第一步；
+ * toRenderProfile：LLM 还原精简视图（剥 hash/组件字典/透明占位，全量产物照常落库）。
  */
 export { picassoArtboardRestoreParse, annotateStableIds } from './parseRestoreDSL';
+export { assessRestoreDiffability } from './parseRestoreDSL/diffability';
+export type { DiffabilityReport, DiffabilityVerdict } from './parseRestoreDSL/diffability';
+export { toRenderProfile } from './parseRestoreDSL/renderProfile';
 export * from './parseRestoreDSL/restoreTypes';
 
 // 代码生成

@@ -93,12 +93,31 @@ export type RestoreNode = {
     verticalAlign?: string;
     align?: string; // 节点级段落水平对齐（runs 全段一致时上提，left 缺省省略）
     runs?: RestoreTextRun[];
+    // [1.2] runs 无显式行高时的有效行高（pt）：单行取 frame 高（= Sketch 实算默认行高），
+    // 多行按 1.4x 字号近似；textResizing=fixed 不写。消费方取 run.lineHeight ?? effectiveLineHeight
+    effectiveLineHeight?: number;
+    // [1.2] 普通编组的 fills 是子图标着色提示（tint），不渲染为背景（shapeGroup 的真填充仍在 fills）
+    tint?: RestoreFill[];
+    // [1.2] 布尔运算形状组标记：type 同为 group，但 fills 为真实填充、children 为布尔子路径
+    shapeGroup?: boolean;
     renderHint?: string; // 带 image 的 group 渲染意图：image = 必须用切图渲染（插件端注入）
     rasterizeReason?: string; // 整组切图判定原因：slice / irregular-vector / export-format（插件端注入）
-    image?: { url?: string; w?: number; h?: number; mode?: string };
+    // [1.2] image.frame：切图位图的实际渲染范围（画板绝对坐标，含阴影/模糊 bleed，可能大于节点
+    // frame，插件端注入）；image.scale：位图导出倍率；image.svgUrl：同切图的矢量版本（插件端注入）
+    image?: {
+        url?: string;
+        svgUrl?: string;
+        w?: number;
+        h?: number;
+        scale?: number;
+        frame?: RestoreFrame;
+        mode?: string;
+    };
     componentKey?: string;
     overrides?: { [key: string]: any };
     contentHash?: string;
+    // [1.2] 无几何内容指纹（contentSignature 去掉 frame）：识别「仅移动未改样式」的第二配对轮
+    styleHash?: string;
     subtreeHash?: string;
     children?: RestoreNode[];
 };
@@ -131,6 +150,7 @@ export type RestoreMetaOptions = {
     generatedAt?: string;
     componentsOmitted?: boolean;
     assetsBaseUrl?: string; // 相对路径图片资源的基地址（图片走 WOS 绝对 URL 时无需传）
+    assetsScale?: number; // [1.2] 切图统一导出倍率（image.scale 缺省时的全局值，插件端按 sliceSize 计算传入）
 };
 
 export type RestoreDSL = {
@@ -144,6 +164,7 @@ export type RestoreDSL = {
         units: 'pt';
         componentsOmitted?: boolean;
         assetsBaseUrl?: string;
+        assetsScale?: number;
     };
     designTokens: RestoreDesignTokens;
     components: { [key: string]: RestoreComponentDef };
@@ -156,7 +177,10 @@ export type RestoreDSL = {
 // 1.1：新增 flip / windingRule / booleanOperation / 节点级 align / renderHint / rasterizeReason /
 //      fill.token / run.styleToken / textStyles.sourceName（key 统一 text-N）/ meta.assetsBaseUrl /
 //      画板背景色落 fills / text 节点 runs 兜底 / path 节点 svgPath 兜底
-export const RESTORE_SCHEMA_VERSION = '1.1';
+// 1.2：新增 effectiveLineHeight（行高兜底）/ tint + shapeGroup（编组 fills 语义拆分，注意普通
+//      group 的 fills 从 1.2 起落 tint 字段）/ styleHash（无几何第二指纹）/ image.svgUrl 补登记 /
+//      image.frame + image.scale + image.w/h（切图 bleed 元数据，插件端注入）/ meta.assetsScale
+export const RESTORE_SCHEMA_VERSION = '1.2';
 
 // 解析包版本常量（与 package.json 同步手工维护，写入 meta.parserVersion 做实现溯源）
 export const PARSER_VERSION = '0.0.45-beta.0';

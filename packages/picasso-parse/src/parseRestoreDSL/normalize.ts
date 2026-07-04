@@ -15,6 +15,33 @@ import {
 
 export const round2 = (n: number): number => Math.round(n * 100) / 100;
 
+/**
+ * 归一化结果缓存（按输入对象弱引用）。
+ * 同一图层对象会被 contentSignature（注哈希）、mapNode（建树）、designTokens（聚合）
+ * 各调一遍相同的纯函数——输入对象不变则结果不变，缓存避免整树多遍重复计算
+ * （运行环境是 Sketch 的 JavaScriptCore，无原生 crypto，每画板解析延迟直接可感）。
+ * 注意：缓存返回值被调用方共享持有（mapNode 直接引用、linkTokens 补写 token 字段），
+ * 调用方不得原地增删缓存数组（建新数组用 concat），且「designTokens 聚合先于 linkTokens」不可倒置。
+ */
+const memoCache = new WeakMap<object, { [key: string]: any }>();
+const memo = <T>(key: string, obj: any, compute: () => T): T => {
+    if (!obj || typeof obj !== 'object') return compute();
+    let entry = memoCache.get(obj);
+    if (!entry) {
+        entry = {};
+        memoCache.set(obj, entry);
+    }
+    if (!(key in entry)) entry[key] = compute();
+    return entry[key];
+};
+
+/**
+ * designTokens 文本样式 key（token 登记与 linkTokens 查表必须同源，勿在调用方各自拼接：
+ * `size || ''` 与 `size !== undefined` 对 size=0 会产生不同 key，导致 styleToken 静默丢失）
+ */
+export const textStyleKey = (run: { font?: string; size?: number; color?: string; lineHeight?: number }): string =>
+    `${run.font || ''}|${run.size !== undefined ? run.size : ''}|${run.color || ''}|${run.lineHeight !== undefined ? run.lineHeight : ''}`;
+
 const hexByte = (v: number): string => {
     const n = Math.max(0, Math.min(255, Math.round(v * 255)));
     return ('0' + n.toString(16)).slice(-2).toUpperCase();
@@ -98,7 +125,7 @@ const applyFillOpacity = (color?: SKColor, contextSettings?: any): SKColor | und
     return { ...color, alpha: (typeof color.alpha === 'number' ? color.alpha : 1) * opacity };
 };
 
-export const fillsToRestore = (layer: SKLayer): RestoreFill[] => {
+export const fillsToRestore = (layer: SKLayer): RestoreFill[] => memo('fills', layer, () => {
     const fills = layer.style && layer.style.fills;
     if (!Array.isArray(fills)) return [];
     const result: RestoreFill[] = [];
@@ -119,11 +146,11 @@ export const fillsToRestore = (layer: SKLayer): RestoreFill[] => {
         }
     });
     return result;
-};
+});
 
 const BORDER_POSITIONS = ['inside', 'center', 'outside'];
 
-export const bordersToRestore = (layer: SKLayer): RestoreBorder[] => {
+export const bordersToRestore = (layer: SKLayer): RestoreBorder[] => memo('borders', layer, () => {
     const borders = layer.style && layer.style.borders;
     if (!Array.isArray(borders)) return [];
     const borderOptions: any = layer.style && layer.style.borderOptions;
@@ -148,9 +175,9 @@ export const bordersToRestore = (layer: SKLayer): RestoreBorder[] => {
         result.push(item);
     });
     return result;
-};
+});
 
-export const shadowsToRestore = (shadows?: any[]): RestoreShadow[] => {
+export const shadowsToRestore = (shadows?: any[]): RestoreShadow[] => memo('shadows', shadows, () => {
     if (!Array.isArray(shadows)) return [];
     const result: RestoreShadow[] = [];
     shadows.forEach((shadow: any) => {
@@ -164,21 +191,21 @@ export const shadowsToRestore = (shadows?: any[]): RestoreShadow[] => {
         });
     });
     return result;
-};
+});
 
 const BLUR_TYPES = ['gaussian', 'motion', 'zoom', 'background'];
 
-export const blurToRestore = (layer: SKLayer): { type: string; radius: number } | undefined => {
+export const blurToRestore = (layer: SKLayer): { type: string; radius: number } | undefined => memo('blur', layer, () => {
     const blur: any = layer.style && layer.style.blur;
     if (!blur || !blur.isEnabled) return undefined;
     return {
         type: BLUR_TYPES[blur.type] || 'gaussian',
         radius: round2(blur.radius),
     };
-};
+});
 
 /** 四角圆角：fixedRadius / points 圆角统一到 [tl, tr, br, bl]；全 0 返回 undefined */
-export const borderRadiusToRestore = (layer: SKLayer): number[] | undefined => {
+export const borderRadiusToRestore = (layer: SKLayer): number[] | undefined => memo('borderRadius', layer, () => {
     const points: any[] = Array.isArray(layer.points) ? layer.points : [];
     let radius: number[] | undefined;
     if (points.length === 4 && layer._class === 'rectangle') {
@@ -190,7 +217,7 @@ export const borderRadiusToRestore = (layer: SKLayer): number[] | undefined => {
     }
     if (!radius || radius.every(r => r === 0)) return undefined;
     return radius;
-};
+});
 
 /** PostScript 字体名拆 fontFamily / fontWeight / italic */
 const FONT_FAMILY_MAP: { [key: string]: string } = {
@@ -251,7 +278,7 @@ export const verticalAlignToRestore = (layer: SKLayer): string | undefined => {
 /** attributedString → text runs（富文本归一化）。
  * 分段信息缺失时从图层级 textStyle 合成整段单 run 兜底——
  * 消费方按「text 节点必有 runs」消费，缺 runs 时字体/颜色/字号全丢。 */
-export const textRunsToRestore = (layer: SKLayer): RestoreTextRun[] => {
+export const textRunsToRestore = (layer: SKLayer): RestoreTextRun[] => memo('textRuns', layer, () => {
     const attributed = layer.attributedString;
     if (!attributed) return [];
     let attrList: any[] = Array.isArray(attributed.attributes) ? attributed.attributes : [];
@@ -296,14 +323,14 @@ export const textRunsToRestore = (layer: SKLayer): RestoreTextRun[] => {
         }
         return item;
     });
-};
+});
 
 /**
  * 矢量描点 → SVG path。
  * points 内坐标为 0~1 归一化值（字符串 "{x, y}"），按图层 frame 尺寸展开；
  * curveMode 非直线时用三次贝塞尔（curveFrom/curveTo 控制点）。
  */
-export const pointsToSvgPath = (layer: SKLayer): string | undefined => {
+export const pointsToSvgPath = (layer: SKLayer): string | undefined => memo('svgPath', layer, () => {
     const points: any[] = Array.isArray(layer.points) ? layer.points : [];
     if (points.length < 2) return undefined;
     const frame: SKFrame = layer.frame || ({ width: 0, height: 0 } as SKFrame);
@@ -336,7 +363,7 @@ export const pointsToSvgPath = (layer: SKLayer): string | undefined => {
     }
     if (layer.isClosed) d += 'Z';
     return d;
-};
+});
 
 /** 翻转：仅有翻转时输出 { x?: true, y?: true } */
 export const flipToRestore = (layer: SKLayer): { x?: boolean; y?: boolean } | undefined => {
