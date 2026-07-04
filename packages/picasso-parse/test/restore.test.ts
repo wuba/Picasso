@@ -441,5 +441,143 @@ const makeExportB = (a: any): any => {
         'Frame 适配：groupBehavior 不入 contentHash（历史指纹零漂移）');
 }
 
+// ---------- 10. 评审修复回归（2026-07） ----------
+// 覆盖：跨类同名换序配对 / componentRoot tint 语义 / dashPattern 0 段 / tint token 回填 /
+// 降级兜底 id 跨次上传稳定 / idByDoObjectID 内部回传表
+{
+    const mkFill10 = (r: number, g: number, b: number): any => ({
+        _class: 'fill', isEnabled: true, fillType: 0,
+        color: { _class: 'color', red: r, green: g, blue: b, alpha: 1 },
+    });
+    const mkRect10 = (id: string, name: string, x: number, fill?: any): any => ({
+        _class: 'rectangle', do_objectID: id, name, isVisible: true,
+        frame: { _class: 'rect', x, y: 0, width: 40, height: 40 },
+        style: { _class: 'style', fills: fill ? [fill] : [] },
+    });
+
+    // —— 跨类同名换序：A 两个同名实例（不同组件/不同 frame），B 解绑组数组顺序调换 ——
+    // 重名复验守卫若写成 a._class === b._class 会在解绑场景（唯一允许跨类配对的场景）
+    // 系统性跳过复验，stableId/componentKey 交叉错配；修复后按 frame 几何找回正主
+    const mkInstance = (id: string, symbolID: string, x: number): any => ({
+        _class: 'symbolInstance', do_objectID: id, symbolID, name: '按钮', isVisible: true,
+        frame: { _class: 'rect', x, y: 0, width: 100, height: 40 },
+    });
+    const mkDetached = (id: string, x: number, childId: string): any => ({
+        _class: 'group', do_objectID: id, name: '按钮', isVisible: true,
+        frame: { _class: 'rect', x, y: 0, width: 100, height: 40 },
+        layers: [mkRect10(childId, '底板', 0)],
+    });
+    const swapA: any = {
+        _class: 'artboard', do_objectID: 'SW-ROOT', name: '换序画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [mkInstance('SW-I1', 'SYM-PRIMARY', 0), mkInstance('SW-I2', 'SYM-SECONDARY', 200)],
+    };
+    const swapB: any = deepCopy(swapA);
+    swapB.do_objectID = 'SWB-ROOT';
+    // 解绑 + z 序调换：SECONDARY（x=200）排到了数组第 0 位
+    swapB.layers = [mkDetached('SWB-G2', 200, 'SWB-C2'), mkDetached('SWB-G1', 0, 'SWB-C1')];
+    annotateStableIds(swapB, deepCopy(swapA));
+    assert(swapB.layers[0].stableId === sha1('SW-I2').slice(0, 8)
+        && swapB.layers[0].restoreComponentKey === sha1('SYM-SECONDARY').slice(0, 8),
+        '换序修复：x=200 的解绑组拿到 SECONDARY 实例的 stableId/componentKey');
+    assert(swapB.layers[1].stableId === sha1('SW-I1').slice(0, 8)
+        && swapB.layers[1].restoreComponentKey === sha1('SYM-PRIMARY').slice(0, 8),
+        '换序修复：x=0 的解绑组拿到 PRIMARY 实例的 stableId/componentKey');
+
+    // —— componentRoot：图标类 master 根上的 fills 是着色提示（tint），不是页面底色 ——
+    const iconMaster: any = {
+        _class: 'symbolMaster', do_objectID: 'IM-ROOT', symbolID: 'SYM-ICON', name: '图标', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 40, height: 40 },
+        style: { _class: 'style', fills: [mkFill10(0.6, 0.6, 0.6)] },
+        layers: [mkRect10('IM-R1', '子路径', 0)],
+    };
+    const iconA: any = {
+        _class: 'artboard', do_objectID: 'IC-ROOT', name: '图标画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [{
+            _class: 'symbolInstance', do_objectID: 'IC-I1', symbolID: 'SYM-ICON', name: '图标', isVisible: true,
+            frame: { _class: 'rect', x: 0, y: 0, width: 40, height: 40 },
+        }],
+    };
+    const iconB: any = deepCopy(iconA);
+    iconB.do_objectID = 'ICB-ROOT';
+    iconB.layers[0] = {
+        _class: 'group', do_objectID: 'ICB-G1', name: '图标', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 40, height: 40 },
+        layers: [mkRect10('ICB-R1', '子路径', 0)],
+    };
+    const iconDsl = picassoArtboardRestoreParse(deepCopy(iconA), iconB, [deepCopy(iconMaster)], { generatedAt: 'fixed' });
+    const iconTree = iconDsl.components[sha1('SYM-ICON').slice(0, 8)].tree!;
+    assert(!!iconTree.tint && !iconTree.fills, 'componentRoot：定义树根 fills 维持 tint 语义（不误升为背景）');
+    // 同一 master 直接作解析根 = 页面语义，fills 保持背景（回归护栏）
+    const iconRootDsl = picassoArtboardRestoreParse(undefined, deepCopy(iconMaster), undefined, { generatedAt: 'fixed' });
+    assert(!!iconRootDsl.artboard.fills && !iconRootDsl.artboard.tint, 'componentRoot：master 直接作解析根仍是页面底色语义');
+
+    // —— dashPattern：0 长度段合法（round-cap 圆点线），全 0 视为未设置 ——
+    const mkDashRect = (id: string, dash: number[]): any => ({
+        _class: 'rectangle', do_objectID: id, name: '虚线框', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 40, height: 40 },
+        style: {
+            _class: 'style',
+            borders: [{ _class: 'border', isEnabled: true, fillType: 0, position: 1, thickness: 1, color: { _class: 'color', red: 0, green: 0, blue: 0, alpha: 1 } }],
+            borderOptions: { _class: 'borderOptions', isEnabled: true, dashPattern: dash, lineCapStyle: 1, lineJoinStyle: 0 },
+        },
+    });
+    const dashArt: any = {
+        _class: 'artboard', do_objectID: 'DA-ROOT', name: '虚线画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [mkDashRect('DA-R1', [0, 8]), mkDashRect('DA-R2', [0, 0]), mkDashRect('DA-R3', [-1, 4])],
+    };
+    const dashDsl = picassoArtboardRestoreParse(undefined, deepCopy(dashArt), undefined, { generatedAt: 'fixed' });
+    const dashKids = dashDsl.artboard.children!;
+    assert(JSON.stringify(dashKids[0].borders![0].dash) === '[0,8]', 'dashPattern：[0,8] 圆点线 0 段保留');
+    assert(dashKids[1].borders![0].dash === undefined, 'dashPattern：全 0 视为未设置');
+    assert(JSON.stringify(dashKids[2].borders![0].dash) === '[4]', 'dashPattern：负数脏值剔除、正值保留');
+
+    // —— tint token 回填：着色色不再是 designTokens 的孤儿槽位 ——
+    const mkTintGroup = (id: string, x: number): any => ({
+        _class: 'group', do_objectID: id, name: '着色组', isVisible: true,
+        frame: { _class: 'rect', x, y: 0, width: 40, height: 40 },
+        style: { _class: 'style', fills: [mkFill10(0.6, 0.6, 0.6)] },
+        layers: [mkRect10(`${id}-C`, '子形状', 0)],
+    });
+    const tintArt: any = {
+        _class: 'artboard', do_objectID: 'TK-ROOT', name: '着色画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [mkTintGroup('TK-G1', 0), mkTintGroup('TK-G2', 50)],
+    };
+    const tintDsl = picassoArtboardRestoreParse(undefined, deepCopy(tintArt), undefined, { generatedAt: 'fixed' });
+    const tintGroup = tintDsl.artboard.children![0];
+    assert(!!tintDsl.designTokens.colors && tintDsl.designTokens.colors['color-1'].value === '#999999',
+        'tint token：着色色进 token 表');
+    assert(!!tintGroup.tint && tintGroup.tint[0].token === 'color-1', 'tint token：tint[].token 回填（不再是孤儿槽位）');
+
+    // —— 降级兜底 id：do_objectID 全换（模拟两次上传的解绑副本）内容不变 → id 集一致 ——
+    const degradeBase: any = {
+        _class: 'artboard', do_objectID: 'DG-ROOT', name: '降级画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [mkRect10('DG-R1', '红', 0, mkFill10(1, 0, 0)), mkRect10('DG-R2', '蓝', 50, mkFill10(0, 0, 1))],
+    };
+    let seq1 = 0;
+    let seq2 = 0;
+    const d1: any = deepCopy(degradeBase);
+    const rewrite1 = (node: any): void => { node.do_objectID = `RUN1-${seq1++}`; (node.layers || []).forEach(rewrite1); };
+    rewrite1(d1);
+    const d2: any = deepCopy(degradeBase);
+    const rewrite2 = (node: any): void => { node.do_objectID = `RUN2-${seq2++}`; (node.layers || []).forEach(rewrite2); };
+    rewrite2(d2);
+    // exportA 缺省 = 降级为内容指纹模式（stableId 不注入，节点 id 走兜底）
+    const dg1 = picassoArtboardRestoreParse(undefined, d1, undefined, { generatedAt: 'fixed' });
+    const dg2 = picassoArtboardRestoreParse(undefined, d2, undefined, { generatedAt: 'fixed' });
+    assert(JSON.stringify(dg1) === JSON.stringify(dg2),
+        '降级兜底 id：do_objectID 全换内容不变时两次解析逐字节一致（含 id 集）');
+
+    // —— idByDoObjectID 内部回传表：查得到、不落产物 ——
+    assert(!!dg1.idByDoObjectID && dg1.idByDoObjectID['RUN1-1'] === dg1.artboard.children![0].id,
+        'idByDoObjectID：B 侧 do_objectID 可查到 RestoreDSL 节点 id（含兜底 id）');
+    assert(JSON.stringify(dg1).indexOf('idByDoObjectID') === -1,
+        'idByDoObjectID：不可枚举，不落 JSON 产物');
+}
+
 console.log(`\nrestore.test: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

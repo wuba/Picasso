@@ -46,12 +46,18 @@ const uniformSpacing = (children: RestoreNode[], direction: 'horizontal' | 'vert
 };
 
 /**
- * 无 stableId（exportA 缺省 / 配对失败降级）时的兜底 id：B 侧 do_objectID 短哈希。
- * 与 shortHashOf 同策略做树内查重：碰撞先延长 12 位，仍冲突（仅 do_objectID 缺失/重复时可能）追加序号，
- * 保证单棵 RestoreDSL 树内 id 唯一——消费方普遍按 id 建索引，重复 id 会静默覆盖丢节点。
+ * 无 stableId（exportA 缺省 / 配对失败降级）时的兜底 id。
+ * 基准优先内容指纹（annotateStableIds 无论配对成败都会注入 subtreeHash/contentHash）：
+ * B 侧 do_objectID 是解绑副本新造的 UUID、每次上传都变，以它为基会让同一未改画板两次
+ * 上传产出完全不同的 id 集（跨版本 diff 误判整树替换）；subtreeHash 含后代区分度最高，
+ * 退 contentHash，两者皆缺（未经注入直接调 mapNode）才退 do_objectID。
+ * 与 shortHashOf 同策略做树内查重：碰撞先延长 12 位，仍冲突（同指纹多胞胎）追加序号
+ * （DFS 顺序确定，同一棵树跨次上传后缀稳定），保证单棵 RestoreDSL 树内 id 唯一——
+ * 消费方普遍按 id 建索引，重复 id 会静默覆盖丢节点。
  */
 const fallbackNodeId = (layer: SKLayer, usedIds: { [id: string]: boolean }): string => {
-    const full = sha1(layer.do_objectID || '');
+    const basis = (layer as any).subtreeHash || (layer as any).contentHash || layer.do_objectID || '';
+    const full = sha1(String(basis));
     let id = full.slice(0, 8);
     if (usedIds[id]) id = full.slice(0, 12);
     let candidate = id;
@@ -60,8 +66,20 @@ const fallbackNodeId = (layer: SKLayer, usedIds: { [id: string]: boolean }): str
     return candidate;
 };
 
-const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, usedIds?: { [id: string]: boolean }): RestoreNode => {
-    const used = usedIds || {};
+export type MapNodeContext = {
+    // 树内 id 查重表（每棵树独立传入）
+    used?: { [id: string]: boolean };
+    // components[*].tree 的定义树根：根 fills 维持 tint 语义（见下方 fills/tint 分流注释）
+    componentRoot?: boolean;
+    // 采集「B 侧 do_objectID → RestoreDSL 节点 id」映射（含兜底 id）。插件端切片 URL
+    // 回填按 stableId 命中，降级路径（exportA 失败/外部库 master 缺失/配对 miss）节点
+    // 无 stableId，没有这张表其切片 URL 永远回填不进 RestoreDSL
+    idByDoObjectID?: { [uuid: string]: string };
+};
+
+const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, ctx?: MapNodeContext): RestoreNode => {
+    const c = ctx || {};
+    const used = c.used || (c.used = {});
     const abs: RestoreFrame = {
         x: round2(layer.frame.x),
         y: round2(layer.frame.y),
@@ -76,12 +94,16 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, use
     // Frame 作为解析根时语义就是画板，type 归为 'artboard'——否则消费方按普通 group 处理，
     // 画板级约定（背景渲染、缺省白底、整图挂载）全部失配。仅根节点归类，嵌套 Frame 仍是 group；
     // 只改 mapNode 输出不动 restoreTypeOf，contentHash/styleHash（经 contentSignature）不受影响。
+    // pageRoot = 页面级解析根（画板主树根 / master 直接作顶层解析）；components[*].tree 的
+    // 定义树根同样 parentAbs === null 但不是页面（componentRoot 区分），fills 语义分流见下
     const frameContainer = isFrameContainer(layer);
     const isRoot = parentAbs === null;
+    const pageRoot = isRoot && !c.componentRoot;
     let type = restoreTypeOf(layer);
-    if (isRoot && frameContainer) type = 'artboard';
+    if (pageRoot && frameContainer) type = 'artboard';
     const id: string = (layer as any).stableId || fallbackNodeId(layer, used);
     used[id] = true;
+    if (c.idByDoObjectID && layer.do_objectID) c.idByDoObjectID[layer.do_objectID] = id;
     const node: RestoreNode = {
         id,
         type,
@@ -120,9 +142,11 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, use
         // 三类例外的 fills 是要渲染的真实填充，保持 fills 语义：
         // - shapeGroup（布尔运算形状）；
         // - Frame / GraphicFrame 容器（含嵌套）：Frame 的填充就是背景，误归 tint 会丢整块底色；
-        // - 解析根：根容器（画板/Frame/symbolMaster）的填充是页面底色。
+        // - 页面级解析根：根容器（画板/Frame/直接顶层解析的 symbolMaster）的填充是页面底色。
+        //   注意 components[*].tree 的定义树根不算（componentRoot）：图标类 master 根上的
+        //   fills 正是给子路径着色的 tint（无 hasBackgroundColor），提升为背景会渲染出色块。
         // 其余类型（rect/oval/path/text/artboard…）维持 fills 原语义。
-        if (type === 'group' && layer._class !== 'shapeGroup' && !frameContainer && !isRoot) {
+        if (type === 'group' && layer._class !== 'shapeGroup' && !frameContainer && !pageRoot) {
             node.tint = fills;
         } else {
             node.fills = fills;
@@ -196,7 +220,7 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, use
     if ((layer as any).subtreeHash) node.subtreeHash = (layer as any).subtreeHash;
 
     if (type !== 'text' && Array.isArray(layer.layers) && layer.layers.length > 0) {
-        node.children = layer.layers.map((child: SKLayer) => mapNode(child, { x: abs.x, y: abs.y }, used));
+        node.children = layer.layers.map((child: SKLayer) => mapNode(child, { x: abs.x, y: abs.y }, c));
     }
 
     // Smart Layout 透传（spacing 依赖已映射子节点的几何，最后算）

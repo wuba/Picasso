@@ -64,6 +64,14 @@ const linkTokens = (root: RestoreNode, tokens: RestoreDesignTokens): void => {
                 fill.token = colorTokenByValue[fill.color];
             }
         });
+        // tint（子图标着色提示）与 fills 同为真实用色：聚合阶段（原始树上）两者不区分地
+        // 进了 token 表，不回填 tint 会留下永远无节点回引的孤儿槽位（COLOR_LIMIT 有限，
+        // 挤占真实渲染色的位置），消费方按 token 建色板时也漏掉图标着色色
+        (node.tint || []).forEach((fill) => {
+            if (fill.color && colorTokenByValue[fill.color]) {
+                fill.token = colorTokenByValue[fill.color];
+            }
+        });
         (node.runs || []).forEach((run) => {
             const key = textStyleKey(run);
             if (styleTokenByKey[key]) {
@@ -114,7 +122,10 @@ export const picassoArtboardRestoreParse = (
     if (!prepared) {
         throw new Error('[picassoArtboardRestoreParse] 画板预处理后为空树');
     }
-    const artboard = mapNode(prepared, null);
+    // do_objectID → 节点 id 映射（含 stableId 缺省时的兜底 id）：插件端切片 URL 回填用，
+    // 覆盖降级路径（exportA 失败/外部库 master/配对 miss）节点。只采主树——切片只存在于画板树
+    const idByDoObjectID: { [uuid: string]: string } = {};
+    const artboard = mapNode(prepared, null, { idByDoObjectID });
 
     // —— components 字典（symbolMaster 定义树） ——
     const components: { [key: string]: RestoreComponentDef } = {};
@@ -130,7 +141,9 @@ export const picassoArtboardRestoreParse = (
             };
             const preparedMaster = prepareTree(master);
             if (preparedMaster) {
-                def.tree = mapNode(preparedMaster, null);
+                // componentRoot：定义树根的 fills 维持 tint 语义（图标类 master 根上的着色
+                // 提示不是页面底色），与画板主树根的 pageRoot 语义区分，见 mapNode 注释
+                def.tree = mapNode(preparedMaster, null, { componentRoot: true });
                 tokenSourceTrees.push(preparedMaster);
                 componentTrees.push(def.tree);
             }
@@ -156,13 +169,19 @@ export const picassoArtboardRestoreParse = (
     if (opts.componentsOmitted) meta.componentsOmitted = true;
     if (opts.assetsBaseUrl) meta.assetsBaseUrl = opts.assetsBaseUrl;
 
-    return {
+    const dsl: RestoreDSL = {
         schemaVersion: RESTORE_SCHEMA_VERSION,
         meta,
         designTokens,
         components,
         artboard,
     };
+
+    // 内部回传字段（非产物 schema 的一部分）：不可枚举 → JSON.stringify 不落盘/不上传，
+    // 仅供同进程调用方（插件端 buildStableIdBySliceId）在收口前查表
+    Object.defineProperty(dsl, 'idByDoObjectID', { value: idByDoObjectID, enumerable: false });
+
+    return dsl;
 };
 
 export default picassoArtboardRestoreParse;

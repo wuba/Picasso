@@ -154,9 +154,12 @@ export const bordersToRestore = (layer: SKLayer): RestoreBorder[] => memo('borde
     const borders = layer.style && layer.style.borders;
     if (!Array.isArray(borders)) return [];
     const borderOptions: any = layer.style && layer.style.borderOptions;
-    const dashPattern: number[] = borderOptions && Array.isArray(borderOptions.dashPattern)
-        ? borderOptions.dashPattern.filter((v: any) => typeof v === 'number' && v > 0)
+    // 0 长度段合法且有语义：[0, 8] + round lineCap 是圆点线，过滤掉 0 会把点线折叠成实虚线；
+    // 只剔除负数/非数值脏值。全 0（无任何正值段）不构成可见图案，视为未设置
+    const rawDash: number[] = borderOptions && Array.isArray(borderOptions.dashPattern)
+        ? borderOptions.dashPattern.filter((v: any) => typeof v === 'number' && v >= 0)
         : [];
+    const dashPattern: number[] = rawDash.some(v => v > 0) ? rawDash : [];
     const result: RestoreBorder[] = [];
     borders.forEach((border: any) => {
         if (!border || !border.isEnabled) return;

@@ -103,7 +103,8 @@ export type RestoreNode = {
     renderHint?: string; // 带 image 的 group 渲染意图：image = 必须用切图渲染（插件端注入）
     rasterizeReason?: string; // 整组切图判定原因：slice / irregular-vector / export-format（插件端注入）
     // [1.2] image.frame：切图位图的实际渲染范围（画板绝对坐标，含阴影/模糊 bleed，可能大于节点
-    // frame，插件端注入）；image.scale：位图导出倍率；image.svgUrl：同切图的矢量版本（插件端注入）
+    // frame，插件端注入）；image.w/h：位图实际像素尺寸（PNG IHDR 实测值，含导出倍率，插件端注入，
+    // 导出失败等降级时缺省）；image.scale：位图导出倍率；image.svgUrl：同切图的矢量版本（插件端注入）
     image?: {
         url?: string;
         svgUrl?: string;
@@ -169,6 +170,9 @@ export type RestoreDSL = {
     designTokens: RestoreDesignTokens;
     components: { [key: string]: RestoreComponentDef };
     artboard: RestoreNode;
+    // 内部回传字段（不可枚举挂载，JSON.stringify 不落产物）：画板主树 B 侧 do_objectID →
+    // 节点 id（含 stableId 缺省时的兜底 id），插件端切片 URL 回填降级路径命中用
+    idByDoObjectID?: { [uuid: string]: string };
 };
 
 // RestoreDSL 输出格式版本：只加字段升 minor；破坏性变更升 major（原则上禁止）。

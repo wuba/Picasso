@@ -54,6 +54,19 @@ const isCompatible = (aClass: string, bClass: string): boolean => {
 };
 
 /**
+ * frame 几何一致（±0.5pt）。跨类配对（A 实例 ↔ B 解绑组）时 contentHash 结构性不可比
+ * （两侧 _class/子树形态不同，同一实例的 hash 也不同），而解绑是原位替换、保持 frame——
+ * 几何是该场景下唯一可用的换序判据。缺 frame 信息时返回 true（不据此否决）。
+ */
+const framesEqual = (a: SKLayer, b: SKLayer): boolean => {
+    const fa: any = (a as any).frame;
+    const fb: any = (b as any).frame;
+    if (!fa || !fb) return true;
+    return Math.abs(fa.x - fb.x) <= 0.5 && Math.abs(fa.y - fb.y) <= 0.5
+        && Math.abs(fa.width - fb.width) <= 0.5 && Math.abs(fa.height - fb.height) <= 0.5;
+};
+
+/**
  * 子节点配对：数量一致且逐位 name/_class 兼容时按 index 硬配（快路径，覆盖绝大多数画板）；
  * 否则先按 (name, contentHash 全等) 配——内容跟人走，同名兄弟 z 序调换也不会错位注入
  * （靠 annotateStableIds 里 hash 先于配对注入保证 A/B 两侧 contentHash 可用）；
@@ -64,17 +77,24 @@ const isCompatible = (aClass: string, bClass: string): boolean => {
  */
 const pairChildren = (aChildren: SKLayer[], bChildren: SKLayer[]): (SKLayer | undefined)[] => {
     if (aChildren.length === bChildren.length) {
-        // 同名兄弟的重名计数：重名 + 同 class + 两侧 hash 均在但不等 → 疑似 z 序调换，
-        // 踢出快路径交给下方 hash 轮跨顺序找回正主（名字唯一时 hash 不等只是内容被改，index 硬配仍正确）
+        // 同名兄弟的重名计数：重名时 index 硬配前必须复验，否则 z 序调换会错位注入。
+        // 同 class：两侧 hash 均在但不等 → 疑似换序；跨类（实例↔解绑组）hash 不可比
+        //（守卫若写成 a._class === b._class 会在解绑场景——唯一允许跨类配对的场景——
+        // 系统性跳过复验），改比 frame 几何（解绑原位替换保持 frame）。
+        // 名字唯一时 hash/frame 不等只是内容被改，index 硬配仍正确（内容跟人走）
         const nameCount: { [name: string]: number } = {};
         aChildren.forEach((a) => { nameCount[a.name] = (nameCount[a.name] || 0) + 1; });
         const indexAligned = bChildren.every((b, i) => {
             const a = aChildren[i];
             if (a.name !== b.name || !isCompatible(a._class, b._class)) return false;
-            if (nameCount[a.name] > 1 && a._class === b._class) {
-                // A 侧用只读计算（不污染输入树），B 侧读已注入值
-                const bHash = (b as any).contentHash;
-                if (bHash && contentHashOf(a) !== bHash) return false;
+            if (nameCount[a.name] > 1) {
+                if (a._class === b._class) {
+                    // A 侧用只读计算（不污染输入树），B 侧读已注入值
+                    const bHash = (b as any).contentHash;
+                    if (bHash && contentHashOf(a) !== bHash) return false;
+                } else if (!framesEqual(a, b)) {
+                    return false;
+                }
             }
             return true;
         });
@@ -95,6 +115,23 @@ const pairChildren = (aChildren: SKLayer[], bChildren: SKLayer[]): (SKLayer | un
             if (aChildren[i].name === b.name
                 && contentHashOf(aChildren[i]) === bHash
                 && isCompatible(aChildren[i]._class, b._class)) {
+                paired[bi] = aChildren[i];
+                aTaken[i] = true;
+                break;
+            }
+        }
+    });
+
+    // 第 1.5 轮：跨类（实例↔解绑组）hash 不可比，按 (name, 跨类兼容, frame 几何一致)
+    // 跨顺序找正主——同名实例 z 序调换时靠 frame 找回，防止落进下方保序贪心轮错配
+    bChildren.forEach((b, bi) => {
+        if (paired[bi]) return;
+        for (let i = 0; i < aChildren.length; i++) {
+            if (aTaken[i]) continue;
+            if (aChildren[i].name === b.name
+                && aChildren[i]._class !== b._class
+                && isCompatible(aChildren[i]._class, b._class)
+                && framesEqual(aChildren[i], b)) {
                 paired[bi] = aChildren[i];
                 aTaken[i] = true;
                 break;

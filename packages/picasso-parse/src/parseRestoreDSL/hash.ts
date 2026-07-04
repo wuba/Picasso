@@ -4,6 +4,9 @@
  * - shortHash：对 UUID 做 sha1 取前 8 位十六进制；全画板查重，碰撞时该节点延长至 12 位。
  * - contentHash：节点归一化属性哈希（不含 children / name / 绝对坐标 / id）——内容寻址，
  *   供跨版本 diff 的模糊配对轮使用，name 是独立打分信号故不入指纹。
+ *   已知盲区（历史指纹零漂移的刻意取舍，restore.test.ts 有断言）：groupBehavior 与
+ *   fills/tint 分类语义不入指纹——同值 fills 的普通编组与 Frame 容器 hash 相同，
+ *   两态切换（着色提示 ↔ 真实背景）是视觉变化但 contentHash 不变，diff 端需另行比对。
  * - subtreeHash：Merkle 结构 hash(contentHash + 有序 children.subtreeHash)。
  */
 import { SKLayer } from '../types';
