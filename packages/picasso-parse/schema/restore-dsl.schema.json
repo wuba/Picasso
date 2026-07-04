@@ -267,10 +267,12 @@
           "description": "[1.2+] 同一切图的矢量（SVG）版本 URL，与 url（PNG）同时导出时写入（插件端注入）。补登记：1.1 产物已存在此字段但 schema 缺失。"
         },
         "w": {
-          "type": "number"
+          "type": "number",
+          "description": "[1.2+] 位图实际像素宽（PNG IHDR 实测值，含导出倍率；插件端注入，导出降级时缺省）。消费方无需下载图片即可校验 frame x scale 与实际产物是否一致。"
         },
         "h": {
-          "type": "number"
+          "type": "number",
+          "description": "[1.2+] 位图实际像素高（同 w，PNG IHDR 实测值）。"
         },
         "scale": {
           "type": "number",
@@ -738,7 +740,7 @@
         "contentHash": {
           "type": "string",
           "pattern": "^[0-9a-f]{8,12}$",
-          "description": "节点自身样式内容指纹（不含 name、绝对坐标与 children），用于跨版本 diff 的节点配对。"
+          "description": "节点自身样式内容指纹（不含 name、绝对坐标与 children），用于跨版本 diff 的节点配对。已知盲区（历史指纹零漂移的刻意取舍）：groupBehavior 与 fills/tint 分类语义不入指纹——同值 fills 的普通编组与 Frame 容器 contentHash 相同，节点在两态间切换（渲染从着色提示变真实背景）不会改变 contentHash，diff 端需结合 groupBehavior/tint 字段本身判断该类视觉变化。"
         },
         "styleHash": {
           "type": "string",
