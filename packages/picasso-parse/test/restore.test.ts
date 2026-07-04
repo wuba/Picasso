@@ -374,5 +374,72 @@ const makeExportB = (a: any): any => {
     assert(dupReport.stableIdOverlap === 0 && dupReport.contentHashOverlap === 1, '1.2 diffability：overlap 数值正确');
 }
 
+// ---------- 9. Sketch 2025 Frame/GraphicFrame 容器适配 ----------
+// Frame 画板导出 JSON 的根 _class 是 'group'（groupBehavior 1），背景色是真实的 style.fills：
+// 曾被普通编组的 fills→tint 重分类误伤，消费方按规范不渲染 tint → 整页底色全丢
+{
+    const mkFill = (r: number, g: number, b: number): any => ({
+        _class: 'fill', isEnabled: true, fillType: 0,
+        color: { _class: 'color', red: r, green: g, blue: b, alpha: 1 },
+    });
+    const mkChildRect = (id: string): any => ({
+        _class: 'rectangle', do_objectID: id, name: '子形状', isVisible: true,
+        frame: { _class: 'rect', x: 1, y: 1, width: 5, height: 5 },
+        style: { _class: 'style' },
+    });
+    const frameRoot: any = {
+        _class: 'group', groupBehavior: 1,   // Sketch 2025 Frame 画板
+        do_objectID: 'F-ROOT', name: 'Frame画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 200 },
+        style: { _class: 'style', fills: [mkFill(0.960784, 0.964706, 0.980392)] },
+        layers: [
+            {
+                _class: 'group', groupBehavior: 1,   // 嵌套 Frame：带背景填充的内容容器
+                do_objectID: 'F-NEST', name: '嵌套Frame', isVisible: true,
+                frame: { _class: 'rect', x: 10, y: 10, width: 100, height: 50 },
+                style: { _class: 'style', fills: [mkFill(1, 1, 1)] },
+                layers: [mkChildRect('F-NR')],
+            },
+            {
+                _class: 'group',   // 无 groupBehavior 的普通编组：tint 语义必须保持（回归护栏）
+                do_objectID: 'F-G1', name: '图标组', isVisible: true,
+                frame: { _class: 'rect', x: 10, y: 100, width: 40, height: 40 },
+                style: { _class: 'style', fills: [mkFill(0.6, 0.6, 0.6)] },
+                layers: [mkChildRect('F-GR')],
+            },
+        ],
+    };
+    const dsl = picassoArtboardRestoreParse(undefined, deepCopy(frameRoot), undefined, { generatedAt: 'fixed' });
+    assert(dsl.artboard.type === 'artboard', 'Frame 适配：Frame 作解析根 type 归为 artboard');
+    assert(!!dsl.artboard.fills && dsl.artboard.fills[0].color === '#F5F6FA' && !dsl.artboard.tint,
+        'Frame 适配：画板背景落 fills 不落 tint');
+    const nested = dsl.artboard.children!.filter(k => k.name === '嵌套Frame')[0];
+    assert(nested.type === 'group' && !!nested.fills && nested.fills[0].color === '#FFFFFF' && !nested.tint,
+        'Frame 适配：嵌套 Frame 的背景保持 fills 语义（type 仍为 group）');
+    const plainGroup = dsl.artboard.children!.filter(k => k.name === '图标组')[0];
+    assert(!!plainGroup.tint && !plainGroup.fills, 'Frame 适配：普通编组 fills→tint 语义不回归');
+
+    // symbolMaster 作解析根：backgroundColor 此前被静默丢弃
+    const masterRoot: any = {
+        _class: 'symbolMaster', do_objectID: 'M-ROOT', name: '组件画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 100, height: 100 },
+        hasBackgroundColor: true,
+        backgroundColor: { _class: 'color', red: 1, green: 1, blue: 1, alpha: 1 },
+        layers: [mkChildRect('M-R1')],
+    };
+    const masterDsl = picassoArtboardRestoreParse(undefined, deepCopy(masterRoot), undefined, { generatedAt: 'fixed' });
+    assert(!!masterDsl.artboard.fills && masterDsl.artboard.fills[0].color === '#FFFFFF',
+        'Frame 适配：symbolMaster 作根时 backgroundColor 落 fills');
+
+    // 分类只改 mapNode 输出，不碰 contentSignature：Frame 与普通 group 的 hash 行为一致
+    const frameCopy = deepCopy(frameRoot);
+    annotateStableIds(frameCopy);
+    const plainCopy = deepCopy(frameRoot);
+    delete plainCopy.groupBehavior;
+    annotateStableIds(plainCopy);
+    assert(frameCopy.contentHash === plainCopy.contentHash,
+        'Frame 适配：groupBehavior 不入 contentHash（历史指纹零漂移）');
+}
+
 console.log(`\nrestore.test: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

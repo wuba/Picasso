@@ -24,6 +24,7 @@ import {
     windingRuleToRestore,
     booleanOpToRestore,
     colorToHex,
+    isFrameContainer,
 } from './normalize';
 
 /** stack.spacing：子节点间距一致（±0.5pt）时才写，几何推不稳时只留 direction */
@@ -71,7 +72,14 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, use
         ? { x: round2(abs.x - parentAbs.x), y: round2(abs.y - parentAbs.y), w: abs.w, h: abs.h }
         : { x: 0, y: 0, w: abs.w, h: abs.h };
 
-    const type = restoreTypeOf(layer);
+    // Sketch 2025 起画板默认是 Frame（_class 'group' + groupBehavior 1/2），老 Artboard 逐渐消失。
+    // Frame 作为解析根时语义就是画板，type 归为 'artboard'——否则消费方按普通 group 处理，
+    // 画板级约定（背景渲染、缺省白底、整图挂载）全部失配。仅根节点归类，嵌套 Frame 仍是 group；
+    // 只改 mapNode 输出不动 restoreTypeOf，contentHash/styleHash（经 contentSignature）不受影响。
+    const frameContainer = isFrameContainer(layer);
+    const isRoot = parentAbs === null;
+    let type = restoreTypeOf(layer);
+    if (isRoot && frameContainer) type = 'artboard';
     const id: string = (layer as any).stableId || fallbackNodeId(layer, used);
     used[id] = true;
     const node: RestoreNode = {
@@ -99,8 +107,9 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, use
     const borderRadius = borderRadiusToRestore(layer);
     if (borderRadius) node.borderRadius = borderRadius;
     let fills = fillsToRestore(layer);
-    // 画板背景色（Sketch 存在 backgroundColor 字段而非 style.fills，丢了整页底色就全白）
-    if (type === 'artboard' && layer.hasBackgroundColor && layer.backgroundColor) {
+    // 画板背景色（Sketch 存在 backgroundColor 字段而非 style.fills，丢了整页底色就全白）。
+    // 解析根不限 _class：老 Artboard 之外，symbolMaster 等作根导出时同样带 backgroundColor
+    if ((type === 'artboard' || isRoot) && layer.hasBackgroundColor && layer.backgroundColor) {
         const bg = colorToHex(layer.backgroundColor);
         // concat 建新数组：fillsToRestore 返回值有缓存（normalize.ts memo），禁止原地 unshift
         if (bg) fills = ([{ color: bg }] as RestoreFill[]).concat(fills);
@@ -108,9 +117,12 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, use
     if (fills.length) {
         // Sketch 的普通编组没有背景填充语义——组上的 fills 是「子图标着色（tint）」，
         // 渲染成背景会出现色块（例：展开箭头组的 #999999 灰方块）。
-        // shapeGroup（布尔运算形状）的 fills 才是真实填充，须区分落 key；
+        // 三类例外的 fills 是要渲染的真实填充，保持 fills 语义：
+        // - shapeGroup（布尔运算形状）；
+        // - Frame / GraphicFrame 容器（含嵌套）：Frame 的填充就是背景，误归 tint 会丢整块底色；
+        // - 解析根：根容器（画板/Frame/symbolMaster）的填充是页面底色。
         // 其余类型（rect/oval/path/text/artboard…）维持 fills 原语义。
-        if (type === 'group' && layer._class !== 'shapeGroup') {
+        if (type === 'group' && layer._class !== 'shapeGroup' && !frameContainer && !isRoot) {
             node.tint = fills;
         } else {
             node.fills = fills;

@@ -389,6 +389,15 @@ export const booleanOpToRestore = (layer: SKLayer): string | undefined => {
     return BOOLEAN_OPS[op];
 };
 
+/**
+ * Sketch 2025 的 Frame / GraphicFrame 容器：导出 JSON 的 _class 仍是 'group'，
+ * 靠 groupBehavior 区分（0 Default / 1 Frame / 2 Graphic）。与普通编组的关键差异：
+ * Frame 可带真实背景填充/圆角/裁剪——其 style.fills 是要渲染的背景，
+ * 不是普通编组那种「子图标着色（tint）提示」。
+ */
+export const isFrameContainer = (layer: SKLayer): boolean =>
+    layer._class === 'group' && (layer.groupBehavior === 1 || layer.groupBehavior === 2);
+
 /** _class → RestoreDSL type 映射 */
 export const restoreTypeOf = (layer: SKLayer): string => {
     switch (layer._class) {
