@@ -162,7 +162,7 @@
           "$ref": "#/definitions/node"
         }
       ],
-      "description": "画板根节点。树内所有 absFrame 均为画板坐标（根节点恒为 x:0,y:0）。根节点通常带 image（整板截图），供还原对比，不参与渲染。"
+      "description": "画板根节点（老 Artboard 与 Sketch 2025 Frame 画板均归一化为 type=artboard，背景色统一落 fills；无 fills 时按 Sketch 画布语义缺省白底）。树内所有 absFrame 均为画板坐标（根节点恒为 x:0,y:0）。根节点通常带 image（整板截图），供还原对比，不参与渲染。"
     }
   },
   "definitions": {
@@ -499,7 +499,7 @@
             "image",
             "slice"
           ],
-          "description": "节点类型。shapePath/triangle/star/polygon 等矢量类统一归为 path；symbolInstance/symbolMaster/shapeGroup 归为 group。"
+          "description": "节点类型。shapePath/triangle/star/polygon 等矢量类统一归为 path；symbolInstance/symbolMaster/shapeGroup 归为 group；Sketch 2025 的 Frame/GraphicFrame（_class group + groupBehavior 1/2）嵌套时归为 group，作为解析根时归为 artboard（画板语义）。"
         },
         "name": {
           "type": "string",
@@ -582,7 +582,7 @@
           "items": {
             "$ref": "#/definitions/fill"
           },
-          "description": "[1.2+] 普通编组（非 shapeGroup）上的填充是「子图标着色提示」而非背景——渲染成背景会出现色块。1.2 起这类 fills 落本字段，group 节点的 fills 字段仅剩 shapeGroup 真填充一种含义。"
+          "description": "[1.2+] 普通编组（非 shapeGroup、非 Frame 容器）上的填充是「子图标着色提示」而非背景——渲染成背景会出现色块，正确消费是下发给子孙矢量/文本重着色（位图子节点已烘焙，跳过）。1.2 起这类 fills 落本字段；group 节点保留 fills 的只有两类真实填充：shapeGroup（布尔形状）与 Frame/GraphicFrame 容器（背景填充）。"
         },
         "borders": {
           "type": "array",

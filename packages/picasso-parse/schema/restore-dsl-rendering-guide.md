@@ -8,6 +8,9 @@
 ## 1. 总则
 
 - 单位一律 pt（`meta.units`）；750 宽画板即 750pt，Web 端 1pt = 1px 直出即可。
+- **画板背景**：`artboard.fills` 是页面底色，必须渲染；无 fills 时缺省**白底**
+  （Sketch 画布语义），不能透出宿主页面背景。Sketch 2025 的 Frame 画板已由 parse
+  归一化（type='artboard'、背景落 fills），消费方无需区分画板是 Artboard 还是 Frame。
 - **缺省值省略**：`visible:true`、`rotation:0`、`opacity:1`、空数组一律不落盘。
   字段不存在 = 取默认值，不是数据缺失。
 - 双坐标系：`frame` 是父级相对坐标（CSS 定位直接用）；`absFrame` 在
@@ -41,9 +44,18 @@
   坐标）：位图画布可能含阴影/模糊 bleed，大于节点 frame 且**四边不对称**。
   换算父相对坐标：`left = image.frame.x - (absFrame.x - frame.x)`，top 同理，
   宽高直接用 `image.frame.w/h`。
-- `image.frame` 缺失时回退节点 `frame` 原位摆放（缺失的都是无 bleed 或 trim 已
+- **位图已烘焙节点变换与着色**：导出位图包含 rotation / flip / 祖先 tint 的最终
+  渲染效果（`image.frame` 也是变换后的画布范围）。摆放位图时**忽略**节点的
+  rotation/flip 字段，不能再叠 CSS transform——会双重变换（实测 flip.y 箭头被翻回
+  朝上）。这些字段仅供矢量化输出（读子树重建）时使用。
+- `image.frame` 缺失时回退节点 `frame` 原位摆放（缺失的多为无 bleed 或 trim 已
   裁边的位图，回退无损）。不要自行做居中/阴影公式假设——历史上这两种假设都被
   实测推翻过（bleed 可以完全偏向一侧）。
+- **回退摆位的物理约束**：确需按 PNG 实际尺寸回摆（PNG÷scale ≠ frame）而用阴影
+  公式估 bleed 时，必须截断到物理可行域——单侧 bleed ≤ `PNG−frame` 的总差值，
+  且不越过画板边缘（导出画布被画板裁切，`min(估值, 差值, absFrame.x/y)`）。
+  实测案例：贴画板顶的全宽页头，阴影朝下，公式估出 bleed(10,8) 而真实是 (0,0)，
+  不截断会整条偏移。
 - 位图像素尺寸 = pt 尺寸 × 倍率。倍率取 `image.scale ?? meta.assetsScale`
   （节点级仅在与全局不同时落盘）。画板整图 `artboard.image` 有独立 scale
   （375 宽画板 2x，其余 1x）。
@@ -75,6 +87,13 @@
   默认行高），多行 ≈ 1.4 × 字号。不要用 1.2 × 字号的通用假设——PingFang 下
   实测偏小。
 - 多 `runs` 按 `from`/`len` 切 span，只写与首 run 不同的属性。
+- **文本图层 fills 覆盖 run 颜色**：text 节点存在纯色 `fills` 时，它是图层级
+  填充覆盖（symbol 文本做颜色 override 的常见形态），**优先于所有 `runs[].color`**
+  （实测："我的访客" run 色是 master 的 #FFFFFFA6，真实渲染色在 fills=#595959）。
+  优先级：run 色 < 节点 fills < 祖先 tint（见 §6）。
+- **保留显式换行**：`text` 里的 `\n` 是真实换行（多段落、竖排星号列全靠它定位），
+  HTML 输出必须 `white-space: pre-wrap`（或 `\n`→`<br>`），默认的空白折叠会把
+  段落挤成一坨。
 - 对齐：`node.align ?? run.align ?? 'left'`；`verticalAlign` 默认 top。
 - 单行判定：`textResizing !== 'auto-height'` 且 frame 高 < 行高 × 1.8 →
   `white-space: nowrap`（防意外折行）。
@@ -86,9 +105,22 @@
 - **`tint`**（1.2+）：普通编组的填充是**子图标着色提示**，不渲染为背景
   （渲染会出现色块）。1.1 老数据该提示仍在 `fills` 里——普通 group 的 `fills`
   一律不渲染为背景。
+- **tint 要下发重着色**：不渲染为背景 ≠ 忽略。Sketch 的组填充语义是把子孙内容
+  整体重着色为 tint 色（保留形状与 alpha）：渲染时将子孙矢量 fill / border /
+  文本颜色替换为 tint 首个纯色（实测：状态栏 symbol 内容本体白色，靠组 tint
+  #333333 染成深灰——不下发就是白字白底）。位图子节点已烘焙 tint，跳过。
+  渐变 tint 罕见，可取首 stop 纯色近似。
+- **Frame 容器不是普通编组**：Sketch 2025 Frame（含嵌套）的填充是**真实背景**，
+  parse 已保持其 `fills` 语义（不落 tint），按普通背景渲染即可。
 - **`shapeGroup: true`**：布尔运算形状组，其 `fills` 才是真实填充，children 是
   布尔子路径。`booleanOperation` 是字段透传（union/subtract/…），消费方不预合并
   ——无法合成路径时整组退化用位图（这类组通常已带 `image`）。
+- **shapeGroup 无位图时的合成**：不要把 `fills` 涂成组包围盒（会出成色块）。
+  可行近似：把全部子路径平移到组坐标系后拼进**同一个** `<path>`，
+  `fill-rule="evenodd"`——subtract 的内路径自然成为挖洞（时钟/放大镜/ⓘ 类
+  镂空 icon 实测正确）。注意 evenodd 只在单个 path 元素内生效，拆成多个
+  `<path>` 不会挖洞。产物 svgPath 只含绝对 M/L/C/Z 命令，平移即给所有坐标
+  加子节点 frame 偏移。
 - **组阴影**：带 `shadows` 的 group 若 `renderHint === 'image'`，默认位图渲染
   （按 §3 摆位即精确）。需要**可编辑输出**时可改走「CSS box-shadow + 子树矢量」
   ——`shadows` 参数与 children 都在 JSON 里，三选一（位图 / CSS+子树 / 混合）
