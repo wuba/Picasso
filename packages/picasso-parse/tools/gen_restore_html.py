@@ -526,6 +526,12 @@ def render_node(node, indent=1, tint=None):
                                            f"fills 下发子路径逐个填色(union 近似)")
             gf = node['fills']
             shape_children = [dict(c, fills=c.get('fills') or gf) for c in shape_children]
+    elif node.get('fills'):
+        # [1.2] 非 shapeGroup 的 group 带 fills = 嵌套 Frame/GraphicFrame 容器(mapNode 已把
+        # 普通编组的着色提示分流到 tint), 其 fills 是真实背景, 不渲染会丢整块底色
+        for fl in node.get('fills', []):
+            styles += fill_to_bg(fl)
+        log_fix('frame-bg', f"容器 {node['name']!r} fills 渲染为背景(嵌套 Frame 语义)")
     borders_to_css(node, styles)
     radius_css(node, styles)
     if node['id'] in Z_FIX:
@@ -533,9 +539,16 @@ def render_node(node, indent=1, tint=None):
     # 普通编组的 tint 下发给子孙矢量/文本重着色(Sketch 组填充语义);
     # 取首个纯色 fill, 渐变 tint 罕见暂不支持
     nt = node.get('tint')
-    if nt and not node.get('shapeGroup') and 'color' in nt[0]:
-        tint = nt[0]['color']
-        log_fix('tint-cascade', f"编组 {node['name']!r} tint={tint} 下发子孙重着色")
+    if nt and not node.get('shapeGroup'):
+        if 'color' in nt[0]:
+            tint = nt[0]['color']
+            log_fix('tint-cascade', f"编组 {node['name']!r} tint={tint} 下发子孙重着色")
+        elif (nt[0].get('gradient') or {}).get('stops'):
+            # 渲染指南 §6: 渐变 tint 罕见, 取首个 stop 纯色近似下发(原先整体跳过 = 静默丢着色)
+            first_stop = nt[0]['gradient']['stops'][0]
+            if first_stop.get('color'):
+                tint = first_stop['color']
+                log_fix('tint-cascade', f"编组 {node['name']!r} 渐变 tint 取首 stop {tint} 近似下发")
     pad = '  ' * indent
     out = (f'{pad}<div class="n grp" data-name="{esc(node["name"])}" '
            f'style="{style_attr(styles)}">\n')
