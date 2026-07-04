@@ -128,7 +128,7 @@ const makeExportB = (a: any): any => {
     assert(restoreText.indexOf('"visible":true') === -1, 'RestoreDSL：不含 visible:true 缺省 key');
     assert(restoreText.indexOf('"rotation":0') === -1, 'RestoreDSL：不含 rotation:0 缺省 key');
     assert(restoreText.indexOf('"opacity":1') === -1, 'RestoreDSL：不含 opacity:1 缺省 key');
-    assert(restore.schemaVersion === '1.2', 'RestoreDSL：schemaVersion = 1.2');
+    assert(restore.schemaVersion === '1.0', 'RestoreDSL：schemaVersion = 1.0（对外首发版本）');
     assert(restore.meta.units === 'pt', 'RestoreDSL：meta.units = pt');
     assert(!!restore.artboard.absFrame, 'RestoreDSL：根节点携带 absFrame');
     assert(restore.artboard.frame.x === 0 && restore.artboard.frame.y === 0, 'RestoreDSL：根节点坐标归零');

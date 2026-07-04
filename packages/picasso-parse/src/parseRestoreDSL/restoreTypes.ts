@@ -178,13 +178,15 @@ export type RestoreDSL = {
 // RestoreDSL 输出格式版本：只加字段升 minor；破坏性变更升 major（原则上禁止）。
 // 修改输出格式时必须在同一次提交里手动更新此常量（对应 DB 列 dsl_format_version），
 // 并同步 schema/restore-dsl.schema.json。
-// 1.1：新增 flip / windingRule / booleanOperation / 节点级 align / renderHint / rasterizeReason /
+// 1.0：对外首发版本。开发期内部迭代号 1.1/1.2 从未随包发布，全部能力并入 1.0 首发：
+//      flip / windingRule / booleanOperation / 节点级 align / renderHint / rasterizeReason /
 //      fill.token / run.styleToken / textStyles.sourceName（key 统一 text-N）/ meta.assetsBaseUrl /
-//      画板背景色落 fills / text 节点 runs 兜底 / path 节点 svgPath 兜底
-// 1.2：新增 effectiveLineHeight（行高兜底）/ tint + shapeGroup（编组 fills 语义拆分，注意普通
-//      group 的 fills 从 1.2 起落 tint 字段）/ styleHash（无几何第二指纹）/ image.svgUrl 补登记 /
-//      image.frame + image.scale + image.w/h（切图 bleed 元数据，插件端注入）/ meta.assetsScale
-export const RESTORE_SCHEMA_VERSION = '1.2';
+//      画板背景色落 fills / text 节点 runs 兜底 / path 节点 svgPath 兜底 /
+//      effectiveLineHeight（行高兜底）/ tint + shapeGroup（编组 fills 语义拆分，普通 group
+//      的 fills 落 tint 字段）/ styleHash（无几何第二指纹）/ image.svgUrl /
+//      image.frame + image.scale + image.w/h（切图 bleed 元数据，插件端注入）/ meta.assetsScale。
+//      注意：代码与 schema 注释中的 [1.1]/[1.2] 标记是内部迭代阶段号，均属 1.0 首发内容。
+export const RESTORE_SCHEMA_VERSION = '1.0';
 
 // 解析包版本常量（与 package.json 同步手工维护，写入 meta.parserVersion 做实现溯源）
-export const PARSER_VERSION = '0.0.45-beta.1';
+export const PARSER_VERSION = '0.0.45-beta.2';

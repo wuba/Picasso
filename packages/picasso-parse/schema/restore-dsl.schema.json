@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/wuba/Picasso/tree/master/packages/picasso-parse/schema/restore-dsl.schema.json",
   "title": "Picasso RestoreDSL",
-  "description": "RestoreDSL 输出格式规范（schemaVersion 1.1，导出侧自 @wubafe/picasso-parse 0.0.45-beta.0 起实现）。1.1 相对 1.0 为纯增量变更：所有新增字段均可选，1.0 产物必须原样通过本 Schema 校验。缺省值省略原则：visible:true / rotation:0 / opacity:1 / verticalAlign:'top' / 空数组一律不写。带 [1.1+] 标记的字段为本版新增；$comment 中带 [2.0 讨论] 的为破坏性变更备选项，仅记录不生效。",
+  "description": "RestoreDSL 输出格式规范（schemaVersion 1.0 对外首发，导出侧自 @wubafe/picasso-parse 0.0.45-beta.2 起实现）。缺省值省略原则：visible:true / rotation:0 / opacity:1 / verticalAlign:'top' / 空数组一律不写。带 [1.1+]/[1.2+] 标记的字段为开发期内部迭代阶段号，均属 1.0 首发内容；$comment 中带 [2.0 讨论] 的为破坏性变更备选项，仅记录不生效。",
   "$comment": "维护约定：本文件与 restoreTypes.ts、RESTORE_SCHEMA_VERSION 同步更新（只加字段升 minor，破坏性变更原则上禁止）。校验方式示例：python3 -m jsonschema 或 ajv validate -s restore-dsl.schema.json -d xxx_restore.json。",
   "type": "object",
   "required": [
