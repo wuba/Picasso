@@ -13,6 +13,7 @@ effectiveLineHeight 行高兜底、tint 不渲染 / shapeGroup 真填充。
 """
 import json
 import math
+import re
 import sys
 import html as html_mod
 
@@ -233,6 +234,11 @@ def render_image_node(node, indent):
     f = node['frame']
     af = node.get('absFrame', f)
     styles = base_styles(node)
+    # 导出位图已烘焙 rotation/flip(image.frame 即变换后的画布范围),
+    # CSS 再叠加会双重变换(实测 flip.y 下箭头被翻成上箭头)
+    if any(k == 'transform' for k, _ in styles):
+        styles = [(k, v) for k, v in styles if k not in ('transform', 'transform-origin')]
+        log_fix('img-transform', f"位图节点 {node['name']!r} 剥离 CSS transform(位图已含变换)")
     url = node['image']['url']
 
     imf = node['image'].get('frame')
@@ -268,6 +274,15 @@ def render_image_node(node, indent):
                 s = node['shadows'][0]
                 bleed_l = s['blur'] - s.get('x', 0) + s.get('spread', 0)
                 bleed_t = s['blur'] - s.get('y', 0) + s.get('spread', 0)
+                # 物理约束截断: 单侧 bleed 不可能超过 PNG 与 frame 的总差值,
+                # 也不可能越过画板边缘(导出画布被画板裁切)。实测: 贴画板顶的全宽页头
+                # 阴影朝下, 公式假设 bleed(10,8) 而真实 (0,0), 不截断会整条偏移。
+                raw_l, raw_t = bleed_l, bleed_t
+                bleed_l = max(0.0, min(bleed_l, rw - f['w'], af['x']))
+                bleed_t = max(0.0, min(bleed_t, rh - f['h'], af['y']))
+                if (raw_l, raw_t) != (bleed_l, bleed_t):
+                    log_fix('bleed-clamp', f"{node['name']!r} 阴影公式 bleed({num(raw_l)},{num(raw_t)}) "
+                                           f"按物理约束截断为 ({num(bleed_l)},{num(bleed_t)})")
             else:
                 bleed_l = (rw - f['w']) / 2
                 bleed_t = (rh - f['h']) / 2
@@ -292,13 +307,24 @@ def render_image_node(node, indent):
     return (f'{pad}<img class="n img" data-name="{esc(node["name"])}" '
             f'src="{url}" style="{style_attr(styles)}" alt="">\n')
 
-def render_text(node, indent):
+def render_text(node, indent, tint=None):
     styles = base_styles(node)
     runs = node.get('runs', [])
     text = node.get('text', '')
     pad = '  ' * indent
     if not runs:
         return f'{pad}<div class="n txt" style="{style_attr(styles)}">{esc(text)}</div>\n'
+
+    # 文本图层自身的纯色 fills 覆盖 runs 内的字符颜色(Sketch 图层填充语义, symbol 文本
+    # 颜色 override 的常见形态)。优先级: run 色 < 节点 fills < 祖先 tint
+    node_fill = next((fl['color'] for fl in node.get('fills', []) if 'color' in fl), None)
+    if node_fill:
+        runs = [dict(r, color=node_fill) for r in runs]
+        log_fix('text-fill-override', f"文本 {node['name'][:20]!r} 颜色取图层 fills {node_fill}(覆盖 run 色)")
+    # 祖先 group 带 tint 时, Sketch 把子孙内容重着色为 tint 色(保留 alpha 形状),
+    # 文本颜色一并替换。
+    if tint:
+        runs = [dict(r, color=tint) for r in runs]
 
     r0 = runs[0]
     # 行高兜底链: run.lineHeight -> [1.2] effectiveLineHeight(parse 侧已按同一规则算好) -> 本地近似
@@ -323,6 +349,12 @@ def render_text(node, indent):
     multiline = node.get('textResizing') == 'auto-height' or node['frame']['h'] >= lh * 1.8
     if not multiline:
         styles.append(('white-space', 'nowrap'))
+    else:
+        # text 里的显式换行符(\n)必须保留, HTML 默认会折叠成空格
+        # (多段落正文与竖排星号列全靠 \n 定位)
+        styles.append(('white-space', 'pre-wrap'))
+        if '\n' in text:
+            log_fix('text-newline', f"多行文本 {node['name'][:20]!r} 含 {text.count(chr(10))} 个换行符, pre-wrap 保留")
 
     if len(runs) <= 1:
         body = esc(text)
@@ -345,17 +377,17 @@ def render_text(node, indent):
         body = ''.join(parts)
     return f'{pad}<div class="n txt" data-name="{esc(node["name"])}" style="{style_attr(styles)}">{body}</div>\n'
 
-def render_path(node, indent):
+def render_path(node, indent, tint=None):
     f = node['frame']
     styles = base_styles(node)
     fill = 'none'
     for fl in node.get('fills', []):
         if 'color' in fl:
-            fill = color_css(fl['color'])
+            fill = color_css(tint or fl['color'])  # tint 重着色
             break
     stroke = ''
     for b in node.get('borders', []):
-        stroke = f' stroke="{color_css(b["color"])}" stroke-width="{num(b["thickness"])}"'
+        stroke = f' stroke="{color_css(tint or b["color"])}" stroke-width="{num(b["thickness"])}"'
         break
     rule = ' fill-rule="evenodd"' if node.get('windingRule') == 'evenodd' else ''
     pad = '  ' * indent
@@ -363,21 +395,85 @@ def render_path(node, indent):
             f'viewBox="0 0 {num(f["w"])} {num(f["h"])}" preserveAspectRatio="none">'
             f'<path d="{node["svgPath"]}" fill="{fill}"{rule}{stroke}/></svg>\n')
 
-def render_shape(node, indent, extra_class=''):
+def render_shape(node, indent, extra_class='', tint=None):
     """rect / oval / 有 fills 的 group 背景"""
     styles = base_styles(node)
     for fl in node.get('fills', []):
-        styles += fill_to_bg(fl)
+        # tint 重着色: 纯色/渐变填充统一替换为 tint 色
+        styles += fill_to_bg({'color': tint} if tint else fl)
     borders_to_css(node, styles)
     radius_css(node, styles, is_oval=(node['type'] == 'oval'))
     pad = '  ' * indent
     return (f'{pad}<div class="n {extra_class}" data-name="{esc(node["name"])}" '
             f'style="{style_attr(styles)}"></div>\n')
 
+def _translate_d(d, tx, ty):
+    """平移 svgPath(实测产物只含绝对 M/L/C/Z, 所有数字均为坐标对)"""
+    if not tx and not ty:
+        return d
+    idx = [0]
+    def rep(m):
+        v = float(m.group(0)) + (tx if idx[0] % 2 == 0 else ty)
+        idx[0] += 1
+        return num(round(v, 4))
+    return re.sub(r'-?\d+\.?\d*(?:e-?\d+)?', rep, d)
+
+def _child_path_d(c):
+    """shapeGroup 子节点 -> 组本地坐标系的 path d; 不支持的返回 None"""
+    f = c['frame']
+    if c.get('rotation') or c.get('flip'):
+        return None
+    if c['type'] == 'path' and c.get('svgPath'):
+        # svgPath 是子节点本地坐标, 平移到组坐标系后拼进同一个 <path>
+        return _translate_d(c['svgPath'], f['x'], f['y'])
+    if c['type'] == 'oval':
+        k = 0.5523
+        rx, ry = f['w'] / 2, f['h'] / 2
+        cx, cy = f['x'] + rx, f['y'] + ry
+        n = lambda v: num(round(v, 3))
+        return (f"M{n(cx - rx)} {n(cy)} "
+                f"C{n(cx - rx)} {n(cy - k * ry)} {n(cx - k * rx)} {n(cy - ry)} {n(cx)} {n(cy - ry)} "
+                f"C{n(cx + k * rx)} {n(cy - ry)} {n(cx + rx)} {n(cy - k * ry)} {n(cx + rx)} {n(cy)} "
+                f"C{n(cx + rx)} {n(cy + k * ry)} {n(cx + k * rx)} {n(cy + ry)} {n(cx)} {n(cy + ry)} "
+                f"C{n(cx - k * rx)} {n(cy + ry)} {n(cx - rx)} {n(cy + k * ry)} {n(cx - rx)} {n(cy)} Z")
+    if c['type'] == 'rect' and not c.get('borderRadius'):
+        return (f"M{num(f['x'])} {num(f['y'])} L{num(f['x'] + f['w'])} {num(f['y'])} "
+                f"L{num(f['x'] + f['w'])} {num(f['y'] + f['h'])} L{num(f['x'])} {num(f['y'] + f['h'])} Z")
+    return None
+
+def shapegroup_svg(node, indent, tint=None):
+    """无位图 shapeGroup: 子路径拼进一个 SVG, fill-rule=evenodd 近似布尔运算
+    (subtract 的内路径成为挖洞)。返回 None 表示无法合成, 由调用方走逐子路径填色回退。"""
+    kids = node.get('children', [])
+    if not kids:
+        return None
+    fill = tint or next((fl['color'] for fl in node.get('fills', []) if 'color' in fl), None)
+    if not fill:
+        return None
+    parts = []
+    for c in kids:
+        p = _child_path_d(c)
+        if p is None:
+            return None
+        parts.append(p)
+    f = node['frame']
+    styles = base_styles(node)
+    stroke = ''
+    for b in node.get('borders', []):
+        stroke = f' stroke="{color_css(tint or b["color"])}" stroke-width="{num(b["thickness"])}"'
+        break
+    # 全部子路径拼进同一个 <path>: fill-rule=evenodd 只在单个 path 元素内生效,
+    # 跨元素不会挖洞(时钟/放大镜/ⓘ 等 subtract icon 会被填成实心)
+    combined = ' '.join(parts)
+    pad = '  ' * indent
+    return (f'{pad}<svg class="n" data-name="{esc(node["name"])}" style="{style_attr(styles)}" '
+            f'viewBox="0 0 {num(f["w"])} {num(f["h"])}" preserveAspectRatio="none">'
+            f'<path d="{combined}" fill="{color_css(fill)}" fill-rule="evenodd"{stroke}/></svg>\n')
+
 # 需要提到顶层 z-index 的节点(在原 JSON 里层级偏低会被后续白底盖住)
 Z_FIX = {}
 
-def render_node(node, indent=1):
+def render_node(node, indent=1, tint=None):
     t = node['type']
     if t == 'slice':
         return ''  # 切片无视觉
@@ -386,35 +482,65 @@ def render_node(node, indent=1):
     if (t in ('rect', 'oval') and node.get('shadows')
             and not node.get('fills') and node.get('renderHint') == 'image'):
         log_fix('shadow-rect', f"纯阴影矩形 {node['name']!r} {node['absFrame']} 改走 CSS box-shadow")
-        return render_shape(node, indent)
+        return render_shape(node, indent, tint=tint)
 
-    # 栅格化节点 / 位图节点直接用位图
+    # 栅格化节点 / 位图节点直接用位图(导出位图已带 tint 效果, 不再处理)
     if node.get('image') and (node.get('renderHint') == 'image' or t == 'image'):
+        # 退化位图守卫: frame 明显大于 2x2 却导出 1x1 空 PNG(fill 全禁用的不可见图层
+        # 也会进切图管道) -> 位图不可用, 退回矢量渲染; 通常无可见样式, 渲染为空即忠实,
+        # 不要按 sibling 猜色补线(实测该类图层在原稿里本就不可见)
+        f = node['frame']
+        nat = png_size(node['image']['url'])
+        if nat and nat[0] <= 1 and nat[1] <= 1 and (f['w'] > 2 or f['h'] > 2):
+            log_fix('degenerate-bitmap', f"{node['name']!r} {node['absFrame']} 导出位图仅 1x1, 退回矢量渲染")
+            return render_shape(node, indent, tint=tint)
         return render_image_node(node, indent)
 
     if t == 'text':
-        return render_text(node, indent)
+        return render_text(node, indent, tint=tint)
     if t == 'path' and node.get('svgPath'):
-        return render_path(node, indent)
+        return render_path(node, indent, tint=tint)
     if t in ('rect', 'oval'):
-        return render_shape(node, indent)
+        return render_shape(node, indent, tint=tint)
 
     # group: 容器。[1.2] 普通编组的着色提示落 tint 字段(不渲染为背景, 渲染会出现
     # "色块"); shapeGroup=true 是布尔运算形状组, 其 fills 才是真实填充需要渲染。
     # (1.1 老数据普通 group 的着色提示仍在 fills 里, 同样不渲染)
     styles = base_styles(node)
+    shape_children = node.get('children', [])
     if node.get('shapeGroup'):
-        for fl in node.get('fills', []):
-            styles += fill_to_bg(fl)
+        if node.get('fills') and len(shape_children) == 0:
+            # 无子路径的 shapeGroup: bbox 填充是唯一可用信息
+            for fl in node.get('fills', []):
+                styles += fill_to_bg({'color': tint} if tint else fl)
+        elif node.get('fills'):
+            # 无位图兜底的 shapeGroup: 把 bbox 涂成 fills 会出现"色块"(logo 文字/圆形
+            # 气泡变实心方块)。改为不画 bbox: 子路径合成单个 SVG + fill-rule=evenodd
+            # (subtract 挖洞正确: 时钟/放大镜/ⓘ 等镂空 icon); 无法合成的退回逐个填色。
+            svg = shapegroup_svg(node, indent, tint)
+            if svg is not None:
+                log_fix('shapegroup-no-image', f"shapeGroup {node['name']!r} {node['absFrame']} 无位图, "
+                                               f"子路径合成 SVG evenodd 渲染")
+                return svg
+            log_fix('shapegroup-no-image', f"shapeGroup {node['name']!r} {node['absFrame']} 无位图, "
+                                           f"fills 下发子路径逐个填色(union 近似)")
+            gf = node['fills']
+            shape_children = [dict(c, fills=c.get('fills') or gf) for c in shape_children]
     borders_to_css(node, styles)
     radius_css(node, styles)
     if node['id'] in Z_FIX:
         styles.append(('z-index', str(Z_FIX[node['id']])))
+    # 普通编组的 tint 下发给子孙矢量/文本重着色(Sketch 组填充语义);
+    # 取首个纯色 fill, 渐变 tint 罕见暂不支持
+    nt = node.get('tint')
+    if nt and not node.get('shapeGroup') and 'color' in nt[0]:
+        tint = nt[0]['color']
+        log_fix('tint-cascade', f"编组 {node['name']!r} tint={tint} 下发子孙重着色")
     pad = '  ' * indent
     out = (f'{pad}<div class="n grp" data-name="{esc(node["name"])}" '
            f'style="{style_attr(styles)}">\n')
-    for c in node.get('children', []):
-        out += render_node(c, indent + 1)
+    for c in shape_children:
+        out += render_node(c, indent + 1, tint=tint)
     out += f'{pad}</div>\n'
     return out
 
@@ -426,8 +552,12 @@ def render_node(node, indent=1):
 # ---------------- 组装页面 ----------------
 body_nodes = ''
 art_styles = [('width', px(ART_W)), ('height', px(ART_H)), ('position', 'relative')]
-for fl in ART.get('fills', []):
+# 画板背景 fills -> tint -> 白底 兜底链: parser 0.0.45-beta.1 及更早版本对 Frame 画板
+# 会把背景误分类进 tint(已修), 存量产物靠 tint 回退; 无背景时按 Sketch 画布语义补白底。
+art_bg = ART.get('fills') or ART.get('tint') or [{'color': '#FFFFFF'}]
+for fl in art_bg:
     art_styles += fill_to_bg(fl)
+log_fix('artboard-bg', f"画板背景取自 {'fills' if ART.get('fills') else ('tint' if ART.get('tint') else '白底缺省')}: {art_bg}")
 for c in ART.get('children', []):
     body_nodes += render_node(c, 3)
 
@@ -484,7 +614,7 @@ HTML = f'''<!DOCTYPE html>
       <option value="1">100%</option>
     </select>
   </label>
-  <span style="opacity:.5">750 × {num(ART_H)} · schemaVersion {esc(str(DSL.get('schemaVersion')))} · parser {esc(DSL['meta'].get('parserVersion',''))}</span>
+  <span style="opacity:.5">{num(ART_W)} × {num(ART_H)} · schemaVersion {esc(str(DSL.get('schemaVersion')))} · parser {esc(DSL['meta'].get('parserVersion',''))}</span>
 </div>
 <div class="stage">
   <div class="wrap" id="wrap" style="width:{num(ART_W)}px; height:{num(ART_H)}px">
