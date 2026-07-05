@@ -378,7 +378,7 @@ def render_image_node(node, indent):
                                         f"{num(imf['w'])}x{num(imf['h'])} 与 PNG 实际 {num(rw)}x{num(rh)} 不符")
         radius_css(node, styles, is_oval=(node['type'] == 'oval'))
         pad = '  ' * indent
-        return (f'{pad}<img class="n img" data-name="{esc(node["name"])}" '
+        return (f'{pad}<img class="n img" data-dsl-id="{esc(node["id"])}" data-name="{esc(node["name"])}" '
                 f'src="{url}" style="{style_attr(styles)}" alt="">\n')
 
     nat = png_size(url)
@@ -421,7 +421,7 @@ def render_image_node(node, indent):
             log_fix('bleed', f"位图回摆 {node['name']!r}: frame {f['w']}x{f['h']} -> 渲染 {num(rw)}x{num(rh)} [{note}]")
     radius_css(node, styles, is_oval=(node['type'] == 'oval'))
     pad = '  ' * indent
-    return (f'{pad}<img class="n img" data-name="{esc(node["name"])}" '
+    return (f'{pad}<img class="n img" data-dsl-id="{esc(node["id"])}" data-name="{esc(node["name"])}" '
             f'src="{url}" style="{style_attr(styles)}" alt="">\n')
 
 def render_text(node, indent):
@@ -430,7 +430,8 @@ def render_text(node, indent):
     text = node.get('text', '')
     pad = '  ' * indent
     if not runs:
-        return f'{pad}<div class="n txt" style="{style_attr(styles)}">{esc(text)}</div>\n'
+        return (f'{pad}<div class="n txt" data-dsl-id="{esc(node["id"])}" '
+                f'style="{style_attr(styles)}">{esc(text)}</div>\n')
 
     # 图层色/祖先 tint 已在 parse 端下发进 runs[].color, 消费端零覆盖逻辑;
     # 文本节点带 fills 只剩渐变文字(罕见), 首色近似
@@ -489,7 +490,8 @@ def render_text(node, indent):
             else:
                 parts.append(esc(seg))
         body = ''.join(parts)
-    return f'{pad}<div class="n txt" data-name="{esc(node["name"])}" style="{style_attr(styles)}">{body}</div>\n'
+    return (f'{pad}<div class="n txt" data-dsl-id="{esc(node["id"])}" data-name="{esc(node["name"])}" '
+            f'style="{style_attr(styles)}">{body}</div>\n')
 
 def render_path(node, indent):
     f = node['frame']
@@ -509,7 +511,8 @@ def render_path(node, indent):
     if stroke:
         styles.append(('overflow', 'visible'))
     pad = '  ' * indent
-    return (f'{pad}<svg class="n" data-name="{esc(node["name"])}" style="{style_attr(styles)}" '
+    return (f'{pad}<svg class="n" data-dsl-id="{esc(node["id"])}" data-name="{esc(node["name"])}" '
+            f'style="{style_attr(styles)}" '
             f'viewBox="0 0 {num(f["w"])} {num(f["h"])}" preserveAspectRatio="none">'
             f'<path d="{node["svgPath"]}" fill="{fill}"{rule}{stroke}/></svg>\n')
 
@@ -521,7 +524,7 @@ def render_shape(node, indent, extra_class=''):
     borders_to_css(node, styles)
     radius_css(node, styles, is_oval=(node['type'] == 'oval'))
     pad = '  ' * indent
-    return (f'{pad}<div class="n {extra_class}" data-name="{esc(node["name"])}" '
+    return (f'{pad}<div class="n {extra_class}" data-dsl-id="{esc(node["id"])}" data-name="{esc(node["name"])}" '
             f'style="{style_attr(styles)}"></div>\n')
 
 def _translate_d(d, tx, ty):
@@ -583,7 +586,8 @@ def shapegroup_svg(node, indent):
     # 跨元素不会挖洞(时钟/放大镜/ⓘ 等 subtract icon 会被填成实心)
     combined = ' '.join(parts)
     pad = '  ' * indent
-    return (f'{pad}<svg class="n" data-name="{esc(node["name"])}" style="{style_attr(styles)}" '
+    return (f'{pad}<svg class="n" data-dsl-id="{esc(node["id"])}" data-name="{esc(node["name"])}" '
+            f'style="{style_attr(styles)}" '
             f'viewBox="0 0 {num(f["w"])} {num(f["h"])}" preserveAspectRatio="none">'
             f'<path d="{combined}" fill="{color_css(fill)}" fill-rule="evenodd"{stroke}/></svg>\n')
 
@@ -647,7 +651,7 @@ def render_node(node, indent=1):
     if node['id'] in Z_FIX:
         styles.append(('z-index', str(Z_FIX[node['id']])))
     pad = '  ' * indent
-    out = (f'{pad}<div class="n grp" data-name="{esc(node["name"])}" '
+    out = (f'{pad}<div class="n grp" data-dsl-id="{esc(node["id"])}" data-name="{esc(node["name"])}" '
            f'style="{style_attr(styles)}">\n')
     for c in shape_children:
         out += render_node(c, indent + 1)
@@ -727,7 +731,7 @@ HTML = f'''<!DOCTYPE html>
 </div>
 <div class="stage">
   <div class="wrap" id="wrap" style="width:{num(ART_W)}px; height:{num(ART_H)}px">
-    <div class="artboard" id="restore" style="{style_attr(art_styles)}">
+    <div class="artboard" id="restore" data-dsl-id="{esc(ART['id'])}" style="{style_attr(art_styles)}">
 {body_nodes}    </div>
     <img id="origImg" src="{orig_url}" alt="原设计图">
   </div>

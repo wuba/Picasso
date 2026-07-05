@@ -378,7 +378,8 @@ function shapegroupSvg(node, indent) {
   // 跨元素不会挖洞(时钟/放大镜/ⓘ 等 subtract icon 会被填成实心)
   const combined = parts.join(' ');
   const pad = '  '.repeat(indent);
-  return pad + '<svg class="n" data-name="' + esc(node.name) + '" style="' + styleAttr(styles) + '" ' +
+  return pad + '<svg class="n" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +
+         'style="' + styleAttr(styles) + '" ' +
          'viewBox="0 0 ' + num(f.w) + ' ' + num(f.h) + '" preserveAspectRatio="none">' +
          '<path d="' + combined + '" fill="' + colorCss(fill) + '" fill-rule="evenodd"' + stroke + '/></svg>\n';
 }
@@ -403,7 +404,8 @@ function renderPath(node, indent) {
   // (案例: 4px stroke 画在 1px 高 viewBox 里只剩 1px)——描边路径放开裁剪
   if (stroke) styles.push(['overflow', 'visible']);
   const pad = '  '.repeat(indent);
-  return pad + '<svg class="n" data-name="' + esc(node.name) + '" style="' + styleAttr(styles) + '" ' +
+  return pad + '<svg class="n" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +
+         'style="' + styleAttr(styles) + '" ' +
          'viewBox="0 0 ' + num(f.w) + ' ' + num(f.h) + '" preserveAspectRatio="none">' +
          '<path d="' + node.svgPath + '" fill="' + fill + '"' + rule + stroke + '/></svg>\n';
 }
@@ -418,7 +420,7 @@ function renderShape(node, indent, extraClass) {
   bordersToCss(node, styles);
   radiusCss(node, styles, node.type === 'oval');
   const pad = '  '.repeat(indent);
-  return pad + '<div class="n ' + extraClass + '" data-name="' + esc(node.name) + '" ' +
+  return pad + '<div class="n ' + extraClass + '" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +
          'style="' + styleAttr(styles) + '"></div>\n';
 }
 
@@ -664,7 +666,7 @@ async function generateRestoreHtml(dslInput, options) {
       }
       radiusCss(node, styles, node.type === 'oval');
       const pad = '  '.repeat(indent);
-      return pad + '<img class="n img" data-name="' + esc(node.name) + '" ' +
+      return pad + '<img class="n img" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +
              'src="' + url + '" style="' + styleAttr(styles) + '" alt="">\n';
     }
 
@@ -720,7 +722,7 @@ async function generateRestoreHtml(dslInput, options) {
     }
     radiusCss(node, styles, node.type === 'oval');
     const pad = '  '.repeat(indent);
-    return pad + '<img class="n img" data-name="' + esc(node.name) + '" ' +
+    return pad + '<img class="n img" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +
            'src="' + url + '" style="' + styleAttr(styles) + '" alt="">\n';
   }
 
@@ -730,7 +732,8 @@ async function generateRestoreHtml(dslInput, options) {
     const text = node.text != null ? node.text : '';
     const pad = '  '.repeat(indent);
     if (!runs.length) {
-      return pad + '<div class="n txt" style="' + styleAttr(styles) + '">' + esc(text) + '</div>\n';
+      return pad + '<div class="n txt" data-dsl-id="' + esc(node.id) + '" ' +
+             'style="' + styleAttr(styles) + '">' + esc(text) + '</div>\n';
     }
 
     // 图层色/祖先 tint 已在 parse 端下发进 runs[].color, 消费端零覆盖逻辑;
@@ -791,7 +794,8 @@ async function generateRestoreHtml(dslInput, options) {
       }
       body = parts.join('');
     }
-    return pad + '<div class="n txt" data-name="' + esc(node.name) + '" style="' + styleAttr(styles) + '">' + body + '</div>\n';
+    return pad + '<div class="n txt" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +
+           'style="' + styleAttr(styles) + '">' + body + '</div>\n';
   }
 
   async function renderNode(node, indent) {
@@ -855,7 +859,7 @@ async function generateRestoreHtml(dslInput, options) {
     radiusCss(node, styles);
     if (node.id in Z_FIX) styles.push(['z-index', String(Z_FIX[node.id])]);
     const pad = '  '.repeat(indent);
-    let out = pad + '<div class="n grp" data-name="' + esc(node.name) + '" ' +
+    let out = pad + '<div class="n grp" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +
               'style="' + styleAttr(styles) + '">\n';
     for (const c of shapeChildren) {
       out += await renderNode(c, indent + 1);
@@ -935,7 +939,7 @@ ${fontFaces}
 </div>
 <div class="stage">
   <div class="wrap" id="wrap" style="width:${num(ART_W)}px; height:${num(ART_H)}px">
-    <div class="artboard" id="restore" style="${styleAttr(artStyles)}">
+    <div class="artboard" id="restore" data-dsl-id="${esc(ART.id)}" style="${styleAttr(artStyles)}">
 ${bodyNodes}    </div>
     <img id="origImg" src="${origUrl}" alt="原设计图">
   </div>
