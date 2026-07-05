@@ -132,19 +132,6 @@ export const patternFillMode = (patternFillType?: number): string | undefined =>
 };
 
 /**
- * fill 项级透明度并入颜色 alpha 通道。
- * Sketch 允许每个 fill 层独立设 contextSettings.opacity，若不并入 alpha，
- * 消费方需两遍相乘计算（layer.opacity × fill.opacity × color.alpha），易漏；
- * 合并后 hex 一次即含所有信息，也让 contentHash 稳定（同视觉两种存储 → 同 hash）。
- */
-const applyFillOpacity = (color?: SKColor, contextSettings?: any): SKColor | undefined => {
-    if (!color) return undefined;
-    const opacity = contextSettings && typeof contextSettings.opacity === 'number' ? contextSettings.opacity : 1;
-    if (opacity >= 1) return color;
-    return { ...color, alpha: (typeof color.alpha === 'number' ? color.alpha : 1) * opacity };
-};
-
-/**
  * 图层 fills 数组归一化。
  * fillType 数值：0=纯色 / 1=渐变 / 4=图片；2/3（Pattern、Noise）Sketch 内极少用，暂不支持——
  * 遇到时静默丢弃（结果数组不含该项），不当异常抛出以免中断整树解析。
@@ -157,8 +144,11 @@ export const fillsToRestore = (layer: SKLayer): RestoreFill[] => memo('fills', l
     fills.forEach((fill: any) => {
         if (!fill || !fill.isEnabled) return;
         if (fill.fillType === 0) {
-            // 纯色：项级透明度先并入 alpha，再 hex 化
-            const color = colorToHex(applyFillOpacity(fill.color, fill.contextSettings));
+            // 纯色只取 color（含其自带 alpha）。fill.contextSettings.opacity **不并入**：
+            // 该字段在 UI 无入口（多为旧版本/导入残留），Sketch 渲染引擎实测忽略它——
+            // 15.反馈面试问题04 三张卡 fill 带 opacity=0.2 而官方导出原图为实色 #F5F7FA，
+            // 曾经的乘入逻辑把不透明底卡算成 #F5F7FA33，白底上近乎消失
+            const color = colorToHex(fill.color);
             if (color) result.push({ color });
         } else if (fill.fillType === 1) {
             // 渐变：项级 opacity 未并入（渐变每个 stop 各自有 alpha，整体缩放需消费方处理）

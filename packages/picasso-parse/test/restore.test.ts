@@ -625,6 +625,31 @@ const makeExportB = (a: any): any => {
     assert(!!bareDsl.artboard.fills && bareDsl.artboard.fills[0].color === '#FFFFFF',
         'bake 画板背景：无背景画板显式写白底（消费端删兜底链）');
 
+    // —— fill 级 contextSettings.opacity 不并入 alpha ——
+    // 该字段 UI 无入口（旧版本/导入残留），Sketch 渲染引擎实测忽略：15.反馈面试问题04
+    // 三张底卡 fill 带 opacity=0.2 而官方导出原图为实色 #F5F7FA。曾经的乘入逻辑
+    // 把它算成 #F5F7FA33，白底上近乎消失
+    const ctxOpacityArt: any = {
+        _class: 'artboard', do_objectID: 'CO-ROOT', name: '项级透明度画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [{
+            _class: 'rectangle', do_objectID: 'CO-R1', name: '底卡', isVisible: true,
+            frame: { _class: 'rect', x: 0, y: 0, width: 333, height: 88 },
+            style: {
+                _class: 'style',
+                fills: [{
+                    _class: 'fill', isEnabled: true, fillType: 0,
+                    color: mkColor(0.961, 0.97, 0.98),
+                    contextSettings: { _class: 'graphicsContextSettings', blendMode: 0, opacity: 0.2 },
+                }],
+            },
+        }],
+    };
+    const ctxOpacityDsl = picassoArtboardRestoreParse(undefined, deepCopy(ctxOpacityArt), undefined, { generatedAt: 'fixed' });
+    const ctxRect = ctxOpacityDsl.artboard.children![0];
+    assert(!!ctxRect.fills && ctxRect.fills[0].color === '#F5F7FA',
+        'fills 归一化：fill.contextSettings.opacity 忽略不并入 alpha（Sketch 渲染实测不生效）');
+
     // —— text.fills 下发 runs[].color 后删除 ——
     const textArt: any = {
         _class: 'artboard', do_objectID: 'TF-ROOT', name: '文本画板', isVisible: true,
