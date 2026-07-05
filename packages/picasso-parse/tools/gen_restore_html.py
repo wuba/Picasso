@@ -15,9 +15,16 @@ v4 削薄(消费 schema 1.1 CSS-ready 语义, 对应 parse 端 bake.ts):
   - 画板背景: fills 必填, 删兜底链
   - stroke-only 细直线: parse 已转 fills 矩形, 无需特判
 可选依赖: Pillow(仅老 Symbol 素材无 image.frame 时的像素校准回退用), 无网络时自动降级。
+
+字体嵌入: 设计稿常用私有字体(如 58 数字字体 don58)浏览器无内置, 回退 PingFang 后
+数字字形明显变宽(实测 19 画板 don58 42px 数值回退后压住"万个"后缀)。设环境变量
+PICASSO_FONT_DIR(多目录冒号分隔), 脚本按 DSL 实际用到的 fontFamily 在目录下递归找
+<family>*.woff2/woff/ttf, base64 内联为 @font-face; 找不到时仅 log 提示不阻断。
 """
+import base64
 import json
 import math
+import os
 import re
 import sys
 import html as html_mod
@@ -153,6 +160,64 @@ def base_styles(node):
 
 def style_attr(styles):
     return '; '.join(f'{k}: {v}' for k, v in styles)
+
+# ---------------- 私有字体嵌入 ----------------
+# 浏览器无内置的设计稿字体(don58 等)按需内联, 否则回退 PingFang 导致数字字宽失真
+_FONT_WEIGHT_HINTS = [('thin', 100), ('extralight', 200), ('light', 300),
+                      ('medium', 500), ('semibold', 600), ('bold', 700),
+                      ('black', 900), ('regular', 400)]
+_FONT_MIME = {'.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf'}
+
+
+def _used_font_families(node, acc):
+    for r in node.get('runs', []):
+        if r.get('fontFamily'):
+            acc.add(r['fontFamily'])
+    for c in node.get('children', []):
+        _used_font_families(c, acc)
+
+
+def build_font_faces():
+    """按 DSL 用到的 fontFamily 在 PICASSO_FONT_DIR 下找字体文件, 内联 @font-face。
+    同 family 多 weight 各出一条(文件名含 Medium/Bold 等权重提示词); 同 weight
+    多格式时取 woff2 > woff > ttf。"""
+    dirs = [d for d in os.environ.get('PICASSO_FONT_DIR', '').split(':') if d.strip()]
+    if not dirs:
+        return ''
+    fams = set()
+    _used_font_families(ART, fams)
+    # 系统字体无需嵌入: .SFNS(苹果系统字面名)与 PingFang 系 macOS/iOS 自带
+    fams = {f for f in fams if not f.startswith('.') and 'pingfang' not in f.lower()}
+    faces = []
+    for fam in sorted(fams):
+        found = {}  # weight -> (ext_priority, path)
+        for root in dirs:
+            for dirpath, _dirnames, filenames in os.walk(root):
+                for fn in filenames:
+                    ext = os.path.splitext(fn)[1].lower()
+                    if ext not in _FONT_MIME or not fn.lower().startswith(fam.lower()):
+                        continue
+                    weight = 400
+                    for hint, w in _FONT_WEIGHT_HINTS:
+                        if hint in fn.lower():
+                            weight = w
+                            break
+                    prio = ['.woff2', '.woff', '.ttf'].index(ext)
+                    if weight not in found or prio < found[weight][0]:
+                        found[weight] = (prio, os.path.join(dirpath, fn))
+        for weight, (_prio, path) in sorted(found.items()):
+            with open(path, 'rb') as fp:
+                b64 = base64.b64encode(fp.read()).decode('ascii')
+            ext = os.path.splitext(path)[1].lower()
+            fmt = {'.woff2': 'woff2', '.woff': 'woff', '.ttf': 'truetype'}[ext]
+            faces.append(
+                f"  @font-face {{ font-family: '{fam}'; font-weight: {weight}; "
+                f"src: url(data:{_FONT_MIME[ext]};base64,{b64}) format('{fmt}'); }}")
+            log_fix('font-embed', f"内联字体 {fam} weight={weight} <- {os.path.basename(path)}")
+        if not found:
+            log_fix('font-missing', f"字体 {fam!r} 在 PICASSO_FONT_DIR 未找到, 将回退 PingFang(字宽可能失真)")
+    return '\n'.join(faces)
+
 
 # ---------------- 位图尺寸感知 ----------------
 # [1.2] 切图统一导出倍率从 meta.assetsScale 读; 老数据缺省按 750 宽画板 @2x 惯例
@@ -565,6 +630,7 @@ for c in ART.get('children', []):
 
 orig_url = (ART.get('image') or {}).get('url', '')
 title = ART.get('name', 'restore')
+font_faces = build_font_faces()
 
 HTML = f'''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -572,6 +638,7 @@ HTML = f'''<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>{esc(title)} · RestoreDSL 还原稿</title>
 <style>
+{font_faces}
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   html, body {{ background: #2b2d31; font-family: 'PingFang SC', -apple-system, sans-serif; }}
   .toolbar {{
