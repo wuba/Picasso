@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-RestoreDSL(schemaVersion 1.1) -> 静态 HTML 还原稿生成器（确定性渲染基线, v4 削薄版）
+RestoreDSL(schemaVersion 1.0) -> 静态 HTML 还原稿生成器（确定性渲染基线, v4 削薄版）
 用法: python3 render_restore.py <restore.json> <output.html>
 
 定位: 模拟 LLM 消费者的确定性渲染器, 用于区分「数据不够还原」(改 parse/插件)
 与「LLM 没用好数据」(改提示词)。渲染语义规范见 schema/restore-dsl-rendering-guide.md。
 
-v4 削薄(消费 schema 1.1 CSS-ready 语义, 对应 parse 端 bake.ts):
+v4 削薄(消费 schema 1.0 CSS-ready 语义, 对应 parse 端 bake.ts):
   - 渐变: 直接读 gradient.css(angle/stops[].pct 已按节点实际宽高投影算好), 删投影计算
-  - tint: 1.1 产物纯色 tint 已在 parse 下发删除, 删递归下发逻辑
+  - tint: 纯色 tint 已在 parse 下发删除, 删递归下发逻辑
   - text.fills: 已在 parse 下发 runs[].color, 删覆盖逻辑
   - rotation/flip: 契约「字段出现 = 必须应用」, 无任何按类型的剥离启发式
   - 画板背景: fills 必填, 删兜底链
@@ -18,8 +18,12 @@ v4 削薄(消费 schema 1.1 CSS-ready 语义, 对应 parse 端 bake.ts):
 
 字体嵌入: 设计稿常用私有字体(如 58 数字字体 don58)浏览器无内置, 回退 PingFang 后
 数字字形明显变宽(实测 19 画板 don58 42px 数值回退后压住"万个"后缀)。设环境变量
-PICASSO_FONT_DIR(多目录冒号分隔), 脚本按 DSL 实际用到的 fontFamily 在目录下递归找
-<family>*.woff2/woff/ttf, base64 内联为 @font-face; 找不到时仅 log 提示不阻断。
+PICASSO_FONT_DIR, 脚本按 DSL 实际用到的 fontFamily 匹配来源条目, base64 内联为
+@font-face; 找不到时仅 log 提示不阻断。条目两种形态(可混用):
+  - 本地目录: 递归找 <family>*.woff2/woff/ttf
+  - 字体文件完整 URL(https?://...): HTTP 无法枚举远程目录, 远程只支持点名到文件;
+    按 URL 文件名做同样的 family/weight 匹配, 命中后下载内联, 失败仅 log 不阻断
+分隔规则: 含 '://' 用英文逗号分隔(URL 自身带冒号), 否则按老口径冒号分隔。
 """
 import base64
 import json
@@ -66,7 +70,7 @@ def color_css(hexs):
     return hexs
 
 def gradient_css(g):
-    """[1.1] 线性渐变直接消费 gradient.css(parse 端 bake 已按节点实际宽高投影算好,
+    """线性渐变直接消费 gradient.css(parse 端 bake 已按节点实际宽高投影算好,
     pct 可为负/超 100, 浏览器沿渐变线外推)。无 css 字段(非线性/退化)取首色纯背景。"""
     css = g.get('css')
     if not css:
@@ -177,12 +181,29 @@ def _used_font_families(node, acc):
         _used_font_families(c, acc)
 
 
+def _font_match(fam, fn):
+    """文件名 -> (weight, ext_priority); 不匹配该 family 返回 None"""
+    ext = os.path.splitext(fn)[1].lower()
+    if ext not in _FONT_MIME or not fn.lower().startswith(fam.lower()):
+        return None
+    weight = 400
+    for hint, w in _FONT_WEIGHT_HINTS:
+        if hint in fn.lower():
+            weight = w
+            break
+    return weight, ['.woff2', '.woff', '.ttf'].index(ext)
+
+
 def build_font_faces():
-    """按 DSL 用到的 fontFamily 在 PICASSO_FONT_DIR 下找字体文件, 内联 @font-face。
+    """按 DSL 用到的 fontFamily 找字体文件, 内联 @font-face。来源条目两种形态(可混用):
+    本地目录(递归找 <family>*.woff2/woff/ttf) / 字体文件完整 URL(HTTP 无法枚举
+    远程目录, 远程只支持点名到文件, 按 URL 文件名做同样匹配, 命中后下载内联)。
     同 family 多 weight 各出一条(文件名含 Medium/Bold 等权重提示词); 同 weight
     多格式时取 woff2 > woff > ttf。"""
-    dirs = [d for d in os.environ.get('PICASSO_FONT_DIR', '').split(':') if d.strip()]
-    if not dirs:
+    raw = os.environ.get('PICASSO_FONT_DIR', '')
+    # URL 自身带冒号, 含 '://' 时改用逗号分隔, 纯本地目录保持冒号老口径
+    entries = [d for d in raw.split(',' if '://' in raw else ':') if d.strip()]
+    if not entries:
         return ''
     fams = set()
     _used_font_families(ART, fams)
@@ -190,37 +211,56 @@ def build_font_faces():
     fams = {f for f in fams if not f.startswith('.') and 'pingfang' not in f.lower()}
     faces = []
     for fam in sorted(fams):
-        found = {}  # weight -> (ext_priority, path)
-        for root in dirs:
-            for dirpath, _dirnames, filenames in os.walk(root):
-                for fn in filenames:
-                    ext = os.path.splitext(fn)[1].lower()
-                    if ext not in _FONT_MIME or not fn.lower().startswith(fam.lower()):
-                        continue
-                    weight = 400
-                    for hint, w in _FONT_WEIGHT_HINTS:
-                        if hint in fn.lower():
-                            weight = w
-                            break
-                    prio = ['.woff2', '.woff', '.ttf'].index(ext)
-                    if weight not in found or prio < found[weight][0]:
-                        found[weight] = (prio, os.path.join(dirpath, fn))
-        for weight, (_prio, path) in sorted(found.items()):
-            with open(path, 'rb') as fp:
-                b64 = base64.b64encode(fp.read()).decode('ascii')
-            ext = os.path.splitext(path)[1].lower()
+        found = {}  # weight -> (ext_priority, ('file', path, name) | ('url', url, name))
+        for entry in entries:
+            e = entry.strip()
+            if re.match(r'https?://', e, re.I):
+                try:
+                    from urllib.parse import urlparse, unquote
+                    fn = unquote(urlparse(e).path.rsplit('/', 1)[-1])
+                except Exception:
+                    continue
+                m = _font_match(fam, fn)
+                if not m:
+                    continue
+                weight, prio = m
+                if weight not in found or prio < found[weight][0]:
+                    found[weight] = (prio, ('url', e, fn))
+            else:
+                for dirpath, _dirnames, filenames in os.walk(entry):
+                    for fn in filenames:
+                        m = _font_match(fam, fn)
+                        if not m:
+                            continue
+                        weight, prio = m
+                        if weight not in found or prio < found[weight][0]:
+                            found[weight] = (prio, ('file', os.path.join(dirpath, fn), fn))
+        for weight, (_prio, src) in sorted(found.items()):
+            kind, loc, name = src
+            if kind == 'url':
+                try:
+                    import urllib.request
+                    data = urllib.request.urlopen(loc, timeout=15).read()
+                except Exception:
+                    log_fix('font-missing', f'字体文件下载失败 {loc}, 跳过')
+                    continue
+            else:
+                with open(loc, 'rb') as fp:
+                    data = fp.read()
+            b64 = base64.b64encode(data).decode('ascii')
+            ext = os.path.splitext(name)[1].lower()
             fmt = {'.woff2': 'woff2', '.woff': 'woff', '.ttf': 'truetype'}[ext]
             faces.append(
                 f"  @font-face {{ font-family: '{fam}'; font-weight: {weight}; "
                 f"src: url(data:{_FONT_MIME[ext]};base64,{b64}) format('{fmt}'); }}")
-            log_fix('font-embed', f"内联字体 {fam} weight={weight} <- {os.path.basename(path)}")
+            log_fix('font-embed', f"内联字体 {fam} weight={weight} <- {name}")
         if not found:
             log_fix('font-missing', f"字体 {fam!r} 在 PICASSO_FONT_DIR 未找到, 将回退 PingFang(字宽可能失真)")
     return '\n'.join(faces)
 
 
 # ---------------- 位图尺寸感知 ----------------
-# [1.2] 切图统一导出倍率从 meta.assetsScale 读; 老数据缺省按 750 宽画板 @2x 惯例
+# 切图统一导出倍率从 meta.assetsScale 读; 老数据缺省按 750 宽画板 @2x 惯例
 ASSETS_SCALE = DSL.get('meta', {}).get('assetsScale') or 2
 
 def image_scale(node):
@@ -305,7 +345,7 @@ def calibrate_placement(url, gx, gy, rw, rh, dx_range, dy_range):
 def render_image_node(node, indent):
     """renderHint=image / type=image 的栅格化节点: 直接用位图, 跳过矢量子树。
     位图可能带 bleed(阴影/模糊溢出图层 frame), 按真实渲染尺寸回摆:
-    - [1.2] 有 image.frame: 插件端采集的画布真实范围(画板绝对坐标), 直接换算摆位
+    - 有 image.frame: 插件端采集的画布真实范围(画板绝对坐标), 直接换算摆位
     - 老数据回退: 有 shadows 按 blur/offset 公式外扩, 否则居中假设 + 像素校准
     """
     f = node['frame']
@@ -392,7 +432,7 @@ def render_text(node, indent):
     if not runs:
         return f'{pad}<div class="n txt" style="{style_attr(styles)}">{esc(text)}</div>\n'
 
-    # [1.1] 图层色/祖先 tint 已在 parse 端下发进 runs[].color, 消费端零覆盖逻辑;
+    # 图层色/祖先 tint 已在 parse 端下发进 runs[].color, 消费端零覆盖逻辑;
     # 文本节点带 fills 只剩渐变文字(罕见), 首色近似
     grad_fill = next((fl for fl in node.get('fills', []) if 'gradient' in fl), None)
     if grad_fill:
@@ -401,7 +441,7 @@ def render_text(node, indent):
         log_fix('text-gradient-approx', f"渐变文字 {node['name'][:20]!r} 用首 stop {approx} 近似")
 
     r0 = runs[0]
-    # 行高兜底链: run.lineHeight -> [1.2] effectiveLineHeight(parse 侧已按同一规则算好) -> 本地近似
+    # 行高兜底链: run.lineHeight -> effectiveLineHeight(parse 侧已按同一规则算好) -> 本地近似
     lh = r0.get('lineHeight') or node.get('effectiveLineHeight')
     if not lh:
         # 单行文本的 frame 高度就是 Sketch 实算的默认行高, 直接采用;
@@ -580,7 +620,7 @@ def render_node(node, indent=1):
     if t in ('rect', 'oval'):
         return render_shape(node, indent)
 
-    # group: 容器。[1.1] 纯色着色提示(tint)已在 parse 端下发子孙并删除, 消费端无
+    # group: 容器。纯色着色提示(tint)已在 parse 端下发子孙并删除, 消费端无
     # 下发逻辑; shapeGroup=true 是布尔运算形状组, 其 fills 是真实填充需要渲染。
     styles = base_styles(node)
     shape_children = node.get('children', [])
@@ -622,7 +662,7 @@ def render_node(node, indent=1):
 # ---------------- 组装页面 ----------------
 body_nodes = ''
 art_styles = [('width', px(ART_W)), ('height', px(ART_H)), ('position', 'relative')]
-# [1.1] 画板背景 fills 必填(parse 端 bake 兜底白底), 消费端零兜底直接读
+# 画板背景 fills 必填(parse 端 bake 兜底白底), 消费端零兜底直接读
 for fl in ART['fills']:
     art_styles += fill_to_bg(fl)
 for c in ART.get('children', []):
