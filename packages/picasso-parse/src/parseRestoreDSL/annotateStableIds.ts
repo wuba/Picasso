@@ -76,6 +76,7 @@ const framesEqual = (a: SKLayer, b: SKLayer): boolean => {
  * 两者来源不同（override 换组件可能改变子节点），盲配会给不相关节点注入错误 stableId。
  */
 const pairChildren = (aChildren: SKLayer[], bChildren: SKLayer[]): (SKLayer | undefined)[] => {
+    // —— 快速路径：长度一致 + 逐位 (name, class 兼容) 都对得上 → 直接按 index 硬配 ——
     if (aChildren.length === bChildren.length) {
         // 同名兄弟的重名计数：重名时 index 硬配前必须复验，否则 z 序调换会错位注入。
         // 同 class：两侧 hash 均在但不等 → 疑似换序；跨类（实例↔解绑组）hash 不可比
@@ -84,6 +85,7 @@ const pairChildren = (aChildren: SKLayer[], bChildren: SKLayer[]): (SKLayer | un
         // 名字唯一时 hash/frame 不等只是内容被改，index 硬配仍正确（内容跟人走）
         const nameCount: { [name: string]: number } = {};
         aChildren.forEach((a) => { nameCount[a.name] = (nameCount[a.name] || 0) + 1; });
+
         const indexAligned = bChildren.every((b, i) => {
             const a = aChildren[i];
             if (a.name !== b.name || !isCompatible(a._class, b._class)) return false;
@@ -98,10 +100,13 @@ const pairChildren = (aChildren: SKLayer[], bChildren: SKLayer[]): (SKLayer | un
             }
             return true;
         });
+
         if (indexAligned) {
             return bChildren.map((_b, i) => aChildren[i]);
         }
     }
+
+    // —— 慢路径：三轮贪心（内容 → 几何 → 保序） ——
     const paired: (SKLayer | undefined)[] = new Array(bChildren.length);
     const aTaken: boolean[] = new Array(aChildren.length);
 
@@ -155,29 +160,53 @@ const pairChildren = (aChildren: SKLayer[], bChildren: SKLayer[]): (SKLayer | un
     return paired;
 };
 
-/** 解析 A 侧 symbolInstance 的 overrideValues → 可读键 overrides */
+/**
+ * 解析 A 侧 symbolInstance 的 overrideValues → 可读键 overrides。
+ *
+ * Sketch 的 overrideName 是固定后缀格式：`<UUID路径>_<字段类型>`。UUID 路径以 `/` 分隔
+ * 表示嵌套 override（如 `父组件UUID/子组件UUID`），后缀标识被覆盖的字段类别：
+ *   - stringValue：文本内容覆盖
+ *   - symbolID：嵌套 symbol 换绑
+ *   - image：图片资源换图
+ * textStyle / layerStyle 等样式类后缀不属于「内容信息」（消费方通过节点自身样式就能看到），
+ * 故仅保留三种内容类 override，跳过样式类。
+ *
+ * 输出键把 UUID 路径逐段映射为可读名（ctx.nameByUUID，缺失时回退 UUID 短前缀），
+ * 便于消费方直接识别"哪个组件被覆盖了什么"，不用二次解字典。
+ */
 const resolveOverrides = (aInstance: any, ctx: AnnotateContext): { [key: string]: any } | undefined => {
     const overrideValues: any[] = aInstance && Array.isArray(aInstance.overrideValues) ? aInstance.overrideValues : [];
     if (!overrideValues.length) return undefined;
+
     const overrides: { [key: string]: any } = {};
     overrideValues.forEach((ov: any) => {
         if (!ov || typeof ov.overrideName !== 'string') return;
+
+        // 只识别三种内容类后缀；样式类后缀（textStyle/layerStyle）在此被静默过滤
         const m = ov.overrideName.match(/^(.+)_(stringValue|symbolID|image)$/);
-        if (!m) return; // textStyle / layerStyle 等样式类 override 不属于内容信息，跳过
+        if (!m) return;
+
+        // UUID 路径 → 可读名路径（nameByUUID 缺失时回退 8 位 UUID 短前缀，避免键完全不可读）
         const readable = m[1]
             .split('/')
             .map((uuid: string) => ctx.nameByUUID[uuid] || uuid.slice(0, 8))
             .join('/');
+
         let value: any = ov.value;
+        // image override 的 value 是 `{ _ref, ... }` 引用对象，仅保留 _ref 让消费方拿到资源 id
         if (m[2] === 'image' && value && typeof value === 'object') {
             value = value._ref || value;
         }
+        // symbolID override 的 value 是 UUID，短哈希化后与 components 字典 key 对齐
         if (m[2] === 'symbolID' && typeof value === 'string' && value) {
             value = shortHashOf(value, ctx.hash);
         }
+        // 空覆盖（用户清空了输入）不写入——避免消费方误判"这里被显式清空"
         if (value === '' || value === undefined || value === null) return;
+
         overrides[readable] = value;
     });
+
     if (!Object.keys(overrides).length) return undefined;
     return overrides;
 };

@@ -30,15 +30,48 @@ export { assessRestoreDiffability } from './diffability';
 export type { DiffabilityReport, DiffabilityVerdict } from './diffability';
 export { toRenderProfile } from './renderProfile';
 
+/**
+ * 快速深拷贝——RestoreDSL 输入是纯 JSON 结构（Sketch 导出），无函数/循环引用/Date，
+ * 用 JSON.parse(JSON.stringify) 最快且够用，避免引 lodash。
+ * 用于隔离 prepareTree 的原地修改，防止污染调用方的原始 exportA/B/masters。
+ */
 const deepCopy = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
-/** 复用既有画板预处理：坐标绝对化 → 基准归零 → Mask 几何化 → 隐藏层剔除（输入深拷贝，不动原树） */
+/**
+ * 复用四种存量 DSL 的画板预处理管线——RestoreDSL 与它们必须消费**同一份**预处理后的树，
+ * 才能保证跨产物几何/可见性一致（stableId 对齐的前提）。
+ *
+ * 四步顺序不可换（每一步都依赖前一步的输出形状）：
+ *   1. deepCopy：整棵树深拷贝——下方四个步骤都是**原地修改**风格（Picasso 历史约定），
+ *      不隔离会污染外部传入的 exportA/B/mastersC，annotate 幂等判断也会失灵。
+ *   2. formatCoordinate：把 Sketch 相对父级的 frame 归一化——布尔运算子路径 / Symbol 展开
+ *      子树的坐标基准修正到父级原点，保证后续所有几何计算共用同一坐标系。
+ *   3. fixPosition：基准归零——画板根节点 frame 从画布绝对坐标归零到 (0,0)，让后代
+ *      absFrame 计算可直接累加父级偏移。
+ *   4. trimByMask：Mask 图层几何化——被 Mask 裁剪的图层 frame 收敛到可见区域，
+ *      避免 mapNode 输出"虚假的大 frame"（原始 frame 是 mask 前的完整尺寸）。
+ *   5. filterHideLayer：剔除 isVisible=false 的图层——隐藏层不参与 RestoreDSL 输出，
+ *      也不参与 contentHash/subtreeHash 计算（消费方看不见就不该占指纹位）。
+ *
+ * @param root 原始 SK 图层树（不会被修改）
+ * @returns 处理后的树根；根节点被过滤（如整个画板 isVisible=false）时返回 undefined
+ */
 const prepareTree = (root: SKLayer): SKLayer | undefined => {
+    // 深拷贝隔离——后续所有 formatCoordinate/fixPosition/trimByMask/filterHideLayer 都是原地改
     let layers: SKLayer[] = [deepCopy(root)];
+
+    // 坐标绝对化：布尔子路径 / Symbol 展开子树的 frame 基准统一到父级原点
     layers = formatCoordinate(layers as any) as SKLayer[];
+
+    // 基准归零：画板 frame 从画布绝对坐标移到 (0,0)，后代 absFrame 可直接累加
     layers = fixPosition(layers);
+
+    // Mask 几何化：被裁剪图层 frame 收敛到可见区域，避免虚假大 frame
     layers = trimByMask(layers);
+
+    // 隐藏层剔除：isVisible=false 的图层从树中移除，不参与后续解析与指纹
     layers = filterHideLayer(layers);
+
     return layers[0];
 };
 

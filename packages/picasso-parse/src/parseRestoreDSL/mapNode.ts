@@ -101,6 +101,10 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, ctx
     const pageRoot = isRoot && !c.componentRoot;
     let type = restoreTypeOf(layer);
     if (pageRoot && frameContainer) type = 'artboard';
+    // id 三级降级：
+    //   1) stableId（annotateStableIds 已注入，跨版本可对齐——首选）
+    //   2) 内容指纹兜底（fallbackNodeId：subtreeHash → contentHash → do_objectID，见其头部注释）
+    //   3) 若整个 annotate 都没跑（未走 picassoArtboardRestoreParse 主流程），退到 do_objectID
     const id: string = (layer as any).stableId || fallbackNodeId(layer, used);
     used[id] = true;
     if (c.idByDoObjectID && layer.do_objectID) c.idByDoObjectID[layer.do_objectID] = id;
@@ -189,6 +193,11 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, ctx
             // 单行自适应文本的 frame 高度就是 Sketch 实算行高（PingFang 实测 28→40、32→45、24→33），
             // 直接采信；多行用 1.4 倍近似（PingFang 系实测区间 1.375~1.44 的中值）。
             // 不回写 runs：runs 参与 contentHash 与 styleToken 关联（textStyleKey），改了会双双破坏。
+            //
+            // 阈值 1.9：单行判据——frame.h ≤ size * 1.9 视为单行。
+            //   PingFang 默认行高在字号的 1.375~1.44 倍区间，1.9 留出 30% 余量兜住少见字体
+            //   （如日文粗体 1.6~1.7）；一旦 ≥ 2 倍字号必然是两行以上。取 1.9 而非 2.0
+            //   是防边界字号（如 24pt 实算 33 高，2.0 阈值=48 会误认双行 12pt 为单行 24pt）。
             const firstRun = runs[0];
             if (firstRun.lineHeight === undefined && typeof firstRun.size === 'number'
                 && node.textResizing !== 'fixed') {
