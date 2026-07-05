@@ -72,15 +72,19 @@ const rnCode = picassoCode([dsl], artboardJSON.frame.width, CodeType.ReactNative
 
 | 函数 | 用途 |
 | --- | --- |
-| `annotateStableIds(exportB, exportA?, mastersC?)` | 把 `stableId` / `contentHash` / `subtreeHash` 原地注入解绑副本树（导出 B）。注入后再喂给四种存量 DSL 解析方法，产物即携带同一批稳定 ID（条件透传，未注入的老输入产出逐字节不变） |
+| `annotateStableIds(exportB, exportA?, mastersC?)` | 把 `stableId` / `contentHash` / `styleHash` / `subtreeHash` 原地注入解绑副本树（导出 B），解绑点上再加 `restoreComponentKey` / `restoreOverrides`。注入后再喂给四种存量 DSL 解析方法，产物即携带同一批稳定 ID + 内容指纹 + 样式指纹（条件透传，未注入的老输入产出逐字节不变） |
 | `picassoArtboardRestoreParse(exportA, exportB, mastersC?, options?)` | 三份输入合并（ID 回填 + components 组装 + overrides 解析），产出 RestoreDSL：结构保真（1:1 镜像图层树）、值归一化、无布局推断 |
+| `assessRestoreDiffability(prev, next)` | 跨版本 diff 前置判定：给两版 RestoreDSL 打 `same-artboard` / `duplicated-artboard` / `unrelated` 三档标签，服务端 diff 第一步用它选择配对策略 |
+| `toRenderProfile(restore)` | LLM 还原用的精简视图：剥离 hash / components 字典 / 透明占位，可节省 31~44% 体积。全量产物照常落库，此函数只影响 LLM 提示词素材 |
 
 - `exportA`：原始画板 JSON（`sketch.export` 直接导出，do_objectID 持久稳定）
 - `exportB`：解绑 Symbol 后的副本画板 JSON（几何精确的展开树）
 - `mastersC`：画板引用到的 symbolMaster JSON 列表（可缺省，components 字典降级）
-- `options`：`{ sketchVersion, pluginVersion, documentId, generatedAt, componentsOmitted, componentSources }`
+- `options`：`{ sketchVersion, pluginVersion, documentId, generatedAt, componentsOmitted, assetsBaseUrl, assetsScale, componentSources }`
 
 推荐调用顺序：三导出 → `annotateStableIds` → 四种存量 DSL 与 `picassoArtboardRestoreParse` 消费同一棵注入后的树。
+
+四种存量 DSL 透传的注入字段：`stableId` / `contentHash` / `subtreeHash` / `styleHash`（`restoreComponentKey` / `restoreOverrides` 只落 RestoreDSL，不透传）。
 
 ### 代码生成（DSL → 文本）
 
