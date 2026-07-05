@@ -106,6 +106,96 @@ const rnCode = picassoCode([dsl], artboardJSON.frame.width, CodeType.ReactNative
 
 完整的类型定义会随 npm tarball 一起发布到 `dist/**/*.d.ts`，可直接在 TypeScript 项目中享受智能提示。
 
+## 配套资源：`schema/` 与 `tools/`
+
+这两个目录围绕 **RestoreDSL**（结构保真中间表示）配套维护，与 `RESTORE_SCHEMA_VERSION` 同步更新。npm 发包时随 tarball 一起分发，服务端 / 渲染端 / 校验端可直接取用。
+
+### `schema/` — RestoreDSL 格式与渲染语义规范
+
+| 文件 | 作用 |
+| --- | --- |
+| [`schema/restore-dsl.schema.json`](schema/restore-dsl.schema.json) | RestoreDSL 输出格式的**规范真源**（JSON Schema draft-07）。字段是否必填、枚举取值、缺省省略约定等以此为准 |
+| [`schema/restore-dsl-rendering-guide.md`](schema/restore-dsl-rendering-guide.md) | **消费端渲染语义规范**——拿到合法 DSL 后怎么渲染才对。适用于所有 RestoreDSL 消费方：服务端 LLM 还原提示词、确定性渲染器、diff 可视化等 |
+
+两个文件解决的问题不同：schema 回答"什么样的 JSON 是合法的"，rendering-guide 回答"合法 JSON 该怎么落到像素"。改任一份都要同步另一份 + `RESTORE_SCHEMA_VERSION`。
+
+**校验产物合法性**（任选其一）：
+
+```sh
+# Python（内置 jsonschema）
+python3 -m jsonschema -i your_restore.json schema/restore-dsl.schema.json
+
+# Node（ajv-cli）
+npx ajv validate -s schema/restore-dsl.schema.json -d your_restore.json
+```
+
+服务端 LLM 提示词工程建议直接引用 `restore-dsl-rendering-guide.md` 全文作为素材源，避免二次转述引入偏差。
+
+### `tools/` — 确定性 HTML 渲染基线
+
+| 文件 | 说明 |
+| --- | --- |
+| [`tools/gen_restore_html.py`](tools/gen_restore_html.py) | Python 3 实现（可选依赖 Pillow，仅老素材无 `image.frame` 时的像素校准回退需要） |
+| [`tools/gen_restore_html.js`](tools/gen_restore_html.js) | Node.js 实现（Node ≥ 14，可选依赖 `pngjs`，同上） |
+
+**定位**：模拟 LLM 消费者的确定性渲染器，把 RestoreDSL 渲染成静态 HTML 还原稿。用途是区分「**数据不够还原**」（改 parse / 插件）与「**LLM 没用好数据**」（改提示词）。schema 变更后拿真实产物跑一遍即回归对照。
+
+两版逐行对齐、输出**逐字节一致**（像素校准命中的节点除外），渲染语义变更必须双边同改。
+
+#### CLI 用法
+
+```sh
+# Python 版
+python3 tools/gen_restore_html.py <restore.json> <output.html>
+
+# Node.js 版（完全等价）
+node tools/gen_restore_html.js <restore.json> <output.html>
+```
+
+产物是自包含单文件 HTML，内置 mode 切换（还原稿 / 原设计图 / 叠加对比 overlay）与缩放选择，用浏览器直接打开即可。运行完成后会在 stdout 打印 `written: <path> (<bytes> bytes)`，并把过程中记录的 `[fix:xxx]` 修正项一并列出（供人工整理进文档）。
+
+#### Node.js API 用法
+
+入库 / 服务化场景可直接拿 HTML 字符串，无需落地文件：
+
+```ts
+const { generateRestoreHtml } = require('@wubafe/picasso-parse/tools/gen_restore_html');
+
+const fixes = [];
+const html = await generateRestoreHtml(dsl, {
+  fontDir: '/path/a:/path/b',   // 可选，缺省读环境变量 PICASSO_FONT_DIR
+  collectFixes: fixes,          // 可选，传数组收集 [tag, msg] 修正记录
+});
+// dsl 可以是 RestoreDSL 对象，也可以是 JSON 字符串
+```
+
+#### 字体嵌入（`PICASSO_FONT_DIR`）
+
+设计稿常用私有字体（如 58 数字字体 `don58`）浏览器无内置，回退 PingFang 后字宽会明显失真（实测数值会压住后续文本）。通过环境变量 `PICASSO_FONT_DIR` 指定字体来源，脚本会按 DSL 实际用到的 `fontFamily` 匹配、base64 内联为 `@font-face`；找不到时仅 log 提示不阻断。
+
+条目支持两种形态（可混用）：
+
+- **本地目录**：递归查找 `<family>*.woff2 / woff / ttf`
+- **字体文件完整 URL**（`https?://.../don58-Medium_V1.4.woff2`）：HTTP 无法枚举远程目录，只支持点名到文件；按 URL 文件名做同样的 family/weight 匹配，命中后整文件下载内联，下载失败仅 log 不阻断
+
+分隔规则：
+
+- 字符串含 `://` → 用英文**逗号**分隔（URL 自身带冒号，无法再冒号分隔）
+- 否则按老口径**冒号**分隔（与 `$PATH` 一致）
+- Node.js API 的 `fontDir` 也可以直接传数组
+
+```sh
+# 纯本地目录
+export PICASSO_FONT_DIR="/Users/me/fonts:/Users/me/private-fonts"
+
+# 混用本地目录与远程 URL
+export PICASSO_FONT_DIR="/Users/me/fonts,https://cdn.example.com/don58-Medium.woff2"
+
+python3 tools/gen_restore_html.py restore.json out.html
+```
+
+以 `.` 开头的 PostScript 名（`.SFNS` 等）是 macOS 私有系统字体、无文件可嵌，脚本会自动跳过、走消费端兜底链。
+
 ## 与 Picasso Sketch 插件的关系
 
 本包是 [Picasso 仓库](https://github.com/wuba/Picasso) 中 `packages/` 下的入口包，**也是该仓库唯一对外发布的 npm 包**。仓库内 `picasso-dsl` / `picasso-group` / `picasso-layout` / `picasso-trans` / `picasso-code-browser` / `sketch-dsl` 六个 sibling 包都标记了 `"private": true`，由本包在 `tsc` 编译时通过相对路径一并编进 `dist/`，对外只暴露 `@wubafe/picasso-parse` 一个入口。
