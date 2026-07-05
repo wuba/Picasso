@@ -7,10 +7,14 @@
 
 ## 1. 总则
 
+- **消费端契约（1.1 起）**：DSL 输出 CSS-ready 最终值，消费端**不做**任何字段
+  兜底、推断或转换回退——缺字段即等于 Sketch 里就没有；有字段就必须应用。
+  语义收敛在 parse 端 `bake.ts` 单点，消费端只做「字段 → 属性」的机械映射。
 - 单位一律 pt（`meta.units`）；750 宽画板即 750pt，Web 端 1pt = 1px 直出即可。
-- **画板背景**：`artboard.fills` 是页面底色，必须渲染；无 fills 时缺省**白底**
-  （Sketch 画布语义），不能透出宿主页面背景。Sketch 2025 的 Frame 画板已由 parse
-  归一化（type='artboard'、背景落 fills），消费方无需区分画板是 Artboard 还是 Frame。
+- **画板背景**：`artboard.fills` 是页面底色，必须渲染；1.1 起该字段**必填**
+  （无背景时 parse 显式写白底），消费端不再需要兜底链。Sketch 2025 的 Frame
+  画板已由 parse 归一化（type='artboard'、背景落 fills），消费方无需区分画板
+  是 Artboard 还是 Frame。
 - **缺省值省略**：`visible:true`、`rotation:0`、`opacity:1`、空数组一律不落盘。
   字段不存在 = 取默认值，不是数据缺失。
 - 双坐标系：`frame` 是父级相对坐标（CSS 定位直接用）；`absFrame` 在
@@ -44,10 +48,15 @@
   坐标）：位图画布可能含阴影/模糊 bleed，大于节点 frame 且**四边不对称**。
   换算父相对坐标：`left = image.frame.x - (absFrame.x - frame.x)`，top 同理，
   宽高直接用 `image.frame.w/h`。
-- **位图已烘焙节点变换与着色**：导出位图包含 rotation / flip / 祖先 tint 的最终
-  渲染效果（`image.frame` 也是变换后的画布范围）。摆放位图时**忽略**节点的
-  rotation/flip 字段，不能再叠 CSS transform——会双重变换（实测 flip.y 箭头被翻回
-  朝上）。这些字段仅供矢量化输出（读子树重建）时使用。
+- **rotation/flip 契约（1.1）：字段出现 = 必须应用，无「已烘焙需忽略」的例外**。
+  切图是 Sketch 渲染管线的产物（所见即所得），图层自身变换必然烘焙进像素——
+  parse 端 bake 对**一切带切图 url 的节点**（含 group/shapeGroup 栅格化）删
+  rotation/flip；产物中还出现该字段的只剩矢量节点，消费端照常应用即可。消费端
+  **禁止**再做任何按节点类型「剥离/忽略 transform」的启发式。历史勘误：1.0/1.1
+  初期曾按「group 栅格化未烘焙、字段保留」处理，其唯一支撑实测（气泡组 flip.x
+  不翻则尖角方向反）经同一 URL 数据复核证实为误判（切图与原图尖角方向本就一致，
+  保留字段反而双重翻转），已于 beta.6 修正。前置条件：group 切图 url 由插件端
+  回填，插件收口必须在回填后再跑一次 `bakeRestoreTree`，否则该删除不生效。
 - `image.frame` 缺失时回退节点 `frame` 原位摆放（缺失的多为无 bleed 或 trim 已
   裁边的位图，回退无损）。不要自行做居中/阴影公式假设——历史上这两种假设都被
   实测推翻过（bleed 可以完全偏向一侧）。
@@ -66,9 +75,14 @@
 ## 4. 样式映射
 
 - **颜色**：`#RRGGBB` / `#RRGGBBAA` 8 位 hex，现代浏览器原生支持。
-- **线性渐变**：`from`/`to` 是节点内单位坐标（y 向下）。CSS 角度 =
-  `atan2(dx, -dy)`（度）。radial/angular 渐变较少见，可退化取首 stop 纯色，
-  或按 CSS `radial-gradient` 尽力映射。
+- **线性渐变（1.1）**：直接消费 `gradient.css`——
+  `linear-gradient(css.angle deg, stops[i].color stops[i].pct%, ...)`，零计算。
+  `pct` 可为负 / 超 100（Sketch from/to 越界语义，浏览器沿渐变线外推，原样
+  输出即可）。**不要**用 `stops[].position × 100` 当 CSS %——那是 from→to 参数
+  比例，与 CSS 渐变线百分位只在 from/to 恰好铺满投影时才相等（实测：越界渐变
+  被"压平"，深色 stop 提前变淡）。`from`/`to` 仅作审计与非 CSS 消费端自算。
+  radial/angular 无 css 字段，退化取首 stop 纯色，或按 CSS `radial-gradient`
+  尽力映射。
 - **边框**：`position` 语义 CSS 没有直接对应，用 box-shadow 模拟不影响布局：
   `inside` → `inset 0 0 0 t`；`outside` → `0 0 0 t`（spread）；`center` →
   内外各半。border 属性会挤占盒模型，不要用。
@@ -87,10 +101,10 @@
   默认行高），多行 ≈ 1.4 × 字号。不要用 1.2 × 字号的通用假设——PingFang 下
   实测偏小。
 - 多 `runs` 按 `from`/`len` 切 span，只写与首 run 不同的属性。
-- **文本图层 fills 覆盖 run 颜色**：text 节点存在纯色 `fills` 时，它是图层级
-  填充覆盖（symbol 文本做颜色 override 的常见形态），**优先于所有 `runs[].color`**
-  （实测："我的访客" run 色是 master 的 #FFFFFFA6，真实渲染色在 fills=#595959）。
-  优先级：run 色 < 节点 fills < 祖先 tint（见 §6）。
+- **文本颜色（1.1）**：`runs[].color` 就是最终渲染色——图层级 fills 覆盖与祖先
+  tint 着色都已在 parse 端 bake 阶段下发进 runs，消费端零覆盖逻辑。text 节点
+  出现 `fills` 只剩一种情形：**渐变文字**（罕见），可取首 stop 纯色近似或
+  background-clip:text 精确渲染。
 - **保留显式换行**：`text` 里的 `\n` 是真实换行（多段落、竖排星号列全靠它定位），
   HTML 输出必须 `white-space: pre-wrap`（或 `\n`→`<br>`），默认的空白折叠会把
   段落挤成一坨。
@@ -100,18 +114,15 @@
 - 字体：`fontFamily` 落地时补中文兜底链
   `'PingFang SC', -apple-system, sans-serif`。
 
-## 6. group 语义（1.2 重要变更）
+## 6. group 语义
 
-- **`tint`**（1.2+）：普通编组的填充是**子图标着色提示**，不渲染为背景
-  （渲染会出现色块）。1.1 老数据该提示仍在 `fills` 里——普通 group 的 `fills`
-  一律不渲染为背景。
-- **tint 要下发重着色**：不渲染为背景 ≠ 忽略。Sketch 的组填充语义是把子孙内容
-  整体重着色为 tint 色（保留形状与 alpha）：渲染时将子孙矢量 fill / border /
-  文本颜色替换为 tint 首个纯色（实测：状态栏 symbol 内容本体白色，靠组 tint
-  #333333 染成深灰——不下发就是白字白底）。位图子节点已烘焙 tint，跳过。
-  渐变 tint 罕见，可取首 stop 纯色近似。
+- **`tint`（1.1 起基本不出现）**：普通编组填充的「子图标着色提示」已在 parse 端
+  bake 阶段下发到子孙 `fills`/`borders`/`runs` 的 color 并删除字段——消费端
+  **没有**任何 tint 下发逻辑。产物中仅可能残留**渐变着色**（极罕见）：不渲染为
+  背景，可取首 stop 纯色近似下发。若在 1.1 产物中见到纯色 tint 属 parse 缺陷，
+  应报修而非兜底。
 - **Frame 容器不是普通编组**：Sketch 2025 Frame（含嵌套）的填充是**真实背景**，
-  parse 已保持其 `fills` 语义（不落 tint），按普通背景渲染即可。
+  parse 已保持其 `fills` 语义，按普通背景渲染即可。
 - **`shapeGroup: true`**：布尔运算形状组，其 `fills` 才是真实填充，children 是
   布尔子路径。`booleanOperation` 是字段透传（union/subtract/…），消费方不预合并
   ——无法合成路径时整组退化用位图（这类组通常已带 `image`）。
@@ -139,10 +150,18 @@
 `run.styleToken` 反向引用）。渲染时不需要；生成**可维护代码**时应把 token 提为
 CSS 变量/类，key 命名 `color-N` / `text-N`，`sourceName` 是 Sketch 共享样式原名。
 
-## 9. 版本兼容
+## 9. 版本兼容（对外口径）
 
 | schemaVersion | 消费端注意 |
 | --- | --- |
-| 1.0 | 无 renderHint/rasterizeReason；`fills[].image.url` 可能是本地相对路径（`meta.assetsBaseUrl` 拼接，该缺陷 1.1 起已修） |
-| 1.1 | 普通 group 着色提示在 `fills`（同样不渲染）；无 image.frame/scale，位图 bleed 只能像素校准 |
-| 1.2 | 本文完整语义：image.frame / effectiveLineHeight / tint / shapeGroup / styleHash / meta.assetsScale |
+| 1.0 | 对外首发（历史 [1.1+]/[1.2+] 标记为开发期内部迭代号，均属 1.0 内容）。消费端需自做：tint 下发、text.fills 覆盖、渐变投影换算、位图 transform 取舍（无统一契约）、画板背景兜底 |
+| 1.1 | **CSS-ready 化（本文完整语义）**：gradient.css 直接消费；tint/text.fills 已下发不出现；rotation/flip 出现即应用；artboard.fills 必填；stroke 细直线已转 fills 矩形；同 frame 子 slice 切图已上提到 group。消费 1.0 存量产物可先过一遍 `bakeRestoreTree`（包主入口导出，幂等）升级到 1.1 语义 |
+
+## 10. 直线与描边路径
+
+- **stroke-only 细直线（1.1）**：parse 端已把「h≤1（或 w≤1）+ 单条纯色实线
+  border」的直线烘焙成等效 `fills` 矩形（骑线语义、短边=thickness），消费端
+  无需特判。
+- **一般描边路径**：SVG 渲染时描边骑线会向 frame 外溢出半个 thickness，svg
+  元素默认 `overflow: hidden` 会裁掉——带 stroke 的 path 需 `overflow: visible`
+  （实测：4px stroke 画在 1px 高 viewBox 里被裁成 1px 细线）。

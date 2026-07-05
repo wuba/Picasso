@@ -21,6 +21,7 @@ import {
     annotateStableIds,
     assessRestoreDiffability,
     toRenderProfile,
+    bakeRestoreTree,
 } from '../src';
 import sha1 from '../src/parseRestoreDSL/sha1';
 
@@ -142,7 +143,7 @@ const makeExportB = (a: any): any => {
     assert(restoreText.indexOf('"visible":true') === -1, 'RestoreDSL：不含 visible:true 缺省 key');
     assert(restoreText.indexOf('"rotation":0') === -1, 'RestoreDSL：不含 rotation:0 缺省 key');
     assert(restoreText.indexOf('"opacity":1') === -1, 'RestoreDSL：不含 opacity:1 缺省 key');
-    assert(restore.schemaVersion === '1.0', 'RestoreDSL：schemaVersion = 1.0（对外首发版本）');
+    assert(restore.schemaVersion === '1.1', 'RestoreDSL：schemaVersion = 1.1（CSS-ready 化）');
     assert(restore.meta.units === 'pt', 'RestoreDSL：meta.units = pt');
     assert(!!restore.artboard.absFrame, 'RestoreDSL：根节点携带 absFrame');
     assert(restore.artboard.frame.x === 0 && restore.artboard.frame.y === 0, 'RestoreDSL：根节点坐标归零');
@@ -358,7 +359,11 @@ const makeExportB = (a: any): any => {
     const restore = picassoArtboardRestoreParse(deepCopy(exportA), deepCopy(exportA), undefined, { generatedAt: 'fixed' });
     const kids = restore.artboard.children!;
     const groupNode = kids.filter(k => k.name === '图标组')[0];
-    assert(!!groupNode.tint && !groupNode.fills, '1.2 tint：普通编组 fills 落 tint 不落 fills');
+    // 1.1 起纯色 tint 在 bake 阶段下发子孙后删除：组上不落 tint 也不落 fills，
+    // 子形状的原色（黑）被重着色为组的着色色（灰）
+    assert(!groupNode.tint && !groupNode.fills, '1.1 tint：普通编组着色提示已下发删除（不落 tint/fills）');
+    assert(!!groupNode.children && groupNode.children[0].fills![0].color === '#999999',
+        '1.1 tint：着色色下发覆盖子形状 fills.color');
     const textNode = kids.filter(k => k.name === '无行高文本')[0];
     assert(textNode.effectiveLineHeight === 20, '1.2 行高兜底：单行无行高文本 effectiveLineHeight = frame 高');
     assert(textNode.runs![0].lineHeight === undefined, '1.2 行高兜底：不回写 runs（保护 hash 与 styleToken）');
@@ -431,7 +436,8 @@ const makeExportB = (a: any): any => {
     assert(nested.type === 'group' && !!nested.fills && nested.fills[0].color === '#FFFFFF' && !nested.tint,
         'Frame 适配：嵌套 Frame 的背景保持 fills 语义（type 仍为 group）');
     const plainGroup = dsl.artboard.children!.filter(k => k.name === '图标组')[0];
-    assert(!!plainGroup.tint && !plainGroup.fills, 'Frame 适配：普通编组 fills→tint 语义不回归');
+    // 普通编组的着色提示不得误升为背景（fills）；1.1 起纯色 tint 已下发删除，两字段皆无
+    assert(!plainGroup.tint && !plainGroup.fills, 'Frame 适配：普通编组着色提示不落 fills（tint 已下发删除）');
 
     // symbolMaster 作解析根：backgroundColor 此前被静默丢弃
     const masterRoot: any = {
@@ -522,7 +528,10 @@ const makeExportB = (a: any): any => {
     };
     const iconDsl = picassoArtboardRestoreParse(deepCopy(iconA), iconB, [deepCopy(iconMaster)], { generatedAt: 'fixed' });
     const iconTree = iconDsl.components[sha1('SYM-ICON').slice(0, 8)].tree!;
-    assert(!!iconTree.tint && !iconTree.fills, 'componentRoot：定义树根 fills 维持 tint 语义（不误升为背景）');
+    // 定义树根的着色提示不得误升为背景；1.1 起已下发删除。子路径本身无填充（渲染无内容），
+    // Sketch tint 只重着色已绘制内容——不给无填充子节点强加 fills
+    assert(!iconTree.tint && !iconTree.fills, 'componentRoot：定义树根着色提示不落 fills（tint 已下发删除）');
+    assert(!iconTree.children![0].fills, 'componentRoot：tint 不给无填充子节点强加 fills');
     // 同一 master 直接作解析根 = 页面语义，fills 保持背景（回归护栏）
     const iconRootDsl = picassoArtboardRestoreParse(undefined, deepCopy(iconMaster), undefined, { generatedAt: 'fixed' });
     assert(!!iconRootDsl.artboard.fills && !iconRootDsl.artboard.tint, 'componentRoot：master 直接作解析根仍是页面底色语义');
@@ -553,7 +562,8 @@ const makeExportB = (a: any): any => {
         _class: 'group', do_objectID: id, name: '着色组', isVisible: true,
         frame: { _class: 'rect', x, y: 0, width: 40, height: 40 },
         style: { _class: 'style', fills: [mkFill10(0.6, 0.6, 0.6)] },
-        layers: [mkRect10(`${id}-C`, '子形状', 0)],
+        // 子形状带自己的原色（黑）——tint 下发是"重着色已有填充"，无填充子节点不适用
+        layers: [mkRect10(`${id}-C`, '子形状', 0, mkFill10(0, 0, 0))],
     });
     const tintArt: any = {
         _class: 'artboard', do_objectID: 'TK-ROOT', name: '着色画板', isVisible: true,
@@ -562,9 +572,14 @@ const makeExportB = (a: any): any => {
     };
     const tintDsl = picassoArtboardRestoreParse(undefined, deepCopy(tintArt), undefined, { generatedAt: 'fixed' });
     const tintGroup = tintDsl.artboard.children![0];
-    assert(!!tintDsl.designTokens.colors && tintDsl.designTokens.colors['color-1'].value === '#999999',
-        'tint token：着色色进 token 表');
-    assert(!!tintGroup.tint && tintGroup.tint[0].token === 'color-1', 'tint token：tint[].token 回填（不再是孤儿槽位）');
+    // 同频 token 按 hex 字典序 tiebreak（#000000 < #999999），token 名动态查表不硬编码
+    const tintTokenName = Object.keys(tintDsl.designTokens.colors || {})
+        .filter(name => tintDsl.designTokens.colors![name].value === '#999999')[0];
+    assert(!!tintTokenName, 'tint token：着色色进 token 表');
+    // 1.1：tint 下发后组上无字段，token 回填落在被重着色的子形状 fills 上
+    assert(!tintGroup.tint && tintGroup.children![0].fills![0].color === '#999999'
+        && tintGroup.children![0].fills![0].token === tintTokenName,
+        'tint token：下发后的子形状新色回填 token（不再是孤儿槽位）');
 
     // —— 降级兜底 id：do_objectID 全换（模拟两次上传的解绑副本）内容不变 → id 集一致 ——
     const degradeBase: any = {
@@ -591,6 +606,210 @@ const makeExportB = (a: any): any => {
         'idByDoObjectID：B 侧 do_objectID 可查到 RestoreDSL 节点 id（含兜底 id）');
     assert(JSON.stringify(dg1).indexOf('idByDoObjectID') === -1,
         'idByDoObjectID：不可枚举，不落 JSON 产物');
+}
+
+// ---------- 10. schema 1.1 CSS-ready 化（bake.ts） ----------
+{
+    const mkColor = (r: number, g: number, b: number, a?: number): any => (
+        { _class: 'color', red: r, green: g, blue: b, alpha: a === undefined ? 1 : a });
+    const mkSolidFill = (r: number, g: number, b: number): any => (
+        { _class: 'fill', isEnabled: true, fillType: 0, color: mkColor(r, g, b) });
+
+    // —— 画板背景必填：无 backgroundColor / 无 fills 的画板显式落白底 ——
+    const bareArt: any = {
+        _class: 'artboard', do_objectID: 'BK-ROOT', name: '裸画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [],
+    };
+    const bareDsl = picassoArtboardRestoreParse(undefined, deepCopy(bareArt), undefined, { generatedAt: 'fixed' });
+    assert(!!bareDsl.artboard.fills && bareDsl.artboard.fills[0].color === '#FFFFFF',
+        'bake 画板背景：无背景画板显式写白底（消费端删兜底链）');
+
+    // —— text.fills 下发 runs[].color 后删除 ——
+    const textArt: any = {
+        _class: 'artboard', do_objectID: 'TF-ROOT', name: '文本画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [{
+            _class: 'text', do_objectID: 'TF-T1', name: '覆盖色文本', isVisible: true,
+            frame: { _class: 'rect', x: 0, y: 0, width: 100, height: 20 },
+            style: { _class: 'style', fills: [mkSolidFill(1, 0, 0)] },
+            attributedString: {
+                _class: 'attributedString', string: '文字',
+                attributes: [{
+                    location: 0, length: 2,
+                    attributes: {
+                        MSAttributedStringFontAttribute: { _class: 'fontDescriptor', attributes: { name: 'PingFangSC-Regular', size: 14 } },
+                        MSAttributedStringColorAttribute: mkColor(0, 0, 0),
+                    },
+                }],
+            },
+        }],
+    };
+    const textDsl = picassoArtboardRestoreParse(undefined, deepCopy(textArt), undefined, { generatedAt: 'fixed' });
+    const coloredText = textDsl.artboard.children![0];
+    assert(!coloredText.fills && coloredText.runs![0].color === '#FF0000',
+        'bake text.fills：图层色下发 runs[].color 后删除 fills');
+
+    // —— gradient.css：线性渐变按节点实际宽高投影预算 CSS 角度/百分位 ——
+    const gradArt: any = {
+        _class: 'artboard', do_objectID: 'GC-ROOT', name: '渐变画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [{
+            _class: 'rectangle', do_objectID: 'GC-R1', name: '渐变块', isVisible: true,
+            frame: { _class: 'rect', x: 0, y: 0, width: 100, height: 50 },
+            style: {
+                _class: 'style',
+                fills: [{
+                    _class: 'fill', isEnabled: true, fillType: 1,
+                    gradient: {
+                        _class: 'gradient', gradientType: 0,
+                        from: '{0.5, 0}', to: '{0.5, 1}',
+                        stops: [
+                            { _class: 'gradientStop', position: 0, color: mkColor(1, 1, 1) },
+                            { _class: 'gradientStop', position: 1, color: mkColor(0, 0, 0) },
+                        ],
+                    },
+                }],
+            },
+        }],
+    };
+    const gradDsl = picassoArtboardRestoreParse(undefined, deepCopy(gradArt), undefined, { generatedAt: 'fixed' });
+    const gradCss = gradDsl.artboard.children![0].fills![0].gradient!.css!;
+    assert(gradCss.angle === 180 && gradCss.stops[0].pct === 0 && gradCss.stops[1].pct === 100,
+        'bake gradient.css：满铺竖向渐变 = 180deg / 0%~100%');
+
+    // —— 描边直线矩形化：h=1 stroke-only 直线 → 等效 fills 矩形（短边居中扩 thickness）——
+    const lineArt: any = {
+        _class: 'artboard', do_objectID: 'LN-ROOT', name: '直线画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [{
+            _class: 'shapePath', do_objectID: 'LN-P1', name: '直线', isVisible: true,
+            frame: { _class: 'rect', x: 10, y: 20, width: 24, height: 1 },
+            isClosed: false,
+            points: [
+                { _class: 'curvePoint', point: '{0, 0.5}', curveMode: 1 },
+                { _class: 'curvePoint', point: '{1, 0.5}', curveMode: 1 },
+            ],
+            style: {
+                _class: 'style',
+                borders: [{ _class: 'border', isEnabled: true, fillType: 0, position: 0, thickness: 4, color: mkColor(0, 0.84, 0.49) }],
+            },
+        }],
+    };
+    const lineDsl = picassoArtboardRestoreParse(undefined, deepCopy(lineArt), undefined, { generatedAt: 'fixed' });
+    const bakedLine = lineDsl.artboard.children![0];
+    assert(bakedLine.type === 'rect' && !bakedLine.borders && !bakedLine.svgPath
+        && !!bakedLine.fills && bakedLine.fills[0].color === '#00D67D'
+        && bakedLine.frame.h === 4 && bakedLine.frame.y === 18.5 && bakedLine.frame.w === 24,
+        'bake 直线矩形化：stroke-only 细直线转 fills 矩形（骑线居中扩 thickness）');
+    // absFrame 与 frame 同方向扩（回归护栏：expand 先换 frame 再算 absFrame 时方向判定不得失效）
+    assert(bakedLine.absFrame.h === 4 && bakedLine.absFrame.y === 18.5 && bakedLine.absFrame.w === 24,
+        'bake 直线矩形化：absFrame 与 frame 同方向扩 thickness');
+
+    // —— 位图变换语义统一：带切图 url 删 rotation/flip；无位图的矢量组保留 ——
+    const flipArt: any = {
+        _class: 'artboard', do_objectID: 'FL-ROOT', name: '翻转画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 200 },
+        layers: [
+            {
+                _class: 'image', do_objectID: 'FL-I1', name: '已烘焙位图', isVisible: true,
+                isFlippedHorizontal: true, rotation: 0,
+                frame: { _class: 'rect', x: 0, y: 0, width: 40, height: 40 },
+                imageUrl: 'https://example.com/baked.png',
+            },
+            {
+                _class: 'group', do_objectID: 'FL-G1', name: '未烘焙组位图', isVisible: true,
+                isFlippedHorizontal: true,
+                frame: { _class: 'rect', x: 50, y: 0, width: 40, height: 40 },
+                layers: [],
+            },
+        ],
+    };
+    const flipDsl = picassoArtboardRestoreParse(undefined, deepCopy(flipArt), undefined, { generatedAt: 'fixed' });
+    const bakedImage = flipDsl.artboard.children![0];
+    const groupVector = flipDsl.artboard.children![1];
+    assert(bakedImage.type === 'image' && !bakedImage.flip && !bakedImage.rotation,
+        'bake 位图变换：type=image 切图节点 rotation/flip 删除（像素已烘焙）');
+    assert(!!groupVector.flip && groupVector.flip.x === true,
+        'bake 位图变换：无位图的矢量 group flip 保留（消费端须应用）');
+    // group 切图 url 是插件端 parse 后回填的：模拟回填后的二次 bake（finalizeRestoreDsl 收口），
+    // 栅格化位图同样是渲染管线产物、已含组自身变换，flip 必须删——保留会被消费端双重翻转
+    // （实证：01「签到领取空跑赔30元」shapeGroup 气泡，切图尖角方向与画板原图一致）
+    groupVector.image = { url: 'https://example.com/group-baked.png' };
+    groupVector.renderHint = 'image';
+    bakeRestoreTree(flipDsl.artboard);
+    assert(!groupVector.flip && !groupVector.rotation,
+        'bake 位图变换：切图 url 回填后的 group 二次 bake 删 rotation/flip（栅格化已烘焙组变换）');
+
+    // —— slice 切图上提：group 无 image、同 frame 子 slice 带切图 → 上提 + renderHint ——
+    // 生产流程里切图 URL 是插件端在 parse 之后按 stableId 回填的，parse 时 bake 看不到；
+    // 插件端回填后需再调一次 bakeRestoreTree（幂等）。这里直接对回填后的 DSL 树测 bake
+    const liftedTree: any = {
+        id: 'g1', type: 'group', name: 'icon组',
+        frame: { x: 0, y: 0, w: 52, h: 52 }, absFrame: { x: 0, y: 0, w: 52, h: 52 },
+        children: [
+            {
+                id: 'r1', type: 'rect', name: '形状',
+                frame: { x: 4, y: 4, w: 44, h: 44 }, absFrame: { x: 4, y: 4, w: 44, h: 44 },
+                fills: [{ color: '#ADBBCC' }],
+            },
+            {
+                id: 's1', type: 'slice', name: 'icon切片',
+                frame: { x: 0, y: 0, w: 52, h: 52 }, absFrame: { x: 0, y: 0, w: 52, h: 52 },
+                image: { url: 'https://example.com/icon.png' },
+            },
+        ],
+    };
+    bakeRestoreTree(liftedTree);
+    assert(!!liftedTree.image && liftedTree.image.url === 'https://example.com/icon.png'
+        && liftedTree.renderHint === 'image',
+        'bake slice 上提：同 frame 子 slice 的切图上提到 group 并补 renderHint');
+    // 幂等护栏：重复 bake 产出不变
+    const liftedOnce = JSON.stringify(liftedTree);
+    bakeRestoreTree(liftedTree);
+    assert(JSON.stringify(liftedTree) === liftedOnce, 'bake slice 上提：重复 bake 幂等');
+
+    // —— trimByMask 渐变重映射：被裁剪图层的 from/to 归一化基准换到新 frame ——
+    const maskArt: any = {
+        _class: 'artboard', do_objectID: 'MK-ROOT', name: '蒙版画板', isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 375, height: 100 },
+        layers: [
+            {
+                _class: 'rectangle', do_objectID: 'MK-M1', name: '蒙版', isVisible: true,
+                hasClippingMask: true,
+                frame: { _class: 'rect', x: 0, y: 0, width: 100, height: 100 },
+            },
+            {
+                // 原 frame 高 200、下半被蒙版裁掉 → 新 frame 高 100。
+                // 原 from={0.5,0} to={0.5,1}（相对 200 高）在新 frame 下应重映射为 to={0.5,2}
+                _class: 'rectangle', do_objectID: 'MK-R1', name: '被裁渐变', isVisible: true,
+                frame: { _class: 'rect', x: 0, y: 0, width: 100, height: 200 },
+                style: {
+                    _class: 'style',
+                    fills: [{
+                        _class: 'fill', isEnabled: true, fillType: 1,
+                        gradient: {
+                            _class: 'gradient', gradientType: 0,
+                            from: '{0.5, 0}', to: '{0.5, 1}',
+                            stops: [
+                                { _class: 'gradientStop', position: 0, color: mkColor(1, 1, 1) },
+                                { _class: 'gradientStop', position: 1, color: mkColor(0, 0, 0) },
+                            ],
+                        },
+                    }],
+                },
+            },
+        ],
+    };
+    const maskDsl = picassoArtboardRestoreParse(undefined, deepCopy(maskArt), undefined, { generatedAt: 'fixed' });
+    const clipped = maskDsl.artboard.children!.filter(k => k.name === '被裁渐变')[0];
+    const remapped = clipped.fills![0].gradient!;
+    assert(clipped.frame.h === 100 && remapped.to[1] === 2 && remapped.from[1] === 0,
+        'trimByMask 渐变重映射：frame 裁半后 to.y 重映射为 2（世界坐标方向不变）');
+
+    // —— 幂等 & 稳定：同输入两次解析逐字节一致（bake 不引入随机性）——
+    const again = picassoArtboardRestoreParse(undefined, deepCopy(maskArt), undefined, { generatedAt: 'fixed' });
+    assert(JSON.stringify(maskDsl) === JSON.stringify(again), 'bake 稳定性：同输入两次解析逐字节一致');
 }
 
 console.log(`\nrestore.test: ${passed} passed, ${failed} failed`);

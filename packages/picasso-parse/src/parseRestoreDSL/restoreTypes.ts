@@ -40,15 +40,28 @@ export type RestoreGradientStop = {
 };
 
 /**
+ * CSS-ready 线性渐变（bake.ts 预算好，消费端零计算直接拼 linear-gradient）。
+ * angle：CSS 角度（deg，0=向上、顺时针）；stops[].pct：沿 CSS 渐变线的百分位，
+ * **可为负 / 超 100**（Sketch from/to 越界语义，浏览器沿渐变线外推，原样输出即可）。
+ */
+export type RestoreGradientCss = {
+    angle: number;
+    stops: { color: string; pct: number }[];
+};
+
+/**
  * 渐变定义。
  * from / to 是**归一化坐标**（0~1），需乘节点 frame 宽高才是渲染坐标——
  * 消费方勿把它当作绝对像素坐标读。
+ * 线性渐变消费 css 字段即可（角度/百分位已按节点实际宽高投影算好）；
+ * from/to/stops.position 保留作审计与非 CSS 消费端自算。
  */
 export type RestoreGradient = {
     type: 'linear' | 'radial' | 'angular'; // 线性 / 径向 / 角度（Sketch 三种模式）
     from: number[]; // [x, y] 归一化起点（0~1 相对节点 frame）
     to: number[];   // [x, y] 归一化终点
     stops: RestoreGradientStop[]; // 至少 2 个 stop，按 position 升序
+    css?: RestoreGradientCss;    // CSS-ready 形态（仅 linear 且节点有面积时写，bake.ts 注入）
 };
 
 /**
@@ -173,7 +186,9 @@ export type RestoreNode = {
     effectiveLineHeight?: number;
 
     // ── 编组分类（渲染差异语义拆分）──
-    // 普通编组的 fills 是子图标着色提示（tint），不渲染为背景（shapeGroup 的真填充仍在 fills）
+    // 普通编组的 fills 是子图标着色提示（tint），不渲染为背景（shapeGroup 的真填充仍在 fills）。
+    // 1.1 起纯色 tint 在 bake 阶段已下发到子孙 fills/borders/runs 的 color 并删除本字段——
+    // 正常产物里不再出现；仅渐变着色（极罕见，无法逐色下发）保留原样
     tint?: RestoreFill[];
     // 布尔运算形状组标记：type 同为 group，但 fills 为真实填充、children 为布尔子路径
     shapeGroup?: boolean;
@@ -297,7 +312,17 @@ export type RestoreDSL = {
 //      effectiveLineHeight（行高兜底）/ tint + shapeGroup（编组 fills 语义拆分，普通 group
 //      的 fills 落 tint 字段）/ styleHash（无几何第二指纹）/ image.svgUrl /
 //      image.frame + image.scale + image.w/h（切图 bleed 元数据，插件端注入）/ meta.assetsScale。
-export const RESTORE_SCHEMA_VERSION = '1.0';
+// 1.1：CSS-ready 化（bake.ts 后处理，语义收敛到 parse 单点，消费端零推断）——
+//      新增 gradient.css（线性渐变的 CSS 角度/百分位预算值）；
+//      画板根 fills 必填（缺省显式写白底）；
+//      纯色 tint 下发子孙后删除（正常产物不再出现 tint）；
+//      text.fills 下发 runs[].color 后删除（文本节点不再出现 fills）；
+//      带切图 url 的节点（不限类型，含 group/shapeGroup 栅格化）不再带 rotation/flip
+//      （切图是渲染管线产物、已含图层自身变换；契约收敛为「字段出现 = 消费端必须应用」）；
+//      stroke-only 细直线转等效 fills 矩形；
+//      group 直接子级 slice 的同 frame 切图上提到 group（renderHint=image 补齐）；
+//      被 Mask 裁剪图层的渐变 from/to 按裁剪前 frame 重映射（修复渐变方向错位）。
+export const RESTORE_SCHEMA_VERSION = '1.1';
 
 // 解析包版本常量（与 package.json 同步手工维护，写入 meta.parserVersion 做实现溯源）
 export const PARSER_VERSION = '0.0.45-beta.3';

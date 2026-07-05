@@ -25,7 +25,9 @@ import {
     booleanOpToRestore,
     colorToHex,
     isFrameContainer,
+    remapGradientForFrame,
 } from './normalize';
+import { RestoreGradient } from './restoreTypes';
 
 /** stack.spacing：子节点间距一致（±0.5pt）时才写，几何推不稳时只留 direction */
 const uniformSpacing = (children: RestoreNode[], direction: 'horizontal' | 'vertical'): number | undefined => {
@@ -133,6 +135,17 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, ctx
     const borderRadius = borderRadiusToRestore(layer);
     if (borderRadius) node.borderRadius = borderRadius;
     let fills = fillsToRestore(layer);
+    // 被 trimByMask 裁剪过的图层：渐变 from/to 的归一化基准还是裁剪前 frame，重映射到
+    // 新 frame（建新数组/对象——fillsToRestore 结果有 memo 缓存，禁止原地改；
+    // contentSignature 不读 __preTrimFrame，指纹零漂移）
+    const preTrimFrame = (layer as any).__preTrimFrame;
+    const remapGradients = <T extends { gradient?: RestoreGradient }>(items: T[]): T[] => {
+        if (!preTrimFrame || !items.some(item => !!item.gradient)) return items;
+        return items.map(item => (item.gradient
+            ? { ...item, gradient: remapGradientForFrame(item.gradient, preTrimFrame, layer.frame) }
+            : item));
+    };
+    fills = remapGradients(fills);
     // 画板背景色（Sketch 存在 backgroundColor 字段而非 style.fills，丢了整页底色就全白）。
     // 解析根不限 _class：老 Artboard 之外，symbolMaster 等作根导出时同样带 backgroundColor
     if ((type === 'artboard' || isRoot) && layer.hasBackgroundColor && layer.backgroundColor) {
@@ -157,7 +170,7 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, ctx
         }
     }
     if (layer._class === 'shapeGroup') node.shapeGroup = true;
-    const borders = bordersToRestore(layer);
+    const borders = remapGradients(bordersToRestore(layer));
     if (borders.length) node.borders = borders;
     const shadows = shadowsToRestore(layer.style && layer.style.shadows);
     if (shadows.length) node.shadows = shadows;

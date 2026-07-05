@@ -99,6 +99,9 @@ export { picassoArtboardRestoreParse, annotateStableIds } from './parseRestoreDS
 export { assessRestoreDiffability } from './parseRestoreDSL/diffability';
 export type { DiffabilityReport, DiffabilityVerdict } from './parseRestoreDSL/diffability';
 export { toRenderProfile } from './parseRestoreDSL/renderProfile';
+// bakeRestoreTree：CSS-ready 后处理（picassoArtboardRestoreParse 内部已调用；单独导出
+// 供存量 1.0 产物离线升级到 1.1 语义 / 服务端补 bake 用）
+export { bakeRestoreTree, bakeGradientCss } from './parseRestoreDSL/bake';
 export * from './parseRestoreDSL/restoreTypes';
 
 // 代码生成

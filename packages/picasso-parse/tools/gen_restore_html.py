@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-RestoreDSL(schemaVersion 1.x) -> 静态 HTML 还原稿生成器（确定性渲染基线）
-用法: python3 gen_restore_html.py <restore.json> <output.html>
+RestoreDSL(schemaVersion 1.1) -> 静态 HTML 还原稿生成器（确定性渲染基线, v4 削薄版）
+用法: python3 render_restore.py <restore.json> <output.html>
 
 定位: 模拟 LLM 消费者的确定性渲染器, 用于区分「数据不够还原」(改 parse/插件)
-与「LLM 没用好数据」(改提示词)。渲染语义规范见 ../schema/restore-dsl-rendering-guide.md,
-本脚本实现与该文档保持一致。
-schema 1.2 消费: image.frame 优先摆位(免像素校准)、image.scale/meta.assetsScale、
-effectiveLineHeight 行高兜底、tint 不渲染 / shapeGroup 真填充。
-可选依赖: Pillow(仅老数据无 image.frame 时的像素校准回退用), 无网络时自动降级。
+与「LLM 没用好数据」(改提示词)。渲染语义规范见 schema/restore-dsl-rendering-guide.md。
+
+v4 削薄(消费 schema 1.1 CSS-ready 语义, 对应 parse 端 bake.ts):
+  - 渐变: 直接读 gradient.css(angle/stops[].pct 已按节点实际宽高投影算好), 删投影计算
+  - tint: 1.1 产物纯色 tint 已在 parse 下发删除, 删递归下发逻辑
+  - text.fills: 已在 parse 下发 runs[].color, 删覆盖逻辑
+  - rotation/flip: 契约「字段出现 = 必须应用」, 无任何按类型的剥离启发式
+  - 画板背景: fills 必填, 删兜底链
+  - stroke-only 细直线: parse 已转 fills 矩形, 无需特判
+可选依赖: Pillow(仅老 Symbol 素材无 image.frame 时的像素校准回退用), 无网络时自动降级。
 """
 import json
 import math
@@ -54,14 +59,13 @@ def color_css(hexs):
     return hexs
 
 def gradient_css(g):
-    """Sketch 线性渐变 from/to(单位坐标, y 向下) -> CSS linear-gradient 角度"""
-    fx, fy = g['from']
-    tx, ty = g['to']
-    dx, dy = tx - fx, ty - fy
-    # CSS: 0deg = to top, 顺时针; 向量 y 轴向下, 故取 atan2(dx, -dy)
-    ang = math.degrees(math.atan2(dx, -dy))
-    stops = ', '.join(f"{color_css(s['color'])} {num(s['position']*100)}%" for s in g['stops'])
-    return f'linear-gradient({num(round(ang, 2))}deg, {stops})'
+    """[1.1] 线性渐变直接消费 gradient.css(parse 端 bake 已按节点实际宽高投影算好,
+    pct 可为负/超 100, 浏览器沿渐变线外推)。无 css 字段(非线性/退化)取首色纯背景。"""
+    css = g.get('css')
+    if not css:
+        return color_css(g['stops'][0]['color'])
+    stops = ', '.join(f"{color_css(s['color'])} {num(s['pct'])}%" for s in css['stops'])
+    return f"linear-gradient({num(css['angle'])}deg, {stops})"
 
 def fill_to_bg(fill):
     """单个 fill -> (background-color / background-image) css 片段列表"""
@@ -112,16 +116,24 @@ def radius_css(node, styles, is_oval=False):
             styles.append(('border-radius', ' '.join(px(v) for v in br)))
 
 def transform_css(node, styles):
+    """[修正] Sketch 语义: flip 在世界坐标系下, rotation 是最终旋转角 → 先 rotate 后 flip。
+    CSS transform 矩阵从右到左应用, 所以要写成 'scale(...) rotate(...)' (scale 在左, rotate
+    在右) 才能让 rotate 先应用于图形。
+    旧写法 'rotate(...) scale(...)' 语义颠倒:
+      案例 <"箭头 (01/09/15 左上): 两条 4x24 rect, rot=-45, 其中一条 flip.y。
+      Sketch 语义: 竖长条 rotate → "/" → flip.y → "\", 组合得 "<";
+      旧 CSS 顺序: flip.y (对称长条无变化) → rotate → "/", 两条都渲成 "/", 变成 "/"。
+    """
     parts = []
     rot = node.get('rotation')
-    if rot:
-        parts.append(f'rotate({num(-rot)}deg)')  # Sketch 逆时针为正 -> CSS 取负
     flip = node.get('flip')
     if flip:
         sx = -1 if flip.get('x') else 1
         sy = -1 if flip.get('y') else 1
         if sx != 1 or sy != 1:
             parts.append(f'scale({sx}, {sy})')
+    if rot:
+        parts.append(f'rotate({num(-rot)}deg)')  # Sketch 逆时针为正 -> CSS 取负
     if parts:
         styles.append(('transform', ' '.join(parts)))
         styles.append(('transform-origin', 'center'))
@@ -234,11 +246,11 @@ def render_image_node(node, indent):
     f = node['frame']
     af = node.get('absFrame', f)
     styles = base_styles(node)
-    # 导出位图已烘焙 rotation/flip(image.frame 即变换后的画布范围),
-    # CSS 再叠加会双重变换(实测 flip.y 下箭头被翻成上箭头)
-    if any(k == 'transform' for k, _ in styles):
-        styles = [(k, v) for k, v in styles if k not in ('transform', 'transform-origin')]
-        log_fix('img-transform', f"位图节点 {node['name']!r} 剥离 CSS transform(位图已含变换)")
+    # 位图 transform 契约(beta.6 定稿): 切图是 Sketch 渲染管线产物, 图层自身变换
+    # 必烘焙进像素, parse 端 bake 对带 url 节点(含 group/shapeGroup)已删 rotation/
+    # flip; 产物里字段出现即必须应用, 渲染端零启发式。勘误: 曾据"01 气泡需 CSS 再
+    # 翻转"判定 group 位图未烘焙, 同一 URL 数据复核证实为误判(切图与原图尖角方向
+    # 本就一致, 再翻反而双重翻转)。前提: 插件收口在 URL 回填后重跑 bakeRestoreTree。
     url = node['image']['url']
 
     imf = node['image'].get('frame')
@@ -307,7 +319,7 @@ def render_image_node(node, indent):
     return (f'{pad}<img class="n img" data-name="{esc(node["name"])}" '
             f'src="{url}" style="{style_attr(styles)}" alt="">\n')
 
-def render_text(node, indent, tint=None):
+def render_text(node, indent):
     styles = base_styles(node)
     runs = node.get('runs', [])
     text = node.get('text', '')
@@ -315,16 +327,13 @@ def render_text(node, indent, tint=None):
     if not runs:
         return f'{pad}<div class="n txt" style="{style_attr(styles)}">{esc(text)}</div>\n'
 
-    # 文本图层自身的纯色 fills 覆盖 runs 内的字符颜色(Sketch 图层填充语义, symbol 文本
-    # 颜色 override 的常见形态)。优先级: run 色 < 节点 fills < 祖先 tint
-    node_fill = next((fl['color'] for fl in node.get('fills', []) if 'color' in fl), None)
-    if node_fill:
-        runs = [dict(r, color=node_fill) for r in runs]
-        log_fix('text-fill-override', f"文本 {node['name'][:20]!r} 颜色取图层 fills {node_fill}(覆盖 run 色)")
-    # 祖先 group 带 tint 时, Sketch 把子孙内容重着色为 tint 色(保留 alpha 形状),
-    # 文本颜色一并替换。
-    if tint:
-        runs = [dict(r, color=tint) for r in runs]
+    # [1.1] 图层色/祖先 tint 已在 parse 端下发进 runs[].color, 消费端零覆盖逻辑;
+    # 文本节点带 fills 只剩渐变文字(罕见), 首色近似
+    grad_fill = next((fl for fl in node.get('fills', []) if 'gradient' in fl), None)
+    if grad_fill:
+        approx = grad_fill['gradient']['stops'][0]['color']
+        runs = [dict(r, color=approx) for r in runs]
+        log_fix('text-gradient-approx', f"渐变文字 {node['name'][:20]!r} 用首 stop {approx} 近似")
 
     r0 = runs[0]
     # 行高兜底链: run.lineHeight -> [1.2] effectiveLineHeight(parse 侧已按同一规则算好) -> 本地近似
@@ -377,30 +386,33 @@ def render_text(node, indent, tint=None):
         body = ''.join(parts)
     return f'{pad}<div class="n txt" data-name="{esc(node["name"])}" style="{style_attr(styles)}">{body}</div>\n'
 
-def render_path(node, indent, tint=None):
+def render_path(node, indent):
     f = node['frame']
     styles = base_styles(node)
     fill = 'none'
     for fl in node.get('fills', []):
         if 'color' in fl:
-            fill = color_css(tint or fl['color'])  # tint 重着色
+            fill = color_css(fl['color'])
             break
     stroke = ''
     for b in node.get('borders', []):
-        stroke = f' stroke="{color_css(tint or b["color"])}" stroke-width="{num(b["thickness"])}"'
+        stroke = f' stroke="{color_css(b["color"])}" stroke-width="{num(b["thickness"])}"'
         break
     rule = ' fill-rule="evenodd"' if node.get('windingRule') == 'evenodd' else ''
+    # 描边骑线(center)会向 frame 外溢出半个 thickness, svg 默认 overflow:hidden 会裁掉
+    # (案例: 4px stroke 画在 1px 高 viewBox 里只剩 1px)——描边路径放开裁剪
+    if stroke:
+        styles.append(('overflow', 'visible'))
     pad = '  ' * indent
     return (f'{pad}<svg class="n" data-name="{esc(node["name"])}" style="{style_attr(styles)}" '
             f'viewBox="0 0 {num(f["w"])} {num(f["h"])}" preserveAspectRatio="none">'
             f'<path d="{node["svgPath"]}" fill="{fill}"{rule}{stroke}/></svg>\n')
 
-def render_shape(node, indent, extra_class='', tint=None):
+def render_shape(node, indent, extra_class=''):
     """rect / oval / 有 fills 的 group 背景"""
     styles = base_styles(node)
     for fl in node.get('fills', []):
-        # tint 重着色: 纯色/渐变填充统一替换为 tint 色
-        styles += fill_to_bg({'color': tint} if tint else fl)
+        styles += fill_to_bg(fl)
     borders_to_css(node, styles)
     radius_css(node, styles, is_oval=(node['type'] == 'oval'))
     pad = '  ' * indent
@@ -441,13 +453,13 @@ def _child_path_d(c):
                 f"L{num(f['x'] + f['w'])} {num(f['y'] + f['h'])} L{num(f['x'])} {num(f['y'] + f['h'])} Z")
     return None
 
-def shapegroup_svg(node, indent, tint=None):
+def shapegroup_svg(node, indent):
     """无位图 shapeGroup: 子路径拼进一个 SVG, fill-rule=evenodd 近似布尔运算
     (subtract 的内路径成为挖洞)。返回 None 表示无法合成, 由调用方走逐子路径填色回退。"""
     kids = node.get('children', [])
     if not kids:
         return None
-    fill = tint or next((fl['color'] for fl in node.get('fills', []) if 'color' in fl), None)
+    fill = next((fl['color'] for fl in node.get('fills', []) if 'color' in fl), None)
     if not fill:
         return None
     parts = []
@@ -460,7 +472,7 @@ def shapegroup_svg(node, indent, tint=None):
     styles = base_styles(node)
     stroke = ''
     for b in node.get('borders', []):
-        stroke = f' stroke="{color_css(tint or b["color"])}" stroke-width="{num(b["thickness"])}"'
+        stroke = f' stroke="{color_css(b["color"])}" stroke-width="{num(b["thickness"])}"'
         break
     # 全部子路径拼进同一个 <path>: fill-rule=evenodd 只在单个 path 元素内生效,
     # 跨元素不会挖洞(时钟/放大镜/ⓘ 等 subtract icon 会被填成实心)
@@ -473,18 +485,18 @@ def shapegroup_svg(node, indent, tint=None):
 # 需要提到顶层 z-index 的节点(在原 JSON 里层级偏低会被后续白底盖住)
 Z_FIX = {}
 
-def render_node(node, indent=1, tint=None):
+def render_node(node, indent=1):
     t = node['type']
     if t == 'slice':
-        return ''  # 切片无视觉
+        return ''  # 切片无视觉(同 frame 切图已在 parse 端上提到父 group)
 
     # 无填充的纯阴影载体矩形: CSS box-shadow 比位图更准(位图常被画板边缘裁切)
     if (t in ('rect', 'oval') and node.get('shadows')
             and not node.get('fills') and node.get('renderHint') == 'image'):
         log_fix('shadow-rect', f"纯阴影矩形 {node['name']!r} {node['absFrame']} 改走 CSS box-shadow")
-        return render_shape(node, indent, tint=tint)
+        return render_shape(node, indent)
 
-    # 栅格化节点 / 位图节点直接用位图(导出位图已带 tint 效果, 不再处理)
+    # 栅格化节点 / 位图节点直接用位图(导出位图已带着色效果, 不再处理)
     if node.get('image') and (node.get('renderHint') == 'image' or t == 'image'):
         # 退化位图守卫: frame 明显大于 2x2 却导出 1x1 空 PNG(fill 全禁用的不可见图层
         # 也会进切图管道) -> 位图不可用, 退回矢量渲染; 通常无可见样式, 渲染为空即忠实,
@@ -493,31 +505,30 @@ def render_node(node, indent=1, tint=None):
         nat = png_size(node['image']['url'])
         if nat and nat[0] <= 1 and nat[1] <= 1 and (f['w'] > 2 or f['h'] > 2):
             log_fix('degenerate-bitmap', f"{node['name']!r} {node['absFrame']} 导出位图仅 1x1, 退回矢量渲染")
-            return render_shape(node, indent, tint=tint)
+            return render_shape(node, indent)
         return render_image_node(node, indent)
 
     if t == 'text':
-        return render_text(node, indent, tint=tint)
+        return render_text(node, indent)
     if t == 'path' and node.get('svgPath'):
-        return render_path(node, indent, tint=tint)
+        return render_path(node, indent)
     if t in ('rect', 'oval'):
-        return render_shape(node, indent, tint=tint)
+        return render_shape(node, indent)
 
-    # group: 容器。[1.2] 普通编组的着色提示落 tint 字段(不渲染为背景, 渲染会出现
-    # "色块"); shapeGroup=true 是布尔运算形状组, 其 fills 才是真实填充需要渲染。
-    # (1.1 老数据普通 group 的着色提示仍在 fills 里, 同样不渲染)
+    # group: 容器。[1.1] 纯色着色提示(tint)已在 parse 端下发子孙并删除, 消费端无
+    # 下发逻辑; shapeGroup=true 是布尔运算形状组, 其 fills 是真实填充需要渲染。
     styles = base_styles(node)
     shape_children = node.get('children', [])
     if node.get('shapeGroup'):
         if node.get('fills') and len(shape_children) == 0:
             # 无子路径的 shapeGroup: bbox 填充是唯一可用信息
             for fl in node.get('fills', []):
-                styles += fill_to_bg({'color': tint} if tint else fl)
+                styles += fill_to_bg(fl)
         elif node.get('fills'):
             # 无位图兜底的 shapeGroup: 把 bbox 涂成 fills 会出现"色块"(logo 文字/圆形
             # 气泡变实心方块)。改为不画 bbox: 子路径合成单个 SVG + fill-rule=evenodd
             # (subtract 挖洞正确: 时钟/放大镜/ⓘ 等镂空 icon); 无法合成的退回逐个填色。
-            svg = shapegroup_svg(node, indent, tint)
+            svg = shapegroup_svg(node, indent)
             if svg is not None:
                 log_fix('shapegroup-no-image', f"shapeGroup {node['name']!r} {node['absFrame']} 无位图, "
                                                f"子路径合成 SVG evenodd 渲染")
@@ -526,34 +537,15 @@ def render_node(node, indent=1, tint=None):
                                            f"fills 下发子路径逐个填色(union 近似)")
             gf = node['fills']
             shape_children = [dict(c, fills=c.get('fills') or gf) for c in shape_children]
-    elif node.get('fills'):
-        # [1.2] 非 shapeGroup 的 group 带 fills = 嵌套 Frame/GraphicFrame 容器(mapNode 已把
-        # 普通编组的着色提示分流到 tint), 其 fills 是真实背景, 不渲染会丢整块底色
-        for fl in node.get('fills', []):
-            styles += fill_to_bg(fl)
-        log_fix('frame-bg', f"容器 {node['name']!r} fills 渲染为背景(嵌套 Frame 语义)")
     borders_to_css(node, styles)
     radius_css(node, styles)
     if node['id'] in Z_FIX:
         styles.append(('z-index', str(Z_FIX[node['id']])))
-    # 普通编组的 tint 下发给子孙矢量/文本重着色(Sketch 组填充语义);
-    # 取首个纯色 fill, 渐变 tint 罕见暂不支持
-    nt = node.get('tint')
-    if nt and not node.get('shapeGroup'):
-        if 'color' in nt[0]:
-            tint = nt[0]['color']
-            log_fix('tint-cascade', f"编组 {node['name']!r} tint={tint} 下发子孙重着色")
-        elif (nt[0].get('gradient') or {}).get('stops'):
-            # 渲染指南 §6: 渐变 tint 罕见, 取首个 stop 纯色近似下发(原先整体跳过 = 静默丢着色)
-            first_stop = nt[0]['gradient']['stops'][0]
-            if first_stop.get('color'):
-                tint = first_stop['color']
-                log_fix('tint-cascade', f"编组 {node['name']!r} 渐变 tint 取首 stop {tint} 近似下发")
     pad = '  ' * indent
     out = (f'{pad}<div class="n grp" data-name="{esc(node["name"])}" '
            f'style="{style_attr(styles)}">\n')
     for c in shape_children:
-        out += render_node(c, indent + 1, tint=tint)
+        out += render_node(c, indent + 1)
     out += f'{pad}</div>\n'
     return out
 
@@ -565,12 +557,9 @@ def render_node(node, indent=1, tint=None):
 # ---------------- 组装页面 ----------------
 body_nodes = ''
 art_styles = [('width', px(ART_W)), ('height', px(ART_H)), ('position', 'relative')]
-# 画板背景 fills -> tint -> 白底 兜底链: parser 0.0.45-beta.1 及更早版本对 Frame 画板
-# 会把背景误分类进 tint(已修), 存量产物靠 tint 回退; 无背景时按 Sketch 画布语义补白底。
-art_bg = ART.get('fills') or ART.get('tint') or [{'color': '#FFFFFF'}]
-for fl in art_bg:
+# [1.1] 画板背景 fills 必填(parse 端 bake 兜底白底), 消费端零兜底直接读
+for fl in ART['fills']:
     art_styles += fill_to_bg(fl)
-log_fix('artboard-bg', f"画板背景取自 {'fills' if ART.get('fills') else ('tint' if ART.get('tint') else '白底缺省')}: {art_bg}")
 for c in ART.get('children', []):
     body_nodes += render_node(c, 3)
 

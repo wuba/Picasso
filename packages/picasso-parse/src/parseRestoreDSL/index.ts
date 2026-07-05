@@ -12,6 +12,7 @@ import trimByMask from '../parseArtboard/trimByMask';
 import filterHideLayer from '../parseArtboard/filterHideLayer';
 import annotateStableIds from './annotateStableIds';
 import mapNode from './mapNode';
+import bakeRestoreTree from './bake';
 import aggregateDesignTokens from './designTokens';
 import { textStyleKey } from './normalize';
 import {
@@ -29,6 +30,7 @@ export * from './restoreTypes';
 export { assessRestoreDiffability } from './diffability';
 export type { DiffabilityReport, DiffabilityVerdict } from './diffability';
 export { toRenderProfile } from './renderProfile';
+export { bakeRestoreTree, bakeGradientCss } from './bake';
 
 /**
  * 快速深拷贝——RestoreDSL 输入是纯 JSON 结构（Sketch 导出），无函数/循环引用/Date，
@@ -159,6 +161,9 @@ export const picassoArtboardRestoreParse = (
     // 覆盖降级路径（exportA 失败/外部库 master/配对 miss）节点。只采主树——切片只存在于画板树
     const idByDoObjectID: { [uuid: string]: string } = {};
     const artboard = mapNode(prepared, null, { idByDoObjectID });
+    // CSS-ready 化（schema 1.1）：tint/text.fills 下发、gradient.css 预算、位图变换语义统一、
+    // 直线矩形化、slice 切图上提。必须在 linkTokens 之前——下发产生的新 color 要参与 token 回填
+    bakeRestoreTree(artboard);
 
     // —— components 字典（symbolMaster 定义树） ——
     const components: { [key: string]: RestoreComponentDef } = {};
@@ -177,6 +182,7 @@ export const picassoArtboardRestoreParse = (
                 // componentRoot：定义树根的 fills 维持 tint 语义（图标类 master 根上的着色
                 // 提示不是页面底色），与画板主树根的 pageRoot 语义区分，见 mapNode 注释
                 def.tree = mapNode(preparedMaster, null, { componentRoot: true });
+                bakeRestoreTree(def.tree);
                 tokenSourceTrees.push(preparedMaster);
                 componentTrees.push(def.tree);
             }

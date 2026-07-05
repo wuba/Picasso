@@ -485,6 +485,38 @@ export const pointsToSvgPath = (layer: SKLayer): string | undefined => memo('svg
     return d;
 });
 
+/**
+ * 被 Mask 裁剪图层的渐变 from/to 重映射。
+ *
+ * 渐变 from/to 是相对图层 frame 的归一化坐标；trimByMask 把被裁剪图层的 frame 收敛到
+ * 可见区域后，同一归一化数值指向的实际方向/位置完全错位（案例：09 地图蒙版渐变
+ * from.y=1.24 越界——原 frame 更大，裁小后旧值直接失真，渐变主方向由水平错成垂直）。
+ * 换算：世界坐标不变，归一化基准从旧 frame 换到新 frame——
+ *   newNorm = (oldNorm × oldSize + oldPos − newPos) / newSize
+ * 返回新对象（gradientToRestore 结果有 memo 缓存，禁止原地改）。
+ * 新 frame 无面积（被裁成 0，随后会被过滤）或几何未变时原样返回。
+ */
+export const remapGradientForFrame = (
+    gradient: RestoreGradient,
+    oldFrame: { x: number; y: number; width: number; height: number },
+    newFrame: { x: number; y: number; width: number; height: number },
+): RestoreGradient => {
+    if (!newFrame.width || !newFrame.height) return gradient;
+    if (oldFrame.x === newFrame.x && oldFrame.y === newFrame.y
+        && oldFrame.width === newFrame.width && oldFrame.height === newFrame.height) {
+        return gradient;
+    }
+    const remapPoint = (p: number[]): number[] => [
+        round2((p[0] * oldFrame.width + oldFrame.x - newFrame.x) / newFrame.width),
+        round2((p[1] * oldFrame.height + oldFrame.y - newFrame.y) / newFrame.height),
+    ];
+    return {
+        ...gradient,
+        from: remapPoint(gradient.from),
+        to: remapPoint(gradient.to),
+    };
+};
+
 /** 翻转：仅有翻转时输出 { x?: true, y?: true } */
 export const flipToRestore = (layer: SKLayer): { x?: boolean; y?: boolean } | undefined => {
     const flip: { x?: boolean; y?: boolean } = {};

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/wuba/Picasso/tree/master/packages/picasso-parse/schema/restore-dsl.schema.json",
   "title": "Picasso RestoreDSL",
-  "description": "RestoreDSL 输出格式规范（schemaVersion 1.0 对外首发，导出侧自 @wubafe/picasso-parse 0.0.45-beta.2 起实现）。缺省值省略原则：visible:true / rotation:0 / opacity:1 / verticalAlign:'top' / 空数组一律不写。带 [1.1+]/[1.2+] 标记的字段为开发期内部迭代阶段号，均属 1.0 首发内容；$comment 中带 [2.0 讨论] 的为破坏性变更备选项，仅记录不生效。",
+  "description": "RestoreDSL 输出格式规范（schemaVersion 1.1，导出侧自 @wubafe/picasso-parse 0.0.45-beta.5 起实现；1.0 为对外首发）。缺省值省略原则：visible:true / rotation:0 / opacity:1 / verticalAlign:'top' / 空数组一律不写。1.1 = CSS-ready 化（parse 端 bake 后处理，消费端零推断）：新增 gradient.css；画板根 fills 必填；纯色 tint 下发子孙后删除；text.fills 下发 runs[].color 后删除；type=image/path 的切图节点不再带 rotation/flip（契约收敛为「字段出现 = 消费端必须应用」）；stroke-only 细直线转 fills 矩形；同 frame 子 slice 切图上提到 group。带 [1.1+]/[1.2+] 标记的历史字段为 1.0 开发期内部迭代阶段号，均属 1.0 首发内容。",
   "$comment": "维护约定：本文件与 restoreTypes.ts、RESTORE_SCHEMA_VERSION 同步更新（只加字段升 minor，破坏性变更原则上禁止）。校验方式示例：python3 -m jsonschema 或 ajv validate -s restore-dsl.schema.json -d xxx_restore.json。",
   "type": "object",
   "required": [
@@ -252,6 +252,40 @@
               }
             }
           }
+        },
+        "css": {
+          "type": "object",
+          "required": [
+            "angle",
+            "stops"
+          ],
+          "properties": {
+            "angle": {
+              "type": "number",
+              "description": "CSS linear-gradient 角度（deg，0=向上、顺时针），已按节点实际宽高换算。"
+            },
+            "stops": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "required": [
+                  "color",
+                  "pct"
+                ],
+                "properties": {
+                  "color": {
+                    "$ref": "#/definitions/hexColor"
+                  },
+                  "pct": {
+                    "type": "number",
+                    "description": "沿 CSS 渐变线的百分位，可为负 / 超 100（Sketch from/to 越界语义，浏览器沿渐变线外推，原样输出即可）。"
+                  }
+                }
+              }
+            }
+          },
+          "description": "[1.1] CSS-ready 线性渐变（bake 预算值）：消费端直接拼 linear-gradient(angle, color pct%, ...)，零计算。仅 type=linear 且节点有面积时写；缺失时（radial/angular/退化）取首 stop 纯色近似。from/to/stops.position 保留作审计与非 CSS 消费端自算。"
         }
       }
     },
@@ -532,7 +566,7 @@
         "rotation": {
           "type": "number",
           "default": 0,
-          "description": "旋转角度（度）。与 Sketch 约定一致：逆时针为正，围绕节点中心旋转（CSS transform:rotate 需取反）。缺省 0 省略。"
+          "description": "旋转角度（度）。与 Sketch 约定一致：逆时针为正，围绕节点中心旋转（CSS transform:rotate 需取反）。缺省 0 省略。[1.1 契约] 字段出现 = 消费端必须应用；type=image/path 的切图节点像素已烘焙变换，bake 阶段已删字段（group 栅格化位图未烘焙，保留）。与 flip 同时出现时 CSS 顺序为 scale(...) rotate(...)（矩阵右到左 = 先转后翻，符合 Sketch 世界坐标语义）。"
         },
         "opacity": {
           "type": "number",
@@ -584,7 +618,7 @@
           "items": {
             "$ref": "#/definitions/fill"
           },
-          "description": "[1.2+] 普通编组（非 shapeGroup、非 Frame 容器）上的填充是「子图标着色提示」而非背景——渲染成背景会出现色块，正确消费是下发给子孙矢量/文本重着色（位图子节点已烘焙，跳过）。1.2 起这类 fills 落本字段；group 节点保留 fills 的只有两类真实填充：shapeGroup（布尔形状）与 Frame/GraphicFrame 容器（背景填充）。"
+          "description": "普通编组（非 shapeGroup、非 Frame 容器）上的填充是「子图标着色提示」而非背景。[1.1 起]纯色 tint 已在 parse 端 bake 阶段下发到子孙 fills/borders/runs 的 color 并删除本字段——正常产物不再出现；仅渐变着色（极罕见，无法逐色下发）保留原样，消费端可取首 stop 纯色近似下发。若在 1.1 产物中见到纯色 tint 属 parse 缺陷。group 节点保留 fills 的只有两类真实填充：shapeGroup（布尔形状）与 Frame/GraphicFrame 容器（背景填充）。"
         },
         "borders": {
           "type": "array",
@@ -658,7 +692,7 @@
               "type": "boolean"
             }
           },
-          "description": "[1.1+] 镜像翻转（Sketch isFlippedHorizontal / isFlippedVertical）。x = 水平翻转，y = 垂直翻转，仅有翻转时输出（CSS 对应 transform: scaleX(-1) / scaleY(-1)，围绕节点中心）。1.0 丢失此信息导致翻转图标方向错误。"
+          "description": "镜像翻转（Sketch isFlippedHorizontal / isFlippedVertical）。x = 水平翻转，y = 垂直翻转，仅有翻转时输出（CSS 对应 transform: scaleX(-1) / scaleY(-1)，围绕节点中心）。[1.1 契约] 字段出现 = 消费端必须应用，无任何「已烘焙需忽略」的例外——type=image/path 切图节点像素已烘焙翻转，bake 阶段已删字段；group 栅格化位图未烘焙，保留字段消费端须翻。与 rotation 并存时 CSS 写 scale(...) rotate(...)（先转后翻）。"
         },
         "text": {
           "type": "string",
