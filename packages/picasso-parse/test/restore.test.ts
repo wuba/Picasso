@@ -143,7 +143,7 @@ const makeExportB = (a: any): any => {
     assert(restoreText.indexOf('"visible":true') === -1, 'RestoreDSL：不含 visible:true 缺省 key');
     assert(restoreText.indexOf('"rotation":0') === -1, 'RestoreDSL：不含 rotation:0 缺省 key');
     assert(restoreText.indexOf('"opacity":1') === -1, 'RestoreDSL：不含 opacity:1 缺省 key');
-    assert(restore.schemaVersion === '1.1', 'RestoreDSL：schemaVersion = 1.1（CSS-ready 化）');
+    assert(restore.schemaVersion === '1.0', 'RestoreDSL：schemaVersion = 1.0（CSS-ready 首发）');
     assert(restore.meta.units === 'pt', 'RestoreDSL：meta.units = pt');
     assert(!!restore.artboard.absFrame, 'RestoreDSL：根节点携带 absFrame');
     assert(restore.artboard.frame.x === 0 && restore.artboard.frame.y === 0, 'RestoreDSL：根节点坐标归零');
@@ -266,20 +266,20 @@ const makeExportB = (a: any): any => {
     assert(cardNode.children![0].id.indexOf('/') > -1, 'RestoreDSL：展开子树节点为复合 ID');
     assert(restore.meta.pluginVersion === '9.9.9', 'meta：pluginVersion 透传');
 
-    // —— 1.1 新增行为 ——
+    // —— CSS-ready 行为（画板背景 / runs 兜底）——
     assert(
         !!restore.artboard.fills && restore.artboard.fills[0].color === '#F7F7F7',
-        '1.1：画板背景色落 fills（hasBackgroundColor → fills[0]）',
+        '画板背景色落 fills（hasBackgroundColor → fills[0]）',
     );
     const textNode = cardNode.children![0];
     assert(
         !!textNode.runs && textNode.runs.length === 1 && textNode.runs[0].font === 'PingFangSC-Medium' && textNode.runs[0].fontWeight === 500,
-        '1.1：attributes 为空时从图层级 textStyle 兜底合成 runs',
+        'attributes 为空时从图层级 textStyle 兜底合成 runs',
     );
-    assert(textNode.runs![0].len === 'iPhone 15'.length, '1.1：兜底 run 覆盖整段文本');
+    assert(textNode.runs![0].len === 'iPhone 15'.length, '兜底 run 覆盖整段文本');
 }
 
-// ---------- 8. [1.2] 新增行为 ----------
+// ---------- 8. stableId / styleHash / effectiveLineHeight / renderProfile / diffability ----------
 {
     const mkRect = (id: string, name: string, hex: [number, number, number], x: number): any => ({
         _class: 'rectangle',
@@ -342,9 +342,9 @@ const makeExportB = (a: any): any => {
     exportB.layers[0] = exportB.layers[1];
     exportB.layers[1] = tmp; // 蓝红调换
     annotateStableIds(exportB, deepCopy(exportA));
-    assert(exportB.layers[0].stableId === sha1('A2-R2').slice(0, 8), '1.2 配对：z 序调换后蓝矩形仍拿到 A2-R2 的 stableId');
-    assert(exportB.layers[1].stableId === sha1('A2-R1').slice(0, 8), '1.2 配对：z 序调换后红矩形仍拿到 A2-R1 的 stableId');
-    assert(!!exportB.styleHash && exportB.styleHash.length === 8, '1.2：annotate 注入 styleHash');
+    assert(exportB.layers[0].stableId === sha1('A2-R2').slice(0, 8), '配对：z 序调换后蓝矩形仍拿到 A2-R2 的 stableId');
+    assert(exportB.layers[1].stableId === sha1('A2-R1').slice(0, 8), '配对：z 序调换后红矩形仍拿到 A2-R1 的 stableId');
+    assert(!!exportB.styleHash && exportB.styleHash.length === 8, 'annotate 注入 styleHash');
 
     // —— styleHash 几何解耦：仅移动 → contentHash 变、styleHash 不变 ——
     const moved: any = deepCopy(exportA);
@@ -352,36 +352,36 @@ const makeExportB = (a: any): any => {
     annotateStableIds(moved);
     const orig: any = deepCopy(exportA);
     annotateStableIds(orig);
-    assert(orig.layers[0].contentHash !== moved.layers[0].contentHash, '1.2 styleHash：移动后 contentHash 变化');
-    assert(orig.layers[0].styleHash === moved.layers[0].styleHash, '1.2 styleHash：移动后 styleHash 不变');
+    assert(orig.layers[0].contentHash !== moved.layers[0].contentHash, 'styleHash：移动后 contentHash 变化');
+    assert(orig.layers[0].styleHash === moved.layers[0].styleHash, 'styleHash：移动后 styleHash 不变');
 
-    // —— RestoreDSL 1.2 字段 ——
+    // —— RestoreDSL 字段 ——
     const restore = picassoArtboardRestoreParse(deepCopy(exportA), deepCopy(exportA), undefined, { generatedAt: 'fixed' });
     const kids = restore.artboard.children!;
     const groupNode = kids.filter(k => k.name === '图标组')[0];
-    // 1.1 起纯色 tint 在 bake 阶段下发子孙后删除：组上不落 tint 也不落 fills，
+    // 纯色 tint 在 bake 阶段下发子孙后删除：组上不落 tint 也不落 fills，
     // 子形状的原色（黑）被重着色为组的着色色（灰）
-    assert(!groupNode.tint && !groupNode.fills, '1.1 tint：普通编组着色提示已下发删除（不落 tint/fills）');
+    assert(!groupNode.tint && !groupNode.fills, 'tint：普通编组着色提示已下发删除（不落 tint/fills）');
     assert(!!groupNode.children && groupNode.children[0].fills![0].color === '#999999',
-        '1.1 tint：着色色下发覆盖子形状 fills.color');
+        'tint：着色色下发覆盖子形状 fills.color');
     const textNode = kids.filter(k => k.name === '无行高文本')[0];
-    assert(textNode.effectiveLineHeight === 20, '1.2 行高兜底：单行无行高文本 effectiveLineHeight = frame 高');
-    assert(textNode.runs![0].lineHeight === undefined, '1.2 行高兜底：不回写 runs（保护 hash 与 styleToken）');
+    assert(textNode.effectiveLineHeight === 20, '行高兜底：单行无行高文本 effectiveLineHeight = frame 高');
+    assert(textNode.runs![0].lineHeight === undefined, '行高兜底：不回写 runs（保护 hash 与 styleToken）');
     const rectNode = kids.filter(k => k.name === '矩形')[0];
-    assert(!!rectNode.fills && !rectNode.tint, '1.2 tint：形状节点 fills 语义不变');
-    assert(!!rectNode.styleHash, '1.2：RestoreDSL 节点透传 styleHash');
+    assert(!!rectNode.fills && !rectNode.tint, 'tint：形状节点 fills 语义不变');
+    assert(!!rectNode.styleHash, 'RestoreDSL 节点透传 styleHash');
 
     // —— toRenderProfile 精简视图 ——
     const lean = toRenderProfile(restore);
     const leanText = JSON.stringify(lean);
     assert(leanText.indexOf('"contentHash"') === -1 && leanText.indexOf('"subtreeHash"') === -1
-        && leanText.indexOf('"styleHash"') === -1, '1.2 renderProfile：剥离三 hash');
-    assert(Object.keys(lean.components).length === 0, '1.2 renderProfile：components 清空');
-    assert(JSON.stringify(restore).indexOf('"contentHash"') > -1, '1.2 renderProfile：输入不被修改');
+        && leanText.indexOf('"styleHash"') === -1, 'renderProfile：剥离三 hash');
+    assert(Object.keys(lean.components).length === 0, 'renderProfile：components 清空');
+    assert(JSON.stringify(restore).indexOf('"contentHash"') > -1, 'renderProfile：输入不被修改');
 
     // —— assessRestoreDiffability ——
     const same = assessRestoreDiffability(restore, restore);
-    assert(same.verdict === 'same-artboard' && same.stableIdOverlap === 1, '1.2 diffability：同版判定 same-artboard');
+    assert(same.verdict === 'same-artboard' && same.stableIdOverlap === 1, 'diffability：同版判定 same-artboard');
     const dup = toRenderProfile(restore); // 借精简视图当"复制画板"样本：id 保留原值,先手工抹掉
     const wipeIds = (node: any): void => { node.id = 'X' + node.id; (node.children || []).forEach(wipeIds); };
     wipeIds(dup.artboard);
@@ -389,8 +389,8 @@ const makeExportB = (a: any): any => {
     const dup2 = JSON.parse(JSON.stringify(restore));
     wipeIds(dup2.artboard);
     const dupReport = assessRestoreDiffability(restore, dup2);
-    assert(dupReport.verdict === 'duplicated-artboard', '1.2 diffability：id 全变内容同源判定 duplicated-artboard');
-    assert(dupReport.stableIdOverlap === 0 && dupReport.contentHashOverlap === 1, '1.2 diffability：overlap 数值正确');
+    assert(dupReport.verdict === 'duplicated-artboard', 'diffability：id 全变内容同源判定 duplicated-artboard');
+    assert(dupReport.stableIdOverlap === 0 && dupReport.contentHashOverlap === 1, 'diffability：overlap 数值正确');
 }
 
 // ---------- 9. Sketch 2025 Frame/GraphicFrame 容器适配 ----------
@@ -436,7 +436,7 @@ const makeExportB = (a: any): any => {
     assert(nested.type === 'group' && !!nested.fills && nested.fills[0].color === '#FFFFFF' && !nested.tint,
         'Frame 适配：嵌套 Frame 的背景保持 fills 语义（type 仍为 group）');
     const plainGroup = dsl.artboard.children!.filter(k => k.name === '图标组')[0];
-    // 普通编组的着色提示不得误升为背景（fills）；1.1 起纯色 tint 已下发删除，两字段皆无
+    // 普通编组的着色提示不得误升为背景（fills）；纯色 tint 已下发删除，两字段皆无
     assert(!plainGroup.tint && !plainGroup.fills, 'Frame 适配：普通编组着色提示不落 fills（tint 已下发删除）');
 
     // symbolMaster 作解析根：backgroundColor 此前被静默丢弃
@@ -528,7 +528,7 @@ const makeExportB = (a: any): any => {
     };
     const iconDsl = picassoArtboardRestoreParse(deepCopy(iconA), iconB, [deepCopy(iconMaster)], { generatedAt: 'fixed' });
     const iconTree = iconDsl.components[sha1('SYM-ICON').slice(0, 8)].tree!;
-    // 定义树根的着色提示不得误升为背景；1.1 起已下发删除。子路径本身无填充（渲染无内容），
+    // 定义树根的着色提示不得误升为背景；纯色 tint 已下发删除。子路径本身无填充（渲染无内容），
     // Sketch tint 只重着色已绘制内容——不给无填充子节点强加 fills
     assert(!iconTree.tint && !iconTree.fills, 'componentRoot：定义树根着色提示不落 fills（tint 已下发删除）');
     assert(!iconTree.children![0].fills, 'componentRoot：tint 不给无填充子节点强加 fills');
@@ -576,7 +576,7 @@ const makeExportB = (a: any): any => {
     const tintTokenName = Object.keys(tintDsl.designTokens.colors || {})
         .filter(name => tintDsl.designTokens.colors![name].value === '#999999')[0];
     assert(!!tintTokenName, 'tint token：着色色进 token 表');
-    // 1.1：tint 下发后组上无字段，token 回填落在被重着色的子形状 fills 上
+    // tint 下发后组上无字段，token 回填落在被重着色的子形状 fills 上
     assert(!tintGroup.tint && tintGroup.children![0].fills![0].color === '#999999'
         && tintGroup.children![0].fills![0].token === tintTokenName,
         'tint token：下发后的子形状新色回填 token（不再是孤儿槽位）');
@@ -608,7 +608,7 @@ const makeExportB = (a: any): any => {
         'idByDoObjectID：不可枚举，不落 JSON 产物');
 }
 
-// ---------- 10. schema 1.1 CSS-ready 化（bake.ts） ----------
+// ---------- 10. CSS-ready 化（bake.ts） ----------
 {
     const mkColor = (r: number, g: number, b: number, a?: number): any => (
         { _class: 'color', red: r, green: g, blue: b, alpha: a === undefined ? 1 : a });

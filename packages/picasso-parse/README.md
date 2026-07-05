@@ -76,7 +76,7 @@ const rnCode = picassoCode([dsl], artboardJSON.frame.width, CodeType.ReactNative
 | `picassoArtboardRestoreParse(exportA, exportB, mastersC?, options?)` | 三份输入合并（ID 回填 + components 组装 + overrides 解析），产出 RestoreDSL：结构保真（1:1 镜像图层树）、值归一化、无布局推断 |
 | `assessRestoreDiffability(prev, next)` | 跨版本 diff 前置判定：给两版 RestoreDSL 打 `same-artboard` / `duplicated-artboard` / `unrelated` 三档标签，服务端 diff 第一步用它选择配对策略 |
 | `toRenderProfile(restore)` | LLM 还原用的精简视图：剥离 hash / components 字典 / 透明占位，可节省 31~44% 体积。全量产物照常落库，此函数只影响 LLM 提示词素材 |
-| `bakeRestoreTree(node)` | CSS-ready 后处理（schema 1.1，`picassoArtboardRestoreParse` 内部已调用）：tint / text.fills 下发删除、gradient.css 预算、位图 rotation/flip 语义统一、stroke 细直线矩形化、slice 切图上提。幂等；单独导出供两类场景——① 存量 1.0 产物离线升级到 1.1 语义；② 插件端在切图 URL 回填后**必须再调一次**（位图相关两项依赖 image.url 存在） |
+| `bakeRestoreTree(node)` | CSS-ready 后处理（schema 1.0，`picassoArtboardRestoreParse` 内部已调用）：tint / text.fills 下发删除、gradient.css 预算、位图 rotation/flip 语义统一、stroke 细直线矩形化、slice 切图上提。幂等；单独导出供插件端在切图 URL 回填后**必须再调一次**（位图相关两项依赖 image.url 存在） |
 
 - `exportA`：原始画板 JSON（`sketch.export` 直接导出，do_objectID 持久稳定）
 - `exportB`：解绑 Symbol 后的副本画板 JSON（几何精确的展开树）

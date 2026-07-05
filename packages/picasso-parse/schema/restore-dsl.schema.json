@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/wuba/Picasso/tree/master/packages/picasso-parse/schema/restore-dsl.schema.json",
   "title": "Picasso RestoreDSL",
-  "description": "RestoreDSL 输出格式规范（schemaVersion 1.1，导出侧自 @wubafe/picasso-parse 0.0.45-beta.5 起实现；1.0 为对外首发）。缺省值省略原则：visible:true / rotation:0 / opacity:1 / verticalAlign:'top' / 空数组一律不写。1.1 = CSS-ready 化（parse 端 bake 后处理，消费端零推断）：新增 gradient.css；画板根 fills 必填；纯色 tint 下发子孙后删除；text.fills 下发 runs[].color 后删除；type=image/path 的切图节点不再带 rotation/flip（契约收敛为「字段出现 = 消费端必须应用」）；stroke-only 细直线转 fills 矩形；同 frame 子 slice 切图上提到 group。带 [1.1+]/[1.2+] 标记的历史字段为 1.0 开发期内部迭代阶段号，均属 1.0 首发内容。",
+  "description": "RestoreDSL 输出格式规范（schemaVersion 1.0，对外首发）。缺省值省略原则：visible:true / rotation:0 / opacity:1 / verticalAlign:'top' / 空数组一律不写。1.0 首发包含 CSS-ready 化（parse 端 bake 后处理，消费端零推断）：gradient.css 直接消费；画板根 fills 必填；纯色 tint 下发子孙后删除；text.fills 下发 runs[].color 后删除；type=image/path 的切图节点不再带 rotation/flip（契约收敛为「字段出现 = 消费端必须应用」）；stroke-only 细直线转 fills 矩形；同 frame 子 slice 切图上提到 group。",
   "$comment": "维护约定：本文件与 restoreTypes.ts、RESTORE_SCHEMA_VERSION 同步更新（只加字段升 minor，破坏性变更原则上禁止）。校验方式示例：python3 -m jsonschema 或 ajv validate -s restore-dsl.schema.json -d xxx_restore.json。",
   "type": "object",
   "required": [
@@ -56,17 +56,17 @@
         "assetsBaseUrl": {
           "type": "string",
           "format": "uri",
-          "description": "[1.1+] 相对路径图片资源的基地址。所有 image.url / fills[].image.url 若非绝对 URL，必须能以 assetsBaseUrl 为基址解析；导出侧应保证二者必居其一，禁止输出无法解析的本地相对路径（1.0 已知缺陷：偶发 images/xxx.png 相对路径且无基址，消费方无法获取）。"
+          "description": "相对路径图片资源的基地址。所有 image.url / fills[].image.url 若非绝对 URL，必须能以 assetsBaseUrl 为基址解析；导出侧应保证二者必居其一，禁止输出无法解析的本地相对路径。"
         },
         "assetsScale": {
           "type": "number",
-          "description": "[1.2+] 切图统一导出倍率（image.scale 缺省时的全局值）。"
+          "description": "切图统一导出倍率（image.scale 缺省时的全局值）。"
         }
       }
     },
     "designTokens": {
       "type": "object",
-      "description": "高频样式值聚合（swatches 不可得，自动命名）。当前仅统计用途：节点侧尚无 token 反向引用，1.1 起可通过 fills[].token / runs[].styleToken 建立关联。",
+      "description": "高频样式值聚合（swatches 不可得，自动命名）。节点侧通过 fills[].token / runs[].styleToken 建立反向关联。",
       "properties": {
         "colors": {
           "type": "object",
@@ -115,7 +115,7 @@
               },
               "sourceName": {
                 "type": "string",
-                "description": "[1.1+] Sketch 共享文本样式原名（如 '08 辅助信息 24/1 Default/...'）。1.0 中共享样式名直接做 key、与自动命名 text-N 混杂；1.1 起（已实现）key 统一为 text-N，原名落此字段。"
+                "description": "Sketch 共享文本样式原名（如 '08 辅助信息 24/1 Default/...'）。key 统一为 text-N，原名落此字段。"
               }
             }
           },
@@ -285,7 +285,7 @@
               }
             }
           },
-          "description": "[1.1] CSS-ready 线性渐变（bake 预算值）：消费端直接拼 linear-gradient(angle, color pct%, ...)，零计算。仅 type=linear 且节点有面积时写；缺失时（radial/angular/退化）取首 stop 纯色近似。from/to/stops.position 保留作审计与非 CSS 消费端自算。"
+          "description": "CSS-ready 线性渐变（bake 预算值）：消费端直接拼 linear-gradient(angle, color pct%, ...)，零计算。仅 type=linear 且节点有面积时写；缺失时（radial/angular/退化）取首 stop 纯色近似。from/to/stops.position 保留作审计与非 CSS 消费端自算。"
         }
       }
     },
@@ -298,23 +298,23 @@
         },
         "svgUrl": {
           "type": "string",
-          "description": "[1.2+] 同一切图的矢量（SVG）版本 URL，与 url（PNG）同时导出时写入（插件端注入）。补登记：1.1 产物已存在此字段但 schema 缺失。"
+          "description": "同一切图的矢量（SVG）版本 URL，与 url（PNG）同时导出时写入（插件端注入）。"
         },
         "w": {
           "type": "number",
-          "description": "[1.2+] 位图实际像素宽（PNG IHDR 实测值，含导出倍率；插件端注入，导出降级时缺省）。消费方无需下载图片即可校验 frame x scale 与实际产物是否一致。"
+          "description": "位图实际像素宽（PNG IHDR 实测值，含导出倍率；插件端注入，导出降级时缺省）。消费方无需下载图片即可校验 frame x scale 与实际产物是否一致。"
         },
         "h": {
           "type": "number",
-          "description": "[1.2+] 位图实际像素高（同 w，PNG IHDR 实测值）。"
+          "description": "位图实际像素高（同 w，PNG IHDR 实测值）。"
         },
         "scale": {
           "type": "number",
-          "description": "[1.2+] 位图导出倍率（如 2 表示 @2x：像素尺寸 = pt 尺寸 x 2）。缺省时取 meta.assetsScale。"
+          "description": "位图导出倍率（如 2 表示 @2x：像素尺寸 = pt 尺寸 x 2）。缺省时取 meta.assetsScale。"
         },
         "frame": {
           "$ref": "#/definitions/frame",
-          "description": "[1.2+] 位图实际渲染范围（画板绝对坐标，pt）。切图画布 = 内容 bounds（含阴影/模糊 bleed），可能大于节点 frame 且偏移不对称；消费方必须按本字段摆放位图，缺失时才回退到节点 frame。"
+          "description": "位图实际渲染范围（画板绝对坐标，pt）。切图画布 = 内容 bounds（含阴影/模糊 bleed），可能大于节点 frame 且偏移不对称；消费方必须按本字段摆放位图，缺失时才回退到节点 frame。"
         },
         "mode": {
           "type": "string",
@@ -337,7 +337,7 @@
         },
         "token": {
           "type": "string",
-          "description": "[1.1+] 指向 designTokens.colors 的 key（如 'color-3'），建立节点与 token 的正向关联。"
+          "description": "指向 designTokens.colors 的 key（如 'color-3'），建立节点与 token 的正向关联。"
         }
       }
     },
@@ -457,7 +457,7 @@
             "center",
             "justify"
           ],
-          "description": "水平对齐。段落属性挂在 run 级是 1.0 的历史设计，1.1 起优先消费节点级 align，run 级仅作兼容回退。",
+          "description": "水平对齐。段落属性同时挂在 run 级与节点级，消费方优先取节点级 align，run 级作兼容回退。",
           "$comment": "[2.0 讨论] 从 run 级移除。"
         },
         "decoration": {
@@ -466,7 +466,7 @@
         },
         "styleToken": {
           "type": "string",
-          "description": "[1.1+] 指向 designTokens.textStyles 的 key，建立 run 与文本样式 token 的正向关联。"
+          "description": "指向 designTokens.textStyles 的 key，建立 run 与文本样式 token 的正向关联。"
         }
       }
     },
@@ -566,7 +566,7 @@
         "rotation": {
           "type": "number",
           "default": 0,
-          "description": "旋转角度（度）。与 Sketch 约定一致：逆时针为正，围绕节点中心旋转（CSS transform:rotate 需取反）。缺省 0 省略。[1.1 契约] 字段出现 = 消费端必须应用；type=image/path 的切图节点像素已烘焙变换，bake 阶段已删字段（group 栅格化位图未烘焙，保留）。与 flip 同时出现时 CSS 顺序为 scale(...) rotate(...)（矩阵右到左 = 先转后翻，符合 Sketch 世界坐标语义）。"
+          "description": "旋转角度（度）。与 Sketch 约定一致：逆时针为正，围绕节点中心旋转（CSS transform:rotate 需取反）。缺省 0 省略。契约：字段出现 = 消费端必须应用；type=image/path 的切图节点像素已烘焙变换，bake 阶段已删字段（group 栅格化位图未烘焙，保留）。与 flip 同时出现时 CSS 顺序为 scale(...) rotate(...)（矩阵右到左 = 先转后翻，符合 Sketch 世界坐标语义）。"
         },
         "opacity": {
           "type": "number",
@@ -618,7 +618,7 @@
           "items": {
             "$ref": "#/definitions/fill"
           },
-          "description": "普通编组（非 shapeGroup、非 Frame 容器）上的填充是「子图标着色提示」而非背景。[1.1 起]纯色 tint 已在 parse 端 bake 阶段下发到子孙 fills/borders/runs 的 color 并删除本字段——正常产物不再出现；仅渐变着色（极罕见，无法逐色下发）保留原样，消费端可取首 stop 纯色近似下发。若在 1.1 产物中见到纯色 tint 属 parse 缺陷。group 节点保留 fills 的只有两类真实填充：shapeGroup（布尔形状）与 Frame/GraphicFrame 容器（背景填充）。"
+          "description": "普通编组（非 shapeGroup、非 Frame 容器）上的填充是「子图标着色提示」而非背景。纯色 tint 已在 parse 端 bake 阶段下发到子孙 fills/borders/runs 的 color 并删除本字段——正常产物不再出现；仅渐变着色（极罕见，无法逐色下发）保留原样，消费端可取首 stop 纯色近似下发。若在产物中见到纯色 tint 属 parse 缺陷。group 节点保留 fills 的只有两类真实填充：shapeGroup（布尔形状）与 Frame/GraphicFrame 容器（背景填充）。"
         },
         "borders": {
           "type": "array",
@@ -666,7 +666,7 @@
             "nonzero"
           ],
           "default": "evenodd",
-          "description": "[1.1+] svgPath 的填充规则。1.0 未导出，消费方只能猜测（Sketch 常用 evenodd）；1.1 起显式输出，缺省 evenodd 省略。"
+          "description": "svgPath 的填充规则。缺省 evenodd 省略（Sketch 常用值）。"
         },
         "booleanOperation": {
           "type": "string",
@@ -676,11 +676,11 @@
             "intersect",
             "difference"
           ],
-          "description": "[1.1+] 该节点参与父级布尔运算的运算符。1.0 丢失此信息导致无 fill 的减形 path 成为不可还原的死数据；1.1 实现取「保留本字段由消费方合成」策略（导出侧预合并为单一 svgPath 留作后续优化）。注意布尔组首个子节点通常无运算符（作为基形）。"
+          "description": "该节点参与父级布尔运算的运算符。策略：保留本字段由消费方合成（导出侧预合并为单一 svgPath 留作后续优化）。注意布尔组首个子节点通常无运算符（作为基形）。"
         },
         "shapeGroup": {
           "type": "boolean",
-          "description": "[1.2+] 布尔运算形状组标记：type 仍为 group，但 fills 为真实填充、children 为参与布尔运算的子路径。缺省 false 省略。"
+          "description": "布尔运算形状组标记：type 仍为 group，但 fills 为真实填充、children 为参与布尔运算的子路径。缺省 false 省略。"
         },
         "flip": {
           "type": "object",
@@ -692,7 +692,7 @@
               "type": "boolean"
             }
           },
-          "description": "镜像翻转（Sketch isFlippedHorizontal / isFlippedVertical）。x = 水平翻转，y = 垂直翻转，仅有翻转时输出（CSS 对应 transform: scaleX(-1) / scaleY(-1)，围绕节点中心）。[1.1 契约] 字段出现 = 消费端必须应用，无任何「已烘焙需忽略」的例外——type=image/path 切图节点像素已烘焙翻转，bake 阶段已删字段；group 栅格化位图未烘焙，保留字段消费端须翻。与 rotation 并存时 CSS 写 scale(...) rotate(...)（先转后翻）。"
+          "description": "镜像翻转（Sketch isFlippedHorizontal / isFlippedVertical）。x = 水平翻转，y = 垂直翻转，仅有翻转时输出（CSS 对应 transform: scaleX(-1) / scaleY(-1)，围绕节点中心）。契约：字段出现 = 消费端必须应用，无任何「已烘焙需忽略」的例外——type=image/path 切图节点像素已烘焙翻转，bake 阶段已删字段；group 栅格化位图未烘焙，保留字段消费端须翻。与 rotation 并存时 CSS 写 scale(...) rotate(...)（先转后翻）。"
         },
         "text": {
           "type": "string",
@@ -705,7 +705,7 @@
             "auto-height",
             "fixed"
           ],
-          "description": "文本框行为（Sketch textBehaviour）。auto-width = 单行不换行、宽度随内容；auto-height = 固定宽度自动换行增高；fixed = 宽高全固定。1.0 中源数据缺 textBehaviour 时省略——消费方在缺失设计字体、fallback 字体量宽偏大时无法判断是否允许换行，导致布局破坏；1.1 起导出侧应尽力必写（text 节点）。"
+          "description": "文本框行为（Sketch textBehaviour）。auto-width = 单行不换行、宽度随内容；auto-height = 固定宽度自动换行增高；fixed = 宽高全固定。导出侧对 text 节点应尽力必写——缺失时消费方在字体 fallback 量宽偏大时无法判断是否允许换行，会导致布局破坏。"
         },
         "verticalAlign": {
           "type": "string",
@@ -725,7 +725,7 @@
             "center",
             "justify"
           ],
-          "description": "[1.1+] 节点级段落水平对齐（取自 run 级 align 的归一：全段一致时上提）。消费方优先取本字段，缺失时回退 runs[0].align。"
+          "description": "节点级段落水平对齐（取自 run 级 align 的归一：全段一致时上提）。消费方优先取本字段，缺失时回退 runs[0].align。"
         },
         "runs": {
           "type": "array",
@@ -736,7 +736,7 @@
         },
         "effectiveLineHeight": {
           "type": "number",
-          "description": "[1.2+] runs 无显式 lineHeight 时的有效行高（pt）。单行自适应文本取 frame 高（即 Sketch 按字体默认行高实算的值），多行按 1.4x 字号近似；textResizing=fixed 不写。消费方取值顺序：run.lineHeight ?? effectiveLineHeight ?? 字体默认。"
+          "description": "runs 无显式 lineHeight 时的有效行高（pt）。单行自适应文本取 frame 高（即 Sketch 按字体默认行高实算的值），多行按 1.4x 字号近似；textResizing=fixed 不写。消费方取值顺序：run.lineHeight ?? effectiveLineHeight ?? 字体默认。"
         },
         "image": {
           "allOf": [
@@ -752,7 +752,7 @@
             "image",
             "vector"
           ],
-          "description": "[1.1+] 带 image 的 group 的渲染意图，由导出侧判定逻辑（handleImage / 纯矢量原子组整组导出）直接落数据：image = 矢量子树不可精确还原（含布尔运算丢失、遮罩、不规则样式），必须用切图渲染，children 仅供结构分析；vector = 切图仅为冗余快照，优先矢量渲染。1.0 缺此字段时消费方只能按'有 image 即用切图'的保守策略。"
+          "description": "带 image 的 group 的渲染意图，由导出侧判定逻辑（handleImage / 纯矢量原子组整组导出）直接落数据：image = 矢量子树不可精确还原（含布尔运算丢失、遮罩、不规则样式），必须用切图渲染，children 仅供结构分析；vector = 切图仅为冗余快照，优先矢量渲染。"
         },
         "rasterizeReason": {
           "type": "string",
@@ -761,7 +761,7 @@
             "irregular-vector",
             "export-format"
           ],
-          "description": "[1.1+] 整组切图的判定原因：slice = 设计师显式放置切片；irregular-vector = 不规则矢量（handleIregularLayer 判定）；export-format = 图层自带 exportFormats。供还原质量归因与 handleJudge 边界回归用。"
+          "description": "整组切图的判定原因：slice = 设计师显式放置切片；irregular-vector = 不规则矢量（handleIregularLayer 判定）；export-format = 图层自带 exportFormats。供还原质量归因与 handleJudge 边界回归用。"
         },
         "componentKey": {
           "type": "string",
@@ -778,7 +778,7 @@
         },
         "styleHash": {
           "type": "string",
-          "description": "[1.2+] 无几何内容指纹：contentSignature 去掉 frame 后的 sha1 前 8 位。与 contentHash 组成两轮 diff 接力——contentHash 全等=未变；仅 styleHash 全等=移动未改样式（moved）。"
+          "description": "无几何内容指纹：contentSignature 去掉 frame 后的 sha1 前 8 位。与 contentHash 组成两轮 diff 接力——contentHash 全等=未变；仅 styleHash 全等=移动未改样式（moved）。"
         },
         "subtreeHash": {
           "type": "string",
