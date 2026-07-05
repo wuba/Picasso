@@ -30,6 +30,9 @@ const _parseDSL = (sketchData: SKLayer[], type: string):DSL => {
         if (layer.subtreeHash !== undefined) {
             dslLayer.subtreeHash = layer.subtreeHash;
         }
+        if (layer.styleHash !== undefined) {
+            dslLayer.styleHash = layer.styleHash;
+        }
 
         // 海葵组件
         if (type === 'lowcode') {

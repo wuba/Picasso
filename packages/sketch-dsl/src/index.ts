@@ -90,6 +90,7 @@ export type SKLayer = {
     stableId?: string // 原稿 do_objectID 的确定性短哈希（Symbol 展开子树内为复合路径）
     contentHash?: string // 节点归一化属性哈希（不含 children）
     subtreeHash?: string // Merkle：hash(contentHash + 有序 children.subtreeHash)
+    styleHash?: string // 无几何第二指纹（不含 frame），diff 场景识别「仅移动未改样式」
     restoreComponentKey?: string // RestoreDSL components 字典 key（master symbolID 短哈希）
     restoreOverrides?: { [key: string]: any } // override path 可读化后的键值
 }

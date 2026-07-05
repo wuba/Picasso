@@ -50,6 +50,7 @@ assert(sha1('中文字符串测试') === sha1('中文字符串测试'), 'sha1 UT
     assert(text.indexOf('"stableId"') === -1, '未注入输入：measure DSL 不含 stableId key');
     assert(text.indexOf('"contentHash"') === -1, '未注入输入：measure DSL 不含 contentHash key');
     assert(text.indexOf('"subtreeHash"') === -1, '未注入输入：measure DSL 不含 subtreeHash key');
+    assert(text.indexOf('"styleHash"') === -1, '未注入输入：measure DSL 不含 styleHash key');
 
     // 同输入两次解析逐字节一致
     const measure2 = picassoArtboardMeatureParse(deepCopy(rawArtboard));
@@ -118,6 +119,19 @@ const makeExportB = (a: any): any => {
     });
     assert(measureIds.length > 0, `一致性：measure DSL 携带 stableId 节点数 > 0（实际 ${measureIds.length}）`);
     assert(aligned === measureIds.length, `一致性：measure 与 RestoreDSL stableId/contentHash 逐值一致（${aligned}/${measureIds.length}）`);
+
+    // styleHash 透传：注入后 measure DSL 至少有一个节点携带 styleHash，且值与 B 树上一致
+    const collectStyleHash = (node: any, out: string[]): string[] => {
+        if (node.styleHash) out.push(`${node.stableId || node.id}|${node.styleHash}`);
+        (node.children || []).forEach((c: any) => collectStyleHash(c, out));
+        return out;
+    };
+    const measureStyle = collectStyleHash(measure, []);
+    const restoreStyle = collectStyleHash(restore.artboard, []);
+    assert(measureStyle.length > 0, `styleHash 透传：measure DSL 携带 styleHash 节点数 > 0（实际 ${measureStyle.length}）`);
+    const restoreStyleSet = new Set(restoreStyle);
+    const styleAligned = measureStyle.filter((s) => restoreStyleSet.has(s)).length;
+    assert(styleAligned === measureStyle.length, `styleHash 透传：measure 与 RestoreDSL styleHash 逐值一致（${styleAligned}/${measureStyle.length}）`);
 
     // ---------- 3./7. RestoreDSL 稳定性 + 缺省省略 ----------
     const exportB3 = makeExportB(exportA);
