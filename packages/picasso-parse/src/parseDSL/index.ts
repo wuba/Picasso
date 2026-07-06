@@ -5,8 +5,53 @@ import parseStyle from './parseStyle';
 import parseImage from './parseImage';
 import handleSlicePosition from './handleSlicePosition';
 import filterGroupLayer from './filterGroupLayer';
+import {
+    clipsContentsToRestore,
+    containerRoleOf,
+    cornerHintsToRestore,
+    decodeFlexStack,
+    decodeLayoutConstraints,
+    decodeStack,
+} from '../parseRestoreDSL/normalize';
 
 // import * as fs from 'fs';
+
+/**
+ * 将 Sketch 2025 容器语义以只读元信息透传给标注 DSL。
+ * @param dslLayer 当前输出的 Picasso DSL 节点；只会追加可选顶层字段。
+ * @param layer 当前 Sketch JSON 图层，字段缺失时保持 DSL 逐字节兼容。
+ * @param type 当前解析模式；仅 measure 模式透传，code/operation/lowcode 不改变行为。
+ * @returns 无返回值，必要时原地补充标注元信息。
+ */
+const applyMeasureSemanticMetadata = (dslLayer: Component, layer: SKLayer, type: string): void => {
+    if (type !== 'measure') return;
+
+    const containerRole = containerRoleOf(layer);
+    if (containerRole) {
+        dslLayer.containerRole = containerRole;
+    }
+
+    const clipsContents = clipsContentsToRestore(layer);
+    if (clipsContents) {
+        dslLayer.clipsContents = true;
+    }
+
+    const cornerHints = cornerHintsToRestore(layer);
+    if (cornerHints) {
+        dslLayer.cornerHints = cornerHints;
+    }
+
+    const layoutConstraints = decodeLayoutConstraints(layer);
+    if (layoutConstraints) {
+        dslLayer.layoutConstraints = layoutConstraints;
+    }
+
+    // Stack 只作为标注语义透传，不参与老 DSL 的布局推断或 style 生成。
+    const stack = decodeFlexStack(layer) || decodeStack(layer);
+    if (stack) {
+        dslLayer.stack = stack;
+    }
+};
 
 const _parseDSL = (sketchData: SKLayer[], type: string):DSL => {
     const dsl: DSL=[];
@@ -33,6 +78,8 @@ const _parseDSL = (sketchData: SKLayer[], type: string):DSL => {
         if (layer.styleHash !== undefined) {
             dslLayer.styleHash = layer.styleHash;
         }
+
+        applyMeasureSemanticMetadata(dslLayer, layer, type);
 
         // 海葵组件
         if (type === 'lowcode') {

@@ -8,15 +8,14 @@
  * ─ contentHash ───────────────────────────────────────────────────────────
  *   节点归一化属性签名的 sha1 前 8 位。签名字段：
  *     类型 / frame / visible / rotation / opacity / flip / windingRule /
- *     booleanOp / artboard 背景 / constraints / stack / borderRadius /
+ *     booleanOp / artboard 背景 / constraints / layoutConstraints / stack /
+ *     containerRole / clipsContents / borderRadius / cornerHints /
  *     fills / borders / shadows / innerShadows / blur /
  *     text（string + runs + textBehaviour + verticalAlign）/ image / path
  *   刻意不含 id / name / children / 绝对坐标——name 是 diff 模糊配对的独立
  *   打分信号，绝对坐标随父级移动漂移，children 由 subtreeHash 单独覆盖。
- *   已知盲区（历史指纹零漂移的刻意取舍，restore.test.ts 有断言）：groupBehavior
- *   与 fills/tint 分类语义不入指纹——同值 fills 的普通编组与 Frame 容器 hash
- *   相同，两态切换（着色提示 ↔ 真实背景）视觉变化但 contentHash 不变，diff 端
- *   需另行比对。
+ *   1.1 起 Frame/GraphicFrame 身份、裁剪与圆角高级语义进入签名：这些字段会直接影响
+ *   跨端还原，继续保持历史零漂移会让 diff 把真实视觉变化误判成未变。
  *
  * ─ styleHash ────────────────────────────────────────────────────────────
  *   与 contentHash 同签名但**去掉 frame**，sha1 前 8 位。让消费方能识别
@@ -36,8 +35,11 @@ import {
     round2,
     restoreTypeOf,
     decodeConstraints,
+    decodeLayoutConstraints,
     decodeStack,
+    decodeFlexStack,
     borderRadiusToRestore,
+    cornerHintsToRestore,
     fillsToRestore,
     bordersToRestore,
     shadowsToRestore,
@@ -50,6 +52,8 @@ import {
     windingRuleToRestore,
     booleanOpToRestore,
     colorToHex,
+    containerRoleOf,
+    clipsContentsToRestore,
 } from './normalize';
 
 /**
@@ -153,12 +157,24 @@ export const contentSignature = (layer: SKLayer, withGeometry: boolean = true): 
     const constraints = decodeConstraints(layer.resizingConstraint);
     if (constraints) signature.c = constraints;
 
-    const stack = decodeStack(layer);
+    const layoutConstraints = decodeLayoutConstraints(layer);
+    if (layoutConstraints) signature.lc = layoutConstraints;
+
+    const stack = decodeFlexStack(layer) || decodeStack(layer);
     if (stack) signature.st = stack;
 
     // —— 视觉样式（normalize 已过滤 !isEnabled，空数组不写）——
+    const containerRole = containerRoleOf(layer);
+    if (containerRole) signature.cr = containerRole;
+
+    const clipsContents = clipsContentsToRestore(layer);
+    if (clipsContents) signature.clip = true;
+
     const borderRadius = borderRadiusToRestore(layer);
     if (borderRadius) signature.br = borderRadius;
+
+    const cornerHints = cornerHintsToRestore(layer);
+    if (cornerHints) signature.ch = cornerHints;
 
     const fills = fillsToRestore(layer);
     if (fills.length) signature.fi = fills;

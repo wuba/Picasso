@@ -23,6 +23,8 @@ export type SKLayer = {
     backgroundColor?: SKColor // 图层背景色
     hasBackgroundColor?: boolean // 背景色是否生效
     includeBackgroundColorInExport?: boolean // 导出图片时是否包含背景色
+    clipsContents?: boolean // Sketch API 对外暴露的 Frame/GraphicFrame 子层裁剪开关
+    clippingBehavior?: number // Sketch 导出 JSON 的裁剪内部枚举；优先使用 clipsContents 布尔语义
     hasScale?: boolean // 是否缩放
     isFlippedVertical?: boolean // 垂直翻转
     isFlippedHorizontal?: boolean // 水平翻转
@@ -45,8 +47,25 @@ export type SKLayer = {
     hasClippingMask?: boolean
     style?: SKStyle // 图层样式
     hasClickThrough?: boolean
+    horizontalSizing?: number // Sketch 2025 Frame 内横向尺寸策略（FlexSizing 原始枚举值）
+    verticalSizing?: number // Sketch 2025 Frame 内纵向尺寸策略（FlexSizing 原始枚举值）
+    horizontalPins?: number // Sketch 2025 Frame 内横向 pin 位掩码（left/right）
+    verticalPins?: number // Sketch 2025 Frame 内纵向 pin 位掩码（top/bottom）
+    leftPadding?: number // Stack / Frame padding 左侧值
+    topPadding?: number // Stack / Frame padding 顶部值
+    rightPadding?: number // Stack / Frame padding 右侧值
+    bottomPadding?: number // Stack / Frame padding 底部值
+    paddingSelection?: number // Sketch padding 输入模式原始值，供结构语义审计
     groupLayout?: {
         _class: string
+        flexDirection?: number
+        justifyContent?: number
+        alignItems?: number
+        alignContent?: number
+        allGuttersGap?: number
+        crossAxisGap?: number
+        wraps?: boolean
+        axis?: number
     }
     imageUrl?: string // 图片url
     image?: SKImage // 图片

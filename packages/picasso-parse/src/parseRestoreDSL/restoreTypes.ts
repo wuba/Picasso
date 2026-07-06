@@ -1,5 +1,5 @@
 /**
- * RestoreDSL（schemaVersion 1.0）类型定义。
+ * RestoreDSL（schemaVersion 1.1）类型定义。
  *
  * 定位：Sketch 画板 → 结构保真中间表示。不做布局推断、不做代码生成、不损失几何精度，
  *      是服务端 diff / LLM 还原 / 跨版本追溯的规范源。
@@ -137,6 +137,49 @@ export type RestoreConstraints = {
 };
 
 /**
+ * Sketch 2025 Frame/GraphicFrame 容器身份。
+ * 普通 group 只做图层编组；Frame/GraphicFrame 具备真实背景、圆角、裁剪与后续布局语义。
+ */
+export type RestoreContainerRole = 'frame' | 'graphicFrame';
+
+/**
+ * 新式 Frame 内布局约束（Sketch 2025 horizontalSizing / verticalSizing / pins）。
+ * raw 字段保留原始枚举/位掩码，mode/pins 给 LLM 和跨端消费方直接使用。
+ */
+export type RestoreLayoutConstraints = {
+    horizontal?: { raw: number; mode: 'fixed' | 'fit' | 'fill' | 'relative' | 'unknown' };
+    vertical?: { raw: number; mode: 'fixed' | 'fit' | 'fill' | 'relative' | 'unknown' };
+    pins?: { left: boolean; right: boolean; top: boolean; bottom: boolean; rawHorizontal?: number; rawVertical?: number };
+};
+
+/**
+ * Sketch Frame / GraphicFrame 圆角扩展语义。
+ * borderRadius 仍是跨端可直接渲染的半径；本结构只承载 smooth / concentric 等更高级提示。
+ */
+export type RestoreCornerHints = {
+    style?: 'rounded' | 'smooth' | 'unknown';
+    rawStyle?: number;
+    smoothing?: number;
+    prefersConcentric?: boolean;
+};
+
+/**
+ * Stack / 自动布局容器语义。
+ * spacing 是 1.0 兼容字段；gap 是 1.1 起推荐字段，二者同值时消费方优先用 gap。
+ */
+export type RestoreStack = {
+    direction: 'horizontal' | 'vertical';
+    spacing?: number;
+    gap?: number;
+    crossAxisGap?: number;
+    padding?: { left: number; top: number; right: number; bottom: number };
+    justifyContent?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly' | 'unknown';
+    alignItems?: 'start' | 'center' | 'end' | 'stretch' | 'none' | 'unknown';
+    alignContent?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly' | 'unknown';
+    wraps?: boolean;
+};
+
+/**
  * 节点——RestoreDSL 树的基本单元。画板本身是根节点（type='artboard'），下钻 children。
  *
  * 输出策略：
@@ -154,16 +197,20 @@ export type RestoreNode = {
     frame: RestoreFrame;              // 相对父节点原点的矩形
     absFrame: RestoreFrame;           // 相对画板原点的矩形（预算好，消费方免逐层累加）
     visible?: boolean;                // false 才写（Sketch 隐藏图层）
-    rotation?: number;                // 顺时针角度（度），非 0 才写
+    rotation?: number;                // Sketch 导出角度（度），消费端按渲染指南映射到目标平台
     opacity?: number;                 // 0~1 不透明度，<1 才写
     flip?: { x?: boolean; y?: boolean }; // 水平/垂直翻转（只写 true 的键）
 
     // ── 布局 ──
     constraints?: RestoreConstraints;                                     // resize 约束（见 RestoreConstraints）
-    stack?: { direction: 'horizontal' | 'vertical'; spacing?: number };   // Sketch Stack 布局（自动排布）
+    layoutConstraints?: RestoreLayoutConstraints;                         // Sketch 2025 Frame 内 sizing / pins 语义
+    stack?: RestoreStack;                                                 // Sketch Stack 布局（自动排布）
 
     // ── 视觉样式 ──
+    containerRole?: RestoreContainerRole; // groupBehavior 1/2 的显式容器身份，普通 group 省略
+    clipsContents?: boolean;       // Frame / GraphicFrame 是否裁剪子层；true 时消费端必须 overflow/clip
     borderRadius?: number[];        // 四角圆角 [tl, tr, br, bl]（全 0 省略）
+    cornerHints?: RestoreCornerHints; // smooth / concentric 等高级圆角语义，平台不支持时退化为 borderRadius
     fills?: RestoreFill[];          // 填充叠层（从下到上），空数组省略
     borders?: RestoreBorder[];      // 描边叠层
     shadows?: RestoreShadow[];      // 外阴影叠层
@@ -281,7 +328,7 @@ export type RestoreMetaOptions = {
  * RestoreDSL 顶层产物——picassoArtboardRestoreParse 的返回类型。
  */
 export type RestoreDSL = {
-    schemaVersion: string;      // RESTORE_SCHEMA_VERSION 常量值（如 '1.0'），消费方按此判定格式兼容性
+    schemaVersion: string;      // RESTORE_SCHEMA_VERSION 常量值（如 '1.1'），消费方按此判定格式兼容性
     meta: {
         sketchVersion?: string;    // Sketch 应用版本（如 '99.1'），插件端注入；缺省表示非插件流程
         pluginVersion?: string;    // Picasso 插件端版本，插件端注入；用于关联客户端 bug
@@ -320,7 +367,9 @@ export type RestoreDSL = {
 //      被 Mask 裁剪图层的渐变 from/to 按裁剪前 frame 重映射 /
 //      styleHash（无几何第二指纹）/ image.svgUrl / image.frame + image.scale + image.w/h
 //      （切图 bleed 元数据，插件端注入）。
-export const RESTORE_SCHEMA_VERSION = '1.0';
+// 1.1：补齐 Sketch 2025 Frame/GraphicFrame 跨端还原语义：containerRole / clipsContents /
+//      cornerHints / layoutConstraints / stack padding+gap+alignment，供 LLM 多端代码生成少猜。
+export const RESTORE_SCHEMA_VERSION = '1.1';
 
 // 解析包版本常量（与 package.json 同步手工维护，写入 meta.parserVersion 做实现溯源）
-export const PARSER_VERSION = '0.0.45-beta.9';
+export const PARSER_VERSION = '0.0.45-beta.10';

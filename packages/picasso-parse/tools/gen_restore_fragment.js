@@ -145,6 +145,14 @@ function radiusCss(node, styles, isOval) {
   }
 }
 
+function clippingCss(node, styles) {
+  // RestoreDSL 1.1: clipsContents 是 Frame/GraphicFrame 的跨端裁剪语义。
+  // 只有 true 才输出；缺省 false 不能让普通 group 意外裁掉阴影或溢出子层。
+  if (node.clipsContents === true) {
+    styles.push(['overflow', 'hidden']);
+  }
+}
+
 function transformCss(node, styles) {
   // [修正] Sketch 语义: flip 在世界坐标系下, rotation 是最终旋转角 → 先 rotate 后 flip。
   // CSS transform 矩阵从右到左应用, 所以要写成 'scale(...) rotate(...)' (scale 在左, rotate
@@ -891,6 +899,7 @@ async function createRestoreRenderContext(dslInput, options) {
     }
     bordersToCss(node, styles);
     radiusCss(node, styles);
+    clippingCss(node, styles);
     if (node.id in Z_FIX) styles.push(['z-index', String(Z_FIX[node.id])]);
     const pad = '  '.repeat(indent);
     let out = pad + '<div class="n grp" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +

@@ -161,7 +161,7 @@ export const picassoArtboardRestoreParse = (
     // 覆盖降级路径（exportA 失败/外部库 master/配对 miss）节点。只采主树——切片只存在于画板树
     const idByDoObjectID: { [uuid: string]: string } = {};
     const artboard = mapNode(prepared, null, { idByDoObjectID });
-    // CSS-ready 化（schema 1.0 bake 后处理）：tint/text.fills 下发、gradient.css 预算、位图变换语义统一、
+    // CSS-ready 化（schema 1.x bake 后处理）：tint/text.fills 下发、gradient.css 预算、位图变换语义统一、
     // 直线矩形化、slice 切图上提。必须在 linkTokens 之前——下发产生的新 color 要参与 token 回填
     bakeRestoreTree(artboard);
 

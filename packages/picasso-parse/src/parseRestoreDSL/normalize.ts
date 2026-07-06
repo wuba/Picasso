@@ -10,6 +10,10 @@ import {
     RestoreShadow,
     RestoreGradient,
     RestoreConstraints,
+    RestoreContainerRole,
+    RestoreLayoutConstraints,
+    RestoreCornerHints,
+    RestoreStack,
     RestoreTextRun,
 } from './restoreTypes';
 
@@ -114,12 +118,103 @@ export const decodeConstraints = (resizingConstraint?: number): RestoreConstrain
     };
 };
 
-/** Sketch Smart Layout（groupLayout）→ stack.direction；未声明 / Freeform 时返回 undefined */
-export const decodeStack = (layer: SKLayer): { direction: 'horizontal' | 'vertical' } | undefined => {
+// Sketch 2025 FlexSizing 数值 → 语义值；未知值保留 raw 并降级 unknown。
+const FLEX_SIZINGS = ['fixed', 'fit', 'fill', 'relative'];
+
+/**
+ * Sketch 2025 sizing / pins → RestoreDSL 布局约束。
+ * @param layer Sketch 图层，读取 horizontalSizing / verticalSizing / horizontalPins / verticalPins。
+ * @returns 有任一新式约束字段时返回语义对象；完全缺失时返回 undefined。
+ */
+export const decodeLayoutConstraints = (layer: SKLayer): RestoreLayoutConstraints | undefined => {
+    const result: RestoreLayoutConstraints = {};
+    const addSizing = (raw: any): { raw: number; mode: RestoreLayoutConstraints['horizontal']['mode'] } | undefined => {
+        if (typeof raw !== 'number') return undefined;
+        return { raw, mode: (FLEX_SIZINGS[raw] || 'unknown') as any };
+    };
+    const horizontal = addSizing((layer as any).horizontalSizing);
+    const vertical = addSizing((layer as any).verticalSizing);
+
+    // fixed 是 Sketch/FlexSizing 的默认尺寸语义，省略即可，避免在全树上铺满无信息字段。
+    if (horizontal && horizontal.mode !== 'fixed') result.horizontal = horizontal;
+    if (vertical && vertical.mode !== 'fixed') result.vertical = vertical;
+
+    const hp = (layer as any).horizontalPins;
+    const vp = (layer as any).verticalPins;
+    if ((typeof hp === 'number' && hp !== 0) || (typeof vp === 'number' && vp !== 0)) {
+        // Pin.Min=1 / Pin.Max=4 / Pin.All=5：raw 保留，布尔位给 LLM 与跨端代码生成直接消费。
+        result.pins = {
+            left: typeof hp === 'number' ? !!(hp & 1) : false,
+            right: typeof hp === 'number' ? !!(hp & 4) : false,
+            top: typeof vp === 'number' ? !!(vp & 1) : false,
+            bottom: typeof vp === 'number' ? !!(vp & 4) : false,
+        };
+        if (typeof hp === 'number') result.pins.rawHorizontal = hp;
+        if (typeof vp === 'number') result.pins.rawVertical = vp;
+    }
+
+    return Object.keys(result).length ? result : undefined;
+};
+
+// StackLayout 枚举数值 → CSS/跨端常用语义。未知值保留为 unknown，避免误映射。
+const STACK_JUSTIFY = ['start', 'center', 'end', 'between', 'around', 'evenly'];
+const STACK_ALIGN = ['start', 'center', 'end', 'stretch', 'none'];
+
+/**
+ * Sketch Smart Layout / Stack Layout → RestoreDSL stack。
+ * @param layer Sketch 图层，读取 groupLayout 与 padding 字段。
+ * @returns Stack 语义；Freeform 或未声明时返回 undefined。
+ */
+export const decodeStack = (layer: SKLayer): RestoreStack | undefined => {
     const gl: any = layer.groupLayout;
     if (!gl || gl._class !== 'MSImmutableInferredGroupLayout') return undefined;
-    // axis: 0=横排 1=竖排
+    // axis: 0=横排 1=竖排；旧 Smart Layout 只可靠表达方向。
     return { direction: gl.axis === 1 ? 'vertical' : 'horizontal' };
+};
+
+/**
+ * Sketch 2025 FlexGroupLayout → RestoreDSL stack。
+ * @param layer Sketch 图层，读取 MSImmutableFlexGroupLayout、padding 和 gap。
+ * @returns Stack 语义；非 FlexGroupLayout 时返回 undefined。
+ */
+export const decodeFlexStack = (layer: SKLayer): RestoreStack | undefined => {
+    const gl: any = layer.groupLayout;
+    if (!gl || gl._class !== 'MSImmutableFlexGroupLayout') return undefined;
+
+    const stack: RestoreStack = {
+        // flexDirection: 0=Row / 1=Column；缺省按 Row 处理，与 Sketch 新建 Stack 默认一致。
+        direction: gl.flexDirection === 1 ? 'vertical' : 'horizontal',
+    };
+    if (typeof gl.allGuttersGap === 'number') {
+        stack.gap = round2(gl.allGuttersGap);
+        stack.spacing = stack.gap;
+    }
+    if (typeof gl.crossAxisGap === 'number') stack.crossAxisGap = round2(gl.crossAxisGap);
+    if (typeof gl.justifyContent === 'number') {
+        stack.justifyContent = (STACK_JUSTIFY[gl.justifyContent] || 'unknown') as any;
+    }
+    if (typeof gl.alignItems === 'number') {
+        stack.alignItems = (STACK_ALIGN[gl.alignItems] || 'unknown') as any;
+    }
+    if (typeof gl.alignContent === 'number') {
+        stack.alignContent = (STACK_JUSTIFY[gl.alignContent] || 'unknown') as any;
+    }
+    if (gl.wraps === true) stack.wraps = true;
+
+    const left = typeof (layer as any).leftPadding === 'number' ? (layer as any).leftPadding : 0;
+    const top = typeof (layer as any).topPadding === 'number' ? (layer as any).topPadding : 0;
+    const right = typeof (layer as any).rightPadding === 'number' ? (layer as any).rightPadding : 0;
+    const bottom = typeof (layer as any).bottomPadding === 'number' ? (layer as any).bottomPadding : 0;
+    if (left || top || right || bottom) {
+        stack.padding = {
+            left: round2(left),
+            top: round2(top),
+            right: round2(right),
+            bottom: round2(bottom),
+        };
+    }
+
+    return stack;
 };
 
 // 图片填充模式 patternFillType 数值 → 语义值：0/1/2/3 分别对应平铺/填满/拉伸/贴合
@@ -614,6 +709,50 @@ export const booleanOpToRestore = (layer: SKLayer): string | undefined => {
  */
 export const isFrameContainer = (layer: SKLayer): boolean =>
     layer._class === 'group' && (layer.groupBehavior === 1 || layer.groupBehavior === 2);
+
+/**
+ * Sketch groupBehavior → RestoreDSL 容器身份。
+ * @param layer Sketch 图层，groupBehavior=1 是 Frame，2 是 GraphicFrame。
+ * @returns Frame/GraphicFrame 语义；普通 group 返回 undefined。
+ */
+export const containerRoleOf = (layer: SKLayer): RestoreContainerRole | undefined => {
+    if (layer._class !== 'group') return undefined;
+    if (layer.groupBehavior === 1) return 'frame';
+    if (layer.groupBehavior === 2) return 'graphicFrame';
+    return undefined;
+};
+
+/**
+ * Frame/GraphicFrame 裁剪语义。
+ * @param layer Sketch 图层。优先读取插件端可注入的 clipsContents 布尔值；raw clippingBehavior 仅作为保守兜底。
+ * @returns true 表示子层必须被容器裁剪；false/未知返回 undefined，遵循缺省省略原则。
+ */
+export const clipsContentsToRestore = (layer: SKLayer): boolean | undefined => {
+    if ((layer as any).clipsContents === true) return true;
+    if ((layer as any).clipsContents === false) return undefined;
+    // Sketch raw JSON 中 clippingBehavior=1 在本地样本对应开启裁剪；其它值不强行猜测为 true。
+    if (isFrameContainer(layer) && (layer as any).clippingBehavior === 1) return true;
+    return undefined;
+};
+
+/**
+ * Sketch style.corners 高级语义 → RestoreDSL cornerHints。
+ * @param layer Sketch 图层，读取 style.corners.style / smoothing / prefersConcentric。
+ * @returns smooth/concentric 等补充提示；没有有效信息时返回 undefined。
+ */
+export const cornerHintsToRestore = (layer: SKLayer): RestoreCornerHints | undefined => {
+    const corners: any = layer.style && layer.style.corners;
+    if (!corners) return undefined;
+    const hints: RestoreCornerHints = {};
+    if (typeof corners.style === 'number') {
+        hints.rawStyle = corners.style;
+        // Sketch 现有导出中 0 为普通圆角；非 0 先标记 smooth，保留 rawStyle 供精确追溯。
+        hints.style = corners.style === 0 ? 'rounded' : 'smooth';
+    }
+    if (typeof corners.smoothing === 'number') hints.smoothing = round2(corners.smoothing);
+    if (corners.concentric === true || corners.prefersConcentric === 1) hints.prefersConcentric = true;
+    return Object.keys(hints).length ? hints : undefined;
+};
 
 /**
  * Sketch _class → RestoreDSL type 归一化映射。

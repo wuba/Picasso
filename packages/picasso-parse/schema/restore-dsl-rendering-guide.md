@@ -95,6 +95,13 @@
   同理加 `inset`。
 - **圆角**：`borderRadius` 数组四角 `[tl, tr, br, bl]`，全等时可合并。
   解析侧会把异常大值收敛到 `min(width, height) / 2`，消费端可按该数组直接渲染。
+  `cornerHints` 只表达 Sketch 2025 smooth / concentric 等增强语义：平台支持连续圆角时可进一步
+  应用（如 iOS continuous corner、Android/Harmony 近似 path/shape 裁剪），不支持时必须退化为
+  普通 `borderRadius`，不能丢半径。
+- **裁剪**：`clipsContents === true` 表示 Frame/GraphicFrame 必须裁剪子层。H5/小程序对应
+  `overflow: hidden`；iOS 对应 `clipsToBounds` / `layer.masksToBounds`；Android 对应父容器
+  `clipChildren/clipToPadding` 与 outline/path 裁剪；鸿蒙对应容器 clip。父容器同时有圆角时，
+  圆角与裁剪必须一起生效。
 - **变换**：Sketch `rotation` 逆时针为正 → CSS `rotate(-r deg)`；`flip` →
   `scale(±1, ±1)`；`transform-origin: center`。
 - **模糊**：`blur.type === 'gaussian'` → `filter: blur(radius px)`；带 blur 的
@@ -135,7 +142,9 @@
   背景，可取首 stop 纯色近似下发。若在产物中见到纯色 tint 属 parse 缺陷，
   应报修而非兜底。
 - **Frame 容器不是普通编组**：Sketch 2025 Frame（含嵌套）的填充是**真实背景**，
-  parse 已保持其 `fills` 语义，按普通背景渲染即可。
+  parse 已保持其 `fills` 语义，按普通背景渲染即可。`containerRole` 显式区分
+  `frame` / `graphicFrame`，消费方不要再靠 type=group 猜；这类容器可同时带背景、
+  描边、阴影、圆角、裁剪与 Stack/约束信息。
 - **`shapeGroup: true`**：布尔运算形状组，其 `fills` 才是真实填充，children 是
   布尔子路径。`booleanOperation` 是字段透传（union/subtract/…），消费方不预合并
   ——无法合成路径时整组退化用位图（这类组通常已带 `image`）。
@@ -158,19 +167,35 @@
 - mask 是 frame 裁剪近似（父容器 `overflow: hidden` 即可），非路径级镂空。
   父容器同时带 `borderRadius` 时，应保持 `overflow: hidden` 与圆角同时生效。
 
-## 8. designTokens
+## 8. 布局语义（给可编辑/响应式代码生成）
+
+- **像素级还原第一原则**：`frame` / `absFrame` 仍是视觉权威。LLM 生成绝对定位代码时，
+  可以忽略 `layoutConstraints` / `stack`，但不能反过来用布局推断覆盖已给出的几何。
+- **`layoutConstraints`**：来自 Sketch 2025 `horizontalSizing` / `verticalSizing` /
+  `horizontalPins` / `verticalPins`。用于多端可编辑布局：
+  `mode=fixed` 倾向固定宽高，`relative` 倾向随父容器比例缩放，`fit/fill` 倾向 Stack/Flex
+  下的内容自适应/填满；`pins` 表示边距约束。缺失的 sizing 轴按 `fixed` 处理，缺失的
+  pins 按无 pin 处理。H5 可映射 absolute+left/right/top/bottom 或 flex；iOS 可映射
+  AutoLayout constraints；Android 可映射 ConstraintLayout/Flexbox；鸿蒙可映射 ArkUI
+  约束或 Flex。
+- **`stack`**：来自 Sketch Stack / legacy Smart Layout。`direction`、`gap`、`padding`、
+  `justifyContent`、`alignItems`、`wraps` 可用于生成可维护布局；若生成结果与 `absFrame`
+  有冲突，优先保持像素还原，把 Stack 只作为代码结构提示。
+
+## 9. designTokens
 
 `designTokens.colors` / `textStyles` 是高频值聚合（`fill.token` /
 `run.styleToken` 反向引用）。渲染时不需要；生成**可维护代码**时应把 token 提为
 CSS 变量/类，key 命名 `color-N` / `text-N`，`sourceName` 是 Sketch 共享样式原名。
 
-## 9. 版本兼容（对外口径）
+## 10. 版本兼容（对外口径）
 
 | schemaVersion | 消费端注意 |
 | --- | --- |
 | 1.0 | 对外首发。CSS-ready 化（本文完整语义）：gradient.css 直接消费；tint/text.fills 已下发不出现；rotation/flip 出现即应用；artboard.fills 必填；stroke 细直线已转 fills 矩形；同 frame 子 slice 切图已上提到 group。语义收敛在 parse 端 `bake.ts` 单点，消费端零推断 |
+| 1.1 | 新增 Sketch 2025 Frame/GraphicFrame 语义：`containerRole`、`clipsContents`、`cornerHints`、`layoutConstraints`、增强 `stack`。跨端 LLM 生成时优先消费这些字段，旧 1.0 文件按缺省语义回退。 |
 
-## 10. dsl-id 溯源标注（多端通道）
+## 11. dsl-id 溯源标注（多端通道）
 
 反查发生在**源码层**而非运行时：后续迭代由工具/LLM 在生成代码文本里检索
 节点 id 定位回 DSL 节点，运行时可查询只是加分项。
@@ -202,7 +227,7 @@ dsl-id 标注是**可选项，推荐开启**——是否携带由消费端按输
 `testID` / `accessibilityIdentifier` / `testTag` 会留在发布包里——属惰性
 元数据，id 只是短哈希，无泄露风险；确需干净发布包的端降级走注释通道。
 
-## 11. 直线与描边路径
+## 12. 直线与描边路径
 
 - **stroke-only 细直线**：parse 端已把「h≤1（或 w≤1）+ 单条纯色实线
   border」的直线烘焙成等效 `fills` 矩形（骑线语义、短边=thickness），消费端

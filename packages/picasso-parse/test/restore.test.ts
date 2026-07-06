@@ -16,7 +16,9 @@ import * as path from 'path';
 // 新导出必须走包主入口 import：src/index.ts 是点名导出制，直接引内部路径会漏掉
 // 「parseRestoreDSL/index.ts 导出了但主入口没透传」这类断链
 import {
+    picassoArtboardCodeParse,
     picassoArtboardMeatureParse,
+    picassoArtboardOperationCodeParse,
     picassoArtboardRestoreParse,
     annotateStableIds,
     assessRestoreDiffability,
@@ -143,7 +145,7 @@ const makeExportB = (a: any): any => {
     assert(restoreText.indexOf('"visible":true') === -1, 'RestoreDSL：不含 visible:true 缺省 key');
     assert(restoreText.indexOf('"rotation":0') === -1, 'RestoreDSL：不含 rotation:0 缺省 key');
     assert(restoreText.indexOf('"opacity":1') === -1, 'RestoreDSL：不含 opacity:1 缺省 key');
-    assert(restore.schemaVersion === '1.0', 'RestoreDSL：schemaVersion = 1.0（CSS-ready 首发）');
+    assert(restore.schemaVersion === '1.1', 'RestoreDSL：schemaVersion = 1.1（Frame/布局语义增强）');
     assert(restore.meta.units === 'pt', 'RestoreDSL：meta.units = pt');
     assert(!!restore.artboard.absFrame, 'RestoreDSL：根节点携带 absFrame');
     assert(restore.artboard.frame.x === 0 && restore.artboard.frame.y === 0, 'RestoreDSL：根节点坐标归零');
@@ -414,9 +416,27 @@ const makeExportB = (a: any): any => {
         layers: [
             {
                 _class: 'group', groupBehavior: 1,   // 嵌套 Frame：带背景填充的内容容器
+                clipsContents: true,
+                clippingBehavior: 1,
+                horizontalSizing: 3,
+                horizontalPins: 5,
+                verticalSizing: 0,
+                verticalPins: 1,
                 do_objectID: 'F-NEST', name: '嵌套Frame', isVisible: true,
                 frame: { _class: 'rect', x: 10, y: 10, width: 100, height: 50 },
                 fixedRadius: 999,
+                groupLayout: {
+                    _class: 'MSImmutableFlexGroupLayout',
+                    flexDirection: 0,
+                    justifyContent: 1,
+                    alignItems: 3,
+                    allGuttersGap: 12,
+                    wraps: true,
+                },
+                leftPadding: 4,
+                topPadding: 6,
+                rightPadding: 8,
+                bottomPadding: 10,
                 style: { _class: 'style', fills: [mkFill(1, 1, 1)] },
                 layers: [mkChildRect('F-NR')],
             },
@@ -442,7 +462,9 @@ const makeExportB = (a: any): any => {
                     corners: {
                         _class: 'MSImmutableStyleCorners',
                         radii: [60, 30, 0, 20],
-                        style: 0,
+                        style: 1,
+                        smoothing: 0.6,
+                        prefersConcentric: 1,
                     },
                     fills: [mkFill(1, 1, 1)],
                 },
@@ -464,6 +486,21 @@ const makeExportB = (a: any): any => {
     const nested = dsl.artboard.children!.filter(k => k.name === '嵌套Frame')[0];
     assert(nested.type === 'group' && !!nested.fills && nested.fills[0].color === '#FFFFFF' && !nested.tint,
         'Frame 适配：嵌套 Frame 的背景保持 fills 语义（type 仍为 group）');
+    assert(nested.containerRole === 'frame' && nested.clipsContents === true,
+        'Frame 适配：Frame 身份与裁剪语义显式输出');
+    assert(JSON.stringify(nested.layoutConstraints) === JSON.stringify({
+        horizontal: { raw: 3, mode: 'relative' },
+        pins: { left: true, right: true, top: true, bottom: false, rawHorizontal: 5, rawVertical: 1 },
+    }), 'Frame 适配：Sketch 2025 sizing/pins 归一为 layoutConstraints');
+    assert(JSON.stringify(nested.stack) === JSON.stringify({
+        direction: 'horizontal',
+        gap: 12,
+        spacing: 12,
+        justifyContent: 'center',
+        alignItems: 'stretch',
+        wraps: true,
+        padding: { left: 4, top: 6, right: 8, bottom: 10 },
+    }), 'Frame 适配：Stack padding/gap/alignment 归一输出');
     assert(JSON.stringify(nested.borderRadius) === JSON.stringify([25, 25, 25, 25]),
         'Frame 适配：fixedRadius 超大值按短边一半 clamp 后落 borderRadius');
     const radiusFrame = dsl.artboard.children!.filter(k => k.name === '圆角Frame')[0];
@@ -472,6 +509,12 @@ const makeExportB = (a: any): any => {
     const styleCornersFrame = dsl.artboard.children!.filter(k => k.name === '样式圆角Frame')[0];
     assert(JSON.stringify(styleCornersFrame.borderRadius) === JSON.stringify([20, 20, 0, 20]),
         'Frame 适配：Frame style.corners.radii 可读取并按短边一半 clamp');
+    assert(JSON.stringify(styleCornersFrame.cornerHints) === JSON.stringify({
+        rawStyle: 1,
+        style: 'smooth',
+        smoothing: 0.6,
+        prefersConcentric: true,
+    }), 'Frame 适配：Frame style.corners smooth/concentric 语义可读取');
     const measure = picassoArtboardMeatureParse(deepCopy(frameRoot)) as any;
     /**
      * 在 measure DSL 组件树中按名称查找节点。
@@ -499,6 +542,53 @@ const makeExportB = (a: any): any => {
             bottomLeft: 20,
         }),
         'Frame 适配：measure DSL 同步读取 Frame style.corners.radii');
+    const measureNestedFrame = findMeasureNodeByName(measure, '嵌套Frame');
+    assert(measureNestedFrame.containerRole === 'frame' && measureNestedFrame.clipsContents === true,
+        'Frame 适配：measure DSL 只读透传 Frame 身份与裁剪语义');
+    assert(measureNestedFrame.style.overflow === undefined,
+        'Frame 适配：measure DSL 不因 clipsContents 改写 overflow 行为');
+    assert(JSON.stringify(measureNestedFrame.layoutConstraints) === JSON.stringify({
+        horizontal: { raw: 3, mode: 'relative' },
+        pins: { left: true, right: true, top: true, bottom: false, rawHorizontal: 5, rawVertical: 1 },
+    }), 'Frame 适配：measure DSL 只读透传 sizing/pins 约束语义');
+    assert(JSON.stringify(measureNestedFrame.stack) === JSON.stringify({
+        direction: 'horizontal',
+        gap: 12,
+        spacing: 12,
+        justifyContent: 'center',
+        alignItems: 'stretch',
+        wraps: true,
+        padding: { left: 4, top: 6, right: 8, bottom: 10 },
+    }), 'Frame 适配：measure DSL 只读透传 Stack padding/gap/alignment');
+    assert(JSON.stringify(measureStyleCornersFrame.cornerHints) === JSON.stringify({
+        rawStyle: 1,
+        style: 'smooth',
+        smoothing: 0.6,
+        prefersConcentric: true,
+    }), 'Frame 适配：measure DSL 只读透传 smooth/concentric 圆角提示');
+    /**
+     * 检查 DSL 树中是否出现仅允许标注输出的 Sketch 2025 语义字段。
+     * @param node 当前 DSL 节点。
+     * @returns 任意节点带有标注元信息时返回 true；否则返回 false。
+     */
+    const hasMeasureOnlySemanticKey = (node: any): boolean => {
+        if (!node) return false;
+        // 这些字段属于标注展示信息，code/operation 默认链路不能被它们影响。
+        if (
+            node.containerRole !== undefined ||
+            node.clipsContents !== undefined ||
+            node.cornerHints !== undefined ||
+            node.layoutConstraints !== undefined ||
+            node.stack !== undefined
+        ) {
+            return true;
+        }
+        return Array.isArray(node.children) && node.children.some(hasMeasureOnlySemanticKey);
+    };
+    const code = picassoArtboardCodeParse(deepCopy(frameRoot)) as any;
+    const operationCode = picassoArtboardOperationCodeParse(deepCopy(frameRoot)) as any;
+    assert(!hasMeasureOnlySemanticKey(code) && !hasMeasureOnlySemanticKey(operationCode),
+        'Frame 适配：code/operation DSL 默认不透传 measure-only 语义字段');
     const plainGroup = dsl.artboard.children!.filter(k => k.name === '图标组')[0];
     // 普通编组的着色提示不得误升为背景（fills）；纯色 tint 已下发删除，两字段皆无
     assert(!plainGroup.tint && !plainGroup.fills, 'Frame 适配：普通编组着色提示不落 fills（tint 已下发删除）');
@@ -521,8 +611,8 @@ const makeExportB = (a: any): any => {
     const plainCopy = deepCopy(frameRoot);
     delete plainCopy.groupBehavior;
     annotateStableIds(plainCopy);
-    assert(frameCopy.contentHash === plainCopy.contentHash,
-        'Frame 适配：groupBehavior 不入 contentHash（历史指纹零漂移）');
+    assert(frameCopy.contentHash !== plainCopy.contentHash,
+        'Frame 适配：Frame 身份进入 contentHash（视觉语义变化应触发 diff）');
 }
 
 // ---------- 10. 评审修复回归（2026-07） ----------

@@ -28,6 +28,40 @@ export interface BaseComponent {
         groupId: string
     }
     groupBreadcrumb?: { id: string; name: string; stableId?: string }[] //Symbol group 面包屑
+    // —— Sketch 2025 Frame / Stack 标注元信息 ——
+    // 这些字段只用于标注/审计消费：表达 Sketch 原生容器、裁剪、圆角和布局语义。
+    // 存量 code / operation / lowcode 链路不应据此改写 style、children 或布局推断。
+    containerRole?: 'frame' | 'graphicFrame'
+    clipsContents?: boolean
+    cornerHints?: {
+        rawStyle?: number
+        style?: 'rounded' | 'smooth' | string
+        smoothing?: number
+        prefersConcentric?: boolean
+    }
+    layoutConstraints?: {
+        horizontal?: { raw: number; mode: 'fixed' | 'relative' | 'fit' | 'fill' | 'unknown' }
+        vertical?: { raw: number; mode: 'fixed' | 'relative' | 'fit' | 'fill' | 'unknown' }
+        pins?: {
+            left?: boolean
+            right?: boolean
+            top?: boolean
+            bottom?: boolean
+            rawHorizontal?: number
+            rawVertical?: number
+        }
+    }
+    stack?: {
+        direction: 'horizontal' | 'vertical'
+        spacing?: number
+        gap?: number
+        crossAxisGap?: number
+        justifyContent?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly' | 'unknown'
+        alignItems?: 'start' | 'center' | 'end' | 'stretch' | 'none' | 'unknown'
+        alignContent?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly' | 'unknown'
+        wraps?: boolean
+        padding?: { left?: number; top?: number; right?: number; bottom?: number }
+    }
     // —— 稳定 ID / 内容指纹 ——
     // 由 annotateStableIds 在 SKLayer 上原地注入，再由 parseDSL 条件透传到本类型。
     // 「未注入」的老输入产物不落 key（向后兼容护栏，restore.test.ts 有断言）。

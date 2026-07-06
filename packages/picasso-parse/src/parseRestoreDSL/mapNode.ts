@@ -10,8 +10,11 @@ import {
     round2,
     restoreTypeOf,
     decodeConstraints,
+    decodeLayoutConstraints,
     decodeStack,
+    decodeFlexStack,
     borderRadiusToRestore,
+    cornerHintsToRestore,
     fillsToRestore,
     bordersToRestore,
     shadowsToRestore,
@@ -25,6 +28,8 @@ import {
     booleanOpToRestore,
     colorToHex,
     isFrameContainer,
+    containerRoleOf,
+    clipsContentsToRestore,
     remapGradientForFrame,
 } from './normalize';
 import { RestoreGradient } from './restoreTypes';
@@ -117,6 +122,8 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, ctx
         frame: rel,
         absFrame: abs,
     };
+    const containerRole = containerRoleOf(layer);
+    if (containerRole) node.containerRole = containerRole;
 
     // —— 缺省值省略：仅偏离缺省时落 key ——
     if (layer.isVisible === false) node.visible = false;
@@ -127,6 +134,8 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, ctx
     }
     const constraints = decodeConstraints(layer.resizingConstraint);
     if (constraints) node.constraints = constraints;
+    const layoutConstraints = decodeLayoutConstraints(layer);
+    if (layoutConstraints) node.layoutConstraints = layoutConstraints;
     const flip = flipToRestore(layer);
     if (flip) node.flip = flip;
     const booleanOp = booleanOpToRestore(layer);
@@ -134,6 +143,10 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, ctx
 
     const borderRadius = borderRadiusToRestore(layer);
     if (borderRadius) node.borderRadius = borderRadius;
+    const cornerHints = cornerHintsToRestore(layer);
+    if (cornerHints) node.cornerHints = cornerHints;
+    const clipsContents = clipsContentsToRestore(layer);
+    if (clipsContents) node.clipsContents = true;
     let fills = fillsToRestore(layer);
     // 被 trimByMask 裁剪过的图层：渐变 from/to 的归一化基准还是裁剪前 frame，重映射到
     // 新 frame（建新数组/对象——fillsToRestore 结果有 memo 缓存，禁止原地改；
@@ -246,12 +259,13 @@ const mapNode = (layer: SKLayer, parentAbs: { x: number; y: number } | null, ctx
     }
 
     // Smart Layout 透传（spacing 依赖已映射子节点的几何，最后算）
-    const stack = decodeStack(layer);
+    const stack = decodeFlexStack(layer) || decodeStack(layer);
     if (stack) {
         node.stack = stack;
         if (node.children && node.children.length > 1) {
             const spacing = uniformSpacing(node.children, stack.direction);
-            if (spacing !== undefined) node.stack.spacing = spacing;
+            if (spacing !== undefined && node.stack.spacing === undefined) node.stack.spacing = spacing;
+            if (spacing !== undefined && node.stack.gap === undefined) node.stack.gap = spacing;
         }
     }
 
