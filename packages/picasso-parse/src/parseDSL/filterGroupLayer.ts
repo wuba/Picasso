@@ -1,17 +1,21 @@
 import { SKLayer } from '../types'
+import { hasBorderRadius } from './parseStyle/parseBorderRadius'
 
 /**
- * @description 判断组自身是否携带可见样式（启用的填充 / 描边 / 阴影）
+ * @description 判断组自身是否携带可见样式（启用的填充 / 描边 / 阴影 / 圆角）
  * @param {SKLayer} layer
  * @returns {boolean}
  */
 const hasVisualStyle = (layer: SKLayer): boolean => {
     const style = layer.style
+
+    // Frame 的圆角会影响 UI 还原，即使没有填充/描边也不能当成纯组织分组拍平。
     return !!(
         style?.fills?.some((item) => item.isEnabled) ||
         style?.borders?.some((item) => item.isEnabled) ||
         style?.shadows?.some((item) => item.isEnabled) ||
-        style?.innerShadows?.some((item) => item.isEnabled)
+        style?.innerShadows?.some((item) => item.isEnabled) ||
+        hasBorderRadius(layer)
     )
 }
 

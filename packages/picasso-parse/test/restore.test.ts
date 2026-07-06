@@ -416,8 +416,22 @@ const makeExportB = (a: any): any => {
                 _class: 'group', groupBehavior: 1,   // 嵌套 Frame：带背景填充的内容容器
                 do_objectID: 'F-NEST', name: '嵌套Frame', isVisible: true,
                 frame: { _class: 'rect', x: 10, y: 10, width: 100, height: 50 },
+                fixedRadius: 999,
                 style: { _class: 'style', fills: [mkFill(1, 1, 1)] },
                 layers: [mkChildRect('F-NR')],
+            },
+            {
+                _class: 'group', groupBehavior: 1,   // Frame points 圆角：新版 Sketch 可能按四角写入 points
+                do_objectID: 'F-RADIUS', name: '圆角Frame', isVisible: true,
+                frame: { _class: 'rect', x: 130, y: 10, width: 80, height: 40 },
+                points: [
+                    { cornerRadius: 60 },
+                    { cornerRadius: 30 },
+                    { cornerRadius: 0 },
+                    { cornerRadius: 20 },
+                ],
+                style: { _class: 'style' },
+                layers: [],
             },
             {
                 _class: 'group',   // 无 groupBehavior 的普通编组：tint 语义必须保持（回归护栏）
@@ -435,6 +449,11 @@ const makeExportB = (a: any): any => {
     const nested = dsl.artboard.children!.filter(k => k.name === '嵌套Frame')[0];
     assert(nested.type === 'group' && !!nested.fills && nested.fills[0].color === '#FFFFFF' && !nested.tint,
         'Frame 适配：嵌套 Frame 的背景保持 fills 语义（type 仍为 group）');
+    assert(JSON.stringify(nested.borderRadius) === JSON.stringify([25, 25, 25, 25]),
+        'Frame 适配：fixedRadius 超大值按短边一半 clamp 后落 borderRadius');
+    const radiusFrame = dsl.artboard.children!.filter(k => k.name === '圆角Frame')[0];
+    assert(JSON.stringify(radiusFrame.borderRadius) === JSON.stringify([20, 20, 0, 20]),
+        'Frame 适配：Frame points.cornerRadius 可读取并按短边一半 clamp');
     const plainGroup = dsl.artboard.children!.filter(k => k.name === '图标组')[0];
     // 普通编组的着色提示不得误升为背景（fills）；纯色 tint 已下发删除，两字段皆无
     assert(!plainGroup.tint && !plainGroup.fills, 'Frame 适配：普通编组着色提示不落 fills（tint 已下发删除）');

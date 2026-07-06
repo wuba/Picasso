@@ -94,6 +94,7 @@
 - **阴影**：`shadows` → `box-shadow: x y blur spread color`；`innerShadows`
   同理加 `inset`。
 - **圆角**：`borderRadius` 数组四角 `[tl, tr, br, bl]`，全等时可合并。
+  解析侧会把异常大值收敛到 `min(width, height) / 2`，消费端可按该数组直接渲染。
 - **变换**：Sketch `rotation` 逆时针为正 → CSS `rotate(-r deg)`；`flip` →
   `scale(±1, ±1)`；`transform-origin: center`。
 - **模糊**：`blur.type === 'gaussian'` → `filter: blur(radius px)`；带 blur 的
@@ -155,6 +156,7 @@
   应用）；`components[componentKey].tree` 是 master 定义，仅供复用分析，渲染
   不要读它。
 - mask 是 frame 裁剪近似（父容器 `overflow: hidden` 即可），非路径级镂空。
+  父容器同时带 `borderRadius` 时，应保持 `overflow: hidden` 与圆角同时生效。
 
 ## 8. designTokens
 

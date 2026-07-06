@@ -248,24 +248,68 @@ export const blurToRestore = (layer: SKLayer): { type: string; radius: number } 
 });
 
 /**
- * 四角圆角：fixedRadius / points 圆角统一到 [tl, tr, br, bl]；全 0 返回 undefined。
+ * 获取图层圆角的可渲染上限。
+ * @param layer Sketch 图层，读取 frame.width / frame.height 作为圆角约束边界。
+ * @returns 圆角最大值，取短边一半；缺少 frame 或尺寸异常时返回 0。
+ */
+const maxBorderRadiusOf = (layer: SKLayer): number => {
+    // Sketch/CSS 对超过短边一半的圆角都会渲染成胶囊，输出侧先收敛为真实语义值。
+    const frame: any = layer.frame || {};
+    const width = typeof frame.width === 'number' ? frame.width : 0;
+    const height = typeof frame.height === 'number' ? frame.height : 0;
+    return Math.max(0, Math.min(width, height) / 2);
+};
+
+/**
+ * 归一化单个圆角值。
+ * @param value Sketch 导出的圆角值，可能是普通数字、空值或最大圆角哨兵值。
+ * @param layer 圆角所在图层，用于根据 frame 尺寸做 clamp。
+ * @returns 2 位精度的非负圆角；无效值返回 0，超大值返回短边一半。
+ */
+const normalizeBorderRadiusValue = (value: any, layer: SKLayer): number => {
+    // 非数值、负数和空值没有有效圆角语义，统一按 0 处理。
+    const radius = Number(value) || 0;
+    if (radius <= 0) return 0;
+
+    // 3.402823466e+38 这类 Sketch 哨兵值不能直接下发给消费端。
+    const maxRadius = maxBorderRadiusOf(layer);
+    return round2(maxRadius ? Math.min(radius, maxRadius) : radius);
+};
+
+/**
+ * 判断是否可以把 points[].cornerRadius 当作矩形四角圆角读取。
+ * @param layer Sketch 图层，rectangle 与 Sketch 2025 Frame/GraphicFrame 支持该语义。
+ * @param points 图层 points 数组，顺序应为左上、右上、右下、左下。
+ * @returns true 表示可读取四角独立圆角；false 表示应回退到 fixedRadius。
+ */
+const canUsePointCornerRadius = (layer: SKLayer, points: any[]): boolean => (
+    points.length === 4
+    && (layer._class === 'rectangle'
+        || (layer._class === 'group' && (layer.groupBehavior === 1 || layer.groupBehavior === 2)))
+);
+
+/**
+ * 四角圆角：points.cornerRadius / fixedRadius 统一到 [tl, tr, br, bl]。
+ * @param layer Sketch 图层；rectangle 和 Frame/GraphicFrame 可读取四角 points 圆角，其它类型读取 fixedRadius 兜底。
+ * @returns 四角圆角数组 [tl, tr, br, bl]；全 0 或无圆角时返回 undefined。
  *
- * 只信任 4 点 rectangle 的 points.cornerRadius——因为：
- *   1) Sketch 里"四角独立设置"的能力只对 rectangle 类矢量层暴露；
+ * 只信任 4 点 rectangle / Frame / GraphicFrame 的 points.cornerRadius——因为：
+ *   1) Sketch 里"四角独立设置"主要对 rectangle 与新版 Frame 容器暴露；
  *   2) 其它 shape（oval / triangle / polygon / star / path）的 points 数量按几何顶点走
  *      （oval=4 但语义是椭圆控制点非四角，triangle=3，polygon/star=n），点上的 cornerRadius
  *      表达的是"顶点倒角"而非"矩形四角"，直接当矩形圆角读会得到语义错乱的数组。
- * 非 4 点 rectangle 或非 rectangle 类的圆角一律走 fixedRadius 单值兜底（四角同值）。
+ * 非 4 点 rectangle/Frame 或其它类型的圆角一律走 fixedRadius 单值兜底（四角同值）。
  */
 export const borderRadiusToRestore = (layer: SKLayer): number[] | undefined => memo('borderRadius', layer, () => {
     const points: any[] = Array.isArray(layer.points) ? layer.points : [];
     let radius: number[] | undefined;
 
-    if (points.length === 4 && layer._class === 'rectangle') {
-        // rectangle 的 points 顺序为 tl → tr → br → bl
-        radius = points.map((p: any) => round2(p.cornerRadius || 0));
+    if (canUsePointCornerRadius(layer, points)) {
+        // rectangle / Frame 的 points 顺序为 tl → tr → br → bl。
+        radius = points.map((p: any) => normalizeBorderRadiusValue(p.cornerRadius, layer));
     } else if (typeof layer.fixedRadius === 'number' && layer.fixedRadius > 0) {
-        const r = round2(layer.fixedRadius);
+        // fixedRadius 是统一圆角；Frame 容器常见此字段，需与 rectangle 一样保留。
+        const r = normalizeBorderRadiusValue(layer.fixedRadius, layer);
         radius = [r, r, r, r];
     }
 
