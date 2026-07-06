@@ -1,7 +1,7 @@
 # RestoreDSL 渲染指南（消费端语义规范）
 
 面向 RestoreDSL 的一切消费方：服务端 LLM 还原提示词、确定性渲染器
-（`tools/gen_restore_html.py`）、diff 可视化等。**格式合法性**以
+（`tools/gen_restore_html.js` / `tools/gen_restore_fragment.js`）、diff 可视化等。**格式合法性**以
 `restore-dsl.schema.json` 为准，本文回答的是「拿到合法数据后怎么渲染才对」。
 两者须与 `RESTORE_SCHEMA_VERSION` 同步维护。
 
@@ -118,7 +118,7 @@
 - **非系统字体需消费端自备字体文件**：`fontFamily` / `fontWeight` 数据是对的，
   但渲染环境没装该字体就会回退兜底链，字宽/字形失真（实测：don58 数字字体缺失
   回退 PingFang 后数值明显变宽、压住后缀）。消费端须按 DSL 实际用到的
-  `fontFamily` 提供 `@font-face`（参照 `tools/gen_restore_html.py` 的
+  `fontFamily` 提供 `@font-face`（参照 `tools/gen_restore_fragment.js` 的
   `PICASSO_FONT_DIR` 机制：按字体名查 woff2/woff/ttf 内联，系统字体跳过）。
   以 `.` 开头的 PostScript 名（`.SFNS` 等）是 macOS 私有系统字体，无文件可嵌，
   走兜底链即可。

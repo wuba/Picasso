@@ -135,20 +135,16 @@ npx ajv validate -s schema/restore-dsl.schema.json -d your_restore.json
 
 | 文件 | 说明 |
 | --- | --- |
-| [`tools/gen_restore_html.py`](tools/gen_restore_html.py) | Python 3 实现（可选依赖 Pillow，仅老素材无 `image.frame` 时的像素校准回退需要） |
-| [`tools/gen_restore_html.js`](tools/gen_restore_html.js) | Node.js 实现（Node ≥ 14，可选依赖 `pngjs`，同上） |
+| [`tools/gen_restore_html.js`](tools/gen_restore_html.js) | Node.js 实现（Node ≥ 14，可选依赖 `pngjs`）——对比页外壳，渲染核心在 `gen_restore_fragment.js` |
+| [`tools/gen_restore_fragment.js`](tools/gen_restore_fragment.js) | Node.js 渲染核心 + 「只要还原稿」独立产物 API（片段 / 纯净页 / fitWidth 等比缩放） |
 
 **定位**：模拟 LLM 消费者的确定性渲染器，把 RestoreDSL 渲染成静态 HTML 还原稿。用途是区分「**数据不够还原**」（改 parse / 插件）与「**LLM 没用好数据**」（改提示词）。schema 变更后拿真实产物跑一遍即回归对照。
 
-两版逐行对齐、输出**逐字节一致**（像素校准命中的节点除外），渲染语义变更必须双边同改。
+渲染语义的工具实现收敛在 Node.js 侧：`gen_restore_fragment.js` 是核心，`gen_restore_html.js` 只负责组装对比页外壳。改渲染语义须同步 `gen_restore_fragment.js`、`schema/restore-dsl-rendering-guide.md` 与 `RESTORE_SCHEMA_VERSION`；涉及对比页能力时再同步 `gen_restore_html.js`。
 
 #### CLI 用法
 
 ```sh
-# Python 版
-python3 tools/gen_restore_html.py <restore.json> <output.html>
-
-# Node.js 版（完全等价）
 node tools/gen_restore_html.js <restore.json> <output.html>
 ```
 
@@ -168,6 +164,34 @@ const html = await generateRestoreHtml(dsl, {
 });
 // dsl 可以是 RestoreDSL 对象，也可以是 JSON 字符串
 ```
+
+#### 只要还原稿（片段 / 纯净页，`gen_restore_fragment.js`）
+
+`generateRestoreHtml` 的产物带工具栏与「原设计图 / 叠加对比」UI。若只需要还原稿本体（嵌入自己的页面、入库、或独立预览），用 `gen_restore_fragment.js`：
+
+```ts
+const {
+  generateRestoreFragment,   // 片段：嵌入宿主页面 / 入库
+  generateRestorePageHtml,   // 纯净页：无工具栏 / 对比 UI 的完整 HTML
+} = require('@wubafe/picasso-parse/tools/gen_restore_fragment');
+
+// 1) 片段
+const frag = await generateRestoreFragment(dsl, { fontDir: '...', collectFixes: [] });
+// frag = { html, css, fontFaces, width, height, title, fixes }
+// html 是还原稿 artboard 节点本体；css（基础样式，全部锚在 .artboard 下不污染全局）
+// 与 fontFaces（@font-face）需一并注入宿主页面
+
+// 2) 纯净页
+const page = await generateRestorePageHtml(dsl, { fitWidth: true });
+```
+
+对应 CLI（产出纯净页）：
+
+```sh
+node tools/gen_restore_fragment.js <restore.json> <output.html> [--fit-width]
+```
+
+**自适应说明**：还原稿本体是**定宽像素产物**（全部节点 `absolute` + px，基准为画板设计宽度），本身不自适应。`fitWidth: true` 时纯净页外层按视口宽度做 `transform: scale` 等比缩放（视觉自适应，不改变内部像素基线），默认关闭；片段始终定宽，宿主页面需要自适应时自行对片段外层做同样的等比缩放（`scale(容器宽 / frag.width)` + `transform-origin: 0 0`）。
 
 #### 字体嵌入（`PICASSO_FONT_DIR`）
 
@@ -191,7 +215,7 @@ export PICASSO_FONT_DIR="/Users/me/fonts:/Users/me/private-fonts"
 # 混用本地目录与远程 URL
 export PICASSO_FONT_DIR="/Users/me/fonts,https://cdn.example.com/don58-Medium.woff2"
 
-python3 tools/gen_restore_html.py restore.json out.html
+node tools/gen_restore_html.js restore.json out.html
 ```
 
 以 `.` 开头的 PostScript 名（`.SFNS` 等）是 macOS 私有系统字体、无文件可嵌，脚本会自动跳过、走消费端兜底链。

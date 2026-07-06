@@ -11,16 +11,14 @@ schema 变更后拿真实产物跑一遍即回归对照。渲染语义规范见 
 
 | 文件 | 运行时 | 可选依赖 |
 | --- | --- | --- |
-| [`gen_restore_html.py`](gen_restore_html.py) | Python 3 | `Pillow`（老素材无 `image.frame` 时的像素校准回退） |
-| [`gen_restore_html.js`](gen_restore_html.js) | Node.js ≥ 14 | `pngjs`（同上） |
+| [`gen_restore_html.js`](gen_restore_html.js) | Node.js ≥ 14 | `pngjs`（老素材无 `image.frame` 时的像素校准回退）——对比页外壳，渲染核心在 `gen_restore_fragment.js` |
+| [`gen_restore_fragment.js`](gen_restore_fragment.js) | Node.js ≥ 14 | `pngjs`（同上）——渲染核心 + 「只要还原稿」独立产物 API |
 
-**双实现逐行对齐、输出逐字节一致**（像素校准命中的节点除外，两版采样精度略有差异，不影响搜索结果的量级）。渲染语义变更**必须双边同改**，否则会破坏对照价值。
+渲染语义的工具实现收敛在 Node.js 侧：`gen_restore_fragment.js` 是核心，`gen_restore_html.js` 只负责组装对比页外壳。渲染语义变更必须同步 `gen_restore_fragment.js`、`../schema/restore-dsl-rendering-guide.md` 与 `RESTORE_SCHEMA_VERSION`，否则会破坏对照价值；涉及对比页能力时再同步 `gen_restore_html.js`。
 
 ## CLI 用法
 
 ```sh
-python3 gen_restore_html.py <restore.json> <output.html>
-# 完全等价：
 node gen_restore_html.js <restore.json> <output.html>
 ```
 
@@ -40,6 +38,31 @@ const html = await generateRestoreHtml(dsl, {
 });
 // dsl 可以是 RestoreDSL 对象，也可以是 JSON 字符串
 ```
+
+## 只要还原稿：`gen_restore_fragment.js`
+
+`generateRestoreHtml` 的产物带工具栏与对比 UI。只需要还原稿本体时：
+
+```js
+const {
+  generateRestoreFragment,   // 片段：嵌入宿主页面 / 入库
+  generateRestorePageHtml,   // 纯净页：无工具栏 / 对比 UI 的完整 HTML
+} = require('./gen_restore_fragment');
+
+const frag = await generateRestoreFragment(dsl, { fontDir, collectFixes });
+// frag = { html, css, fontFaces, width, height, title, fixes }
+// html 是还原稿 artboard 节点本体；css 与 fontFaces 需一并注入宿主页面
+
+const page = await generateRestorePageHtml(dsl, { fitWidth: true });
+```
+
+对应 CLI（产出纯净页）：
+
+```sh
+node gen_restore_fragment.js <restore.json> <output.html> [--fit-width]
+```
+
+**自适应说明**：还原稿本体是**定宽像素产物**（全部节点 `absolute` + px），本身不自适应。`fitWidth: true` 时纯净页外层按视口宽度做 `transform: scale` 等比缩放（视觉自适应，不改变内部像素基线），默认关闭；片段始终定宽，宿主自适应时对片段外层做 `scale(容器宽 / frag.width)` + `transform-origin: 0 0`。
 
 ## 字体嵌入：`PICASSO_FONT_DIR`
 
@@ -63,11 +86,11 @@ export PICASSO_FONT_DIR="/Users/me/fonts:/Users/me/private-fonts"
 # 混用本地目录与远程 URL
 export PICASSO_FONT_DIR="/Users/me/fonts,https://cdn.example.com/don58-Medium.woff2"
 
-python3 gen_restore_html.py restore.json out.html
+node gen_restore_html.js restore.json out.html
 ```
 
 以 `.` 开头的 PostScript 名（`.SFNS` 等）是 macOS 私有系统字体，无文件可嵌，脚本会自动跳过、走消费端兜底链。
 
 ## 与 schema 的同步
 
-本目录两份脚本、`../schema/restore-dsl.schema.json`、`../schema/restore-dsl-rendering-guide.md`、`../src/parseRestoreDSL/restoreTypes.ts` 的 `RESTORE_SCHEMA_VERSION` **四位一体**——改任一处必须同步其余三处，否则渲染器会与产物脱节，失去对照价值。
+本目录 Node.js 渲染工具、`../schema/restore-dsl.schema.json`、`../schema/restore-dsl-rendering-guide.md`、`../src/parseRestoreDSL/restoreTypes.ts` 的 `RESTORE_SCHEMA_VERSION` 必须同步维护——改任一处都要检查其余几处，否则渲染器会与产物脱节，失去对照价值。
