@@ -58,6 +58,16 @@ Picasso/
 
 > `packages/` 下除 `picasso-parse` 外都是 `"private": true`，由 `picasso-parse` 在编译时一起打进 tarball，对外只发布一个 npm 包：[`@wubafe/picasso-parse`](https://www.npmjs.com/package/@wubafe/picasso-parse)。
 
+### RestoreDSL / schema / tools
+
+`@wubafe/picasso-parse` 从 `0.1.0` 起新增 **RestoreDSL**（结构保真中间表示）能力，用于服务端 diff、LLM 还原和跨版本追溯。它与传统 Web / 小程序 / ReactNative 代码生成链路不同：RestoreDSL 保留 1:1 图层树、稳定 ID、内容指纹、组件定义、设计 tokens 与渲染语义，不做自动布局推断。
+
+相关文档与资源集中在 `packages/picasso-parse/`：
+
+- [`packages/picasso-parse/README.md`](packages/picasso-parse/README.md)：RestoreDSL API、三导出输入、稳定 ID 注入、渲染工具用法。
+- [`packages/picasso-parse/schema/`](packages/picasso-parse/schema/)：RestoreDSL JSON Schema 与渲染语义规范。
+- [`packages/picasso-parse/tools/`](packages/picasso-parse/tools/)：确定性 HTML 渲染基线，用于区分解析数据缺口与消费端渲染/提示词问题。
+
 ## 开发说明
 
 ### 插件本体
@@ -82,6 +92,7 @@ npm run reload
 cd packages/picasso-parse
 npm install
 npm run build       # tsc → dist/，会同时把 sibling 包的源码编进 dist/
+npm test            # 跑基础解析用例与 RestoreDSL 回归用例
 npm publish         # 发布 @wubafe/picasso-parse
 ```
 

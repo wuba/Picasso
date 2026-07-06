@@ -235,7 +235,7 @@ cd Picasso/packages/picasso-parse
 npm install
 npm run build        # tsc → dist/，会一并编译 sibling 包源码
 
-npm run test         # ts-node-dev 监听 test/index.ts
+npm test             # 依次运行 test/index.ts 与 test/restore.test.ts
 ```
 
 发布：
