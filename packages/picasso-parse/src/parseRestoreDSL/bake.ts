@@ -203,15 +203,6 @@ const bakeNode = (node: RestoreNode, inheritedTint: string | undefined, isRoot: 
     if (node.fills) node.fills = bakeGradientsIn(node.fills, node.frame.w, node.frame.h);
     if (node.borders) node.borders = bakeGradientsIn(node.borders, node.frame.w, node.frame.h);
 
-    // 5. 位图变换语义统一：切图像素是渲染管线产物、必含图层自身变换，带 url 一律删
-    //    rotation/flip（含 group/shapeGroup 栅格化——「组位图未烘焙」旧结论经同一 URL
-    //    数据复核为误判）。DSL 契约：字段出现 = 必须应用。group 的 url 多为插件端回填，
-    //    实际删除发生在回填后的二次 bake（幂等）。
-    if (isBitmap) {
-        delete node.rotation;
-        delete node.flip;
-    }
-
     // 7. slice 切图上提：group 自身无切图、直接子级 slice 带同 frame 切图 → 上提 + renderHint
     if (!node.image && node.children) {
         for (let i = 0; i < node.children.length; i++) {
@@ -222,6 +213,15 @@ const bakeNode = (node: RestoreNode, inheritedTint: string | undefined, isRoot: 
                 break;
             }
         }
+    }
+
+    // 5. 位图变换语义统一：切图像素是渲染管线产物、必含图层自身变换，带 url 一律删
+    //    rotation/flip（含 group/shapeGroup 栅格化——「组位图未烘焙」旧结论经同一 URL
+    //    数据复核为误判）。必须放在 slice 上提之后：上提会让原本无 image 的 group
+    //    变成位图渲染节点，若提前判断会残留 rotation/flip，消费端会二次变换。
+    if (node.image && node.image.url) {
+        delete node.rotation;
+        delete node.flip;
     }
 
     if (node.children) {

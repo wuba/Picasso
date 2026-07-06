@@ -755,6 +755,17 @@ const makeExportB = (a: any): any => {
     assert(JSON.stringify(dg1) === JSON.stringify(dg2),
         '降级兜底 id：do_objectID 全换内容不变时两次解析逐字节一致（含 id 集）');
 
+    // —— hash-only 注入后再补 A 树：必须重新配对写 stableId ——
+    const hashOnlyB: any = deepCopy(degradeBase);
+    rewrite1(hashOnlyB);
+    annotateStableIds(hashOnlyB);
+    assert(!!hashOnlyB.contentHash && !hashOnlyB.stableId,
+        '幂等补注入前置：缺 exportA 时只注入 contentHash，不注入 stableId');
+    const stableAfterA = picassoArtboardRestoreParse(deepCopy(degradeBase), hashOnlyB, undefined, { generatedAt: 'fixed' });
+    assert(hashOnlyB.stableId === sha1(degradeBase.do_objectID).slice(0, 8)
+        && stableAfterA.artboard.id === hashOnlyB.stableId,
+        '幂等补注入：hash-only B 后续带 exportA 解析时会补写 stableId');
+
     // —— idByDoObjectID 内部回传表：查得到、不落产物 ——
     assert(!!dg1.idByDoObjectID && dg1.idByDoObjectID['RUN1-1'] === dg1.artboard.children![0].id,
         'idByDoObjectID：B 侧 do_objectID 可查到 RestoreDSL 节点 id（含兜底 id）');
@@ -926,6 +937,7 @@ const makeExportB = (a: any): any => {
     const liftedTree: any = {
         id: 'g1', type: 'group', name: 'icon组',
         frame: { x: 0, y: 0, w: 52, h: 52 }, absFrame: { x: 0, y: 0, w: 52, h: 52 },
+        rotation: 45, flip: { x: true },
         children: [
             {
                 id: 'r1', type: 'rect', name: '形状',
@@ -941,8 +953,8 @@ const makeExportB = (a: any): any => {
     };
     bakeRestoreTree(liftedTree);
     assert(!!liftedTree.image && liftedTree.image.url === 'https://example.com/icon.png'
-        && liftedTree.renderHint === 'image',
-        'bake slice 上提：同 frame 子 slice 的切图上提到 group 并补 renderHint');
+        && liftedTree.renderHint === 'image' && !liftedTree.rotation && !liftedTree.flip,
+        'bake slice 上提：同 frame 子 slice 的切图上提到 group，并删除已烘焙变换');
     // 幂等护栏：重复 bake 产出不变
     const liftedOnce = JSON.stringify(liftedTree);
     bakeRestoreTree(liftedTree);

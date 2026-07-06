@@ -144,11 +144,14 @@ export const picassoArtboardRestoreParse = (
     const opts = options || {};
 
     // 幂等注入：已注入则跳过，保证与四种存量 DSL 消费同一批 stableId/hash。
-    // 只查 B 根 contentHash 不够——若调用方复用已注入的 B 树但传入了新的（未注入）mastersC，
-    // 新 masters 缺 restoreComponentKey 会被下方 components 组装静默整体丢弃，故一并校验
+    // 有 exportA 时，调用方期待 A/B 配对后的 stableId；仅有 contentHash 可能只是 hash-only
+    // 降级注入，不能视为完整注入，否则会错过 stableId 补写。
+    const artboardAnnotated = exportA ? !!(exportB as any).stableId : !!(exportB as any).contentHash;
+    // 若调用方复用已注入的 B 树但传入了新的（未注入）mastersC，新 masters 缺
+    // restoreComponentKey 会被下方 components 组装静默整体丢弃，故一并校验。
     const mastersAnnotated = !Array.isArray(mastersC)
         || mastersC.every((master: any) => !master || !master.symbolID || !!master.restoreComponentKey);
-    if (!(exportB as any).contentHash || !mastersAnnotated) {
+    if (!artboardAnnotated || !mastersAnnotated) {
         annotateStableIds(exportB, exportA, mastersC);
     }
 

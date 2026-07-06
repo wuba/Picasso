@@ -9,7 +9,7 @@
     "scripts": {
         "build": "tsc",
         "prepublishOnly": "npm run build",
-        "test": "ts-node-dev --respawn test/index.ts"
+        "test": "ts-node test/index.ts && ts-node test/restore.test.ts"
     },
     "devDependencies": {
         "@types/node": "^10.12.15",
