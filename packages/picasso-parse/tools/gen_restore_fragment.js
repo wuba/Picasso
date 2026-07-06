@@ -93,11 +93,18 @@ function fillToBg(fill) {
 }
 
 function bordersToCss(node, styles) {
-  // borders/shadows -> box-shadow 模拟(不影响布局)。
+  // borders/shadows/innerShadows -> box-shadow 模拟(不影响布局)。
   // 边框: inside=inset, outside=spread, center=对半; 投影: 直接映射 drop shadow
   const shadows = [];
   for (const s of node.shadows || []) {
     shadows.push(
+      px(s.x != null ? s.x : 0) + ' ' + px(s.y != null ? s.y : 0) + ' ' +
+      px(s.blur != null ? s.blur : 0) + ' ' + px(s.spread != null ? s.spread : 0) + ' ' +
+      colorCss(s.color));
+  }
+  for (const s of node.innerShadows || []) {
+    shadows.push(
+      'inset ' +
       px(s.x != null ? s.x : 0) + ' ' + px(s.y != null ? s.y : 0) + ' ' +
       px(s.blur != null ? s.blur : 0) + ' ' + px(s.spread != null ? s.spread : 0) + ' ' +
       colorCss(s.color));
@@ -116,6 +123,14 @@ function bordersToCss(node, styles) {
     }
   }
   if (shadows.length) styles.push(['box-shadow', shadows.join(', ')]);
+}
+
+function blurCss(node, styles) {
+  const blur = node.blur;
+  if (!blur) return;
+  if (String(blur.type || '').toLowerCase() === 'gaussian') {
+    styles.push(['filter', 'blur(' + px(blur.radius) + ')']);
+  }
 }
 
 function radiusCss(node, styles, isOval) {
@@ -249,8 +264,9 @@ function* walkFiles(root) {
 }
 
 // ---------------- 位图解码(像素校准用, pngjs 可选) ----------------
-// bleed 回摆的方向假设(居中/阴影公式)不总成立: 例如头像组的在线状态点让 bleed 全在右下。
-// 校准: 与画板原始截图做小范围位移搜索, 用实测位移落位。依赖 pngjs + 网络, 失败自动回退假设值。
+// 老数据兼容: image.frame 缺失时, 历史版本曾用居中/阴影公式估 bleed 并做像素校准。
+// 新数据默认不启发式猜测; 只有显式打开兼容开关才会走这段校准逻辑。
+// 校准依赖 pngjs + 网络, 失败自动回退假设值。
 let PNG = null;
 try {
   PNG = require('pngjs').PNG; // 可选依赖, 用于像素校准
@@ -363,6 +379,7 @@ function shapegroupSvg(node, indent) {
   }
   const f = node.frame;
   const styles = baseStyles(node);
+  blurCss(node, styles);
   let stroke = '';
   for (const b of node.borders || []) {
     stroke = ' stroke="' + colorCss(b.color) + '" stroke-width="' + num(b.thickness) + '"';
@@ -381,6 +398,7 @@ function shapegroupSvg(node, indent) {
 function renderPath(node, indent) {
   const f = node.frame;
   const styles = baseStyles(node);
+  blurCss(node, styles);
   let fill = 'none';
   for (const fl of node.fills || []) {
     if ('color' in fl) {
@@ -408,6 +426,7 @@ function renderShape(node, indent, extraClass) {
   // rect / oval / 有 fills 的 group 背景
   if (extraClass === undefined) extraClass = '';
   const styles = baseStyles(node);
+  blurCss(node, styles);
   for (const fl of node.fills || []) {
     for (const kv of fillToBg(fl)) styles.push(kv);
   }
@@ -435,6 +454,8 @@ const Z_FIX = {};
  * @param {string|string[]} [options.fontDir] 私有字体来源: 本地目录 或 字体文件完整 URL, 可混用;
  *   数组直接传, 字符串含 '://' 用逗号分隔、否则冒号分隔。缺省读环境变量 PICASSO_FONT_DIR
  * @param {Array}  [options.collectFixes] 传入数组则收集渲染期修正记录 [tag, msg]
+ * @param {boolean} [options.legacyBitmapFallbackPlacement] 兼容老数据: image.frame 缺失且
+ *   PNG 尺寸大于节点 frame 时, 继续按历史启发式回摆。默认 false, 对齐渲染指南。
  * @param {number} [options.childIndent] 画板直接子节点的缩进层级(2 空格/层), 默认 1;
  *   gen_restore_html.js 的对比页传 3(维持历史产物逐字节不变)
  * @returns {Promise<{DSL: object, ART: object, width: number, height: number,
@@ -544,6 +565,8 @@ async function createRestoreRenderContext(dslInput, options) {
   // ---------------- 位图尺寸感知 ----------------
   // 切图统一导出倍率从 meta.assetsScale 读; 老数据缺省按 750 宽画板 @2x 惯例
   const ASSETS_SCALE = ((DSL.meta || {}).assetsScale) || 2;
+  const LEGACY_BITMAP_FALLBACK_PLACEMENT =
+    !!opts.legacyBitmapFallbackPlacement || process.env.PICASSO_LEGACY_BITMAP_FALLBACK_PLACEMENT === '1';
 
   function imageScale(node) {
     // 节点级 image.scale 优先(与全局不同时才落盘), 否则用 meta.assetsScale
@@ -628,7 +651,7 @@ async function createRestoreRenderContext(dslInput, options) {
     // renderHint=image / type=image 的栅格化节点: 直接用位图, 跳过矢量子树。
     // 位图可能带 bleed(阴影/模糊溢出图层 frame), 按真实渲染尺寸回摆:
     // - 有 image.frame: 插件端采集的画布真实范围(画板绝对坐标), 直接换算摆位
-    // - 老数据回退: 有 shadows 按 blur/offset 公式外扩, 否则居中假设 + 像素校准
+    // - 无 image.frame: 默认回退节点 frame 原位摆放; 老数据可显式打开历史启发式回摆
     const f = node.frame;
     const af = node.absFrame || f;
     let styles = baseStyles(node);
@@ -668,13 +691,19 @@ async function createRestoreRenderContext(dslInput, options) {
              'src="' + url + '" style="' + styleAttr(styles) + '" alt="">\n';
     }
 
+    if (!LEGACY_BITMAP_FALLBACK_PLACEMENT) {
+      const pad = '  '.repeat(indent);
+      return pad + '<img class="n img" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +
+             'src="' + url + '" style="' + styleAttr(styles) + '" alt="">\n';
+    }
+
     const nat = await pngSize(url);
     if (nat) {
       const sc = imageScale(node);
       const rw = nat[0] / sc;
       const rh = nat[1] / sc;
       if (Math.abs(rw - f.w) > 0.25 || Math.abs(rh - f.h) > 0.25) {
-        // 位图含 bleed, 重算摆放位置: 先按 阴影公式/居中 假设, 再与原图做像素校准
+        // 兼容模式: 位图含 bleed, 重算摆放位置。先按阴影公式/居中假设, 再与原图做像素校准
         let bleedL;
         let bleedT;
         if (node.shadows && node.shadows.length) {
@@ -726,6 +755,7 @@ async function createRestoreRenderContext(dslInput, options) {
 
   function renderText(node, indent) {
     const styles = baseStyles(node);
+    blurCss(node, styles);
     let runs = node.runs || [];
     const text = node.text != null ? node.text : '';
     const pad = '  '.repeat(indent);
@@ -827,10 +857,16 @@ async function createRestoreRenderContext(dslInput, options) {
     if (t === 'rect' || t === 'oval') return renderShape(node, indent);
 
     // group: 容器。纯色着色提示(tint)已在 parse 端下发子孙并删除, 消费端无
-    // 下发逻辑; shapeGroup=true 是布尔运算形状组, 其 fills 是真实填充需要渲染。
+    // 下发逻辑; 普通 group 若仍保留 fills, 说明它是 Frame/GraphicFrame 容器背景。
+    // shapeGroup=true 是布尔运算形状组, 其 fills 需按路径语义渲染, 不能涂成 bbox 色块。
     const styles = baseStyles(node);
+    blurCss(node, styles);
     let shapeChildren = node.children || [];
-    if (node.shapeGroup) {
+    if (!node.shapeGroup) {
+      for (const fl of node.fills || []) {
+        for (const kv of fillToBg(fl)) styles.push(kv);
+      }
+    } else {
       if (node.fills && node.fills.length && shapeChildren.length === 0) {
         // 无子路径的 shapeGroup: bbox 填充是唯一可用信息
         for (const fl of node.fills) {
@@ -913,7 +949,7 @@ const FRAGMENT_CSS = [
  * 产物是定宽像素片段(不自适应); 宿主需自适应时对 html 外层做等比缩放
  * (transform: scale(容器宽 / width), transform-origin: 0 0)。
  * @param {object|string} dslInput RestoreDSL 对象, 或其 JSON 字符串
- * @param {object} [options] fontDir / collectFixes 同 createRestoreRenderContext
+ * @param {object} [options] fontDir / collectFixes / legacyBitmapFallbackPlacement 同 createRestoreRenderContext
  * @returns {Promise<{html: string, css: string, fontFaces: string,
  *   width: number, height: number, title: string, fixes: Array}>}
  *   html: `<div class="artboard" ...>` 还原稿节点; css: 片段基础样式;
@@ -924,6 +960,7 @@ async function generateRestoreFragment(dslInput, options) {
   const ctx = await createRestoreRenderContext(dslInput, {
     fontDir: opts.fontDir,
     collectFixes: opts.collectFixes,
+    legacyBitmapFallbackPlacement: opts.legacyBitmapFallbackPlacement,
     childIndent: 1,
   });
   const html = '<div class="artboard" data-dsl-id="' + esc(ctx.ART.id) + '" ' +

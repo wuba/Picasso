@@ -32,7 +32,9 @@
 按顺序判定，命中即止：
 
 1. `type === 'slice'` → 无视觉，跳过。
-2. `opacity === 0` → 不渲染整棵子树（占位层）。
+2. `opacity === 0` → 仍渲染节点及子树，但加 `opacity:0`；这是全量
+   RestoreDSL 的保真口径。若消费的是 `toRenderProfile` 精简视图，该类占位
+   子树已在喂给 LLM 前被剔除。
 3. **纯阴影矩形**：`type ∈ {rect, oval}` 且有 `shadows`、无 `fills`、
    `renderHint === 'image'` → 优先 CSS `box-shadow` 渲染（该类位图常被画板边缘
    裁切，CSS 更准）。
@@ -62,11 +64,12 @@
 - `image.frame` 缺失时回退节点 `frame` 原位摆放（缺失的多为无 bleed 或 trim 已
   裁边的位图，回退无损）。不要自行做居中/阴影公式假设——历史上这两种假设都被
   实测推翻过（bleed 可以完全偏向一侧）。
-- **回退摆位的物理约束**：确需按 PNG 实际尺寸回摆（PNG÷scale ≠ frame）而用阴影
-  公式估 bleed 时，必须截断到物理可行域——单侧 bleed ≤ `PNG−frame` 的总差值，
-  且不越过画板边缘（导出画布被画板裁切，`min(估值, 差值, absFrame.x/y)`）。
-  实测案例：贴画板顶的全宽页头，阴影朝下，公式估出 bleed(10,8) 而真实是 (0,0)，
-  不截断会整条偏移。
+- **老数据兼容回摆**：只有在消费方显式开启兼容模式时，才允许按 PNG 实际尺寸
+  回摆（PNG÷scale ≠ frame）并用阴影公式估 bleed；此时必须截断到物理可行域——
+  单侧 bleed ≤ `PNG−frame` 的总差值，且不越过画板边缘（导出画布被画板裁切，
+  `min(估值, 差值, absFrame.x/y)`）。实测案例：贴画板顶的全宽页头，阴影朝下，
+  公式估出 bleed(10,8) 而真实是 (0,0)，不截断会整条偏移。新数据应优先补齐
+  `image.frame`，默认渲染不得启发式猜测。
 - 位图像素尺寸 = pt 尺寸 × 倍率。倍率取 `image.scale ?? meta.assetsScale`
   （节点级仅在与全局不同时落盘）。画板整图 `artboard.image` 有独立 scale
   （375 宽画板 2x，其余 1x）。
@@ -93,7 +96,7 @@
 - **圆角**：`borderRadius` 数组四角 `[tl, tr, br, bl]`，全等时可合并。
 - **变换**：Sketch `rotation` 逆时针为正 → CSS `rotate(-r deg)`；`flip` →
   `scale(±1, ±1)`；`transform-origin: center`。
-- **模糊**：`blur.type === 'Gaussian'` → `filter: blur(radius px)`；带 blur 的
+- **模糊**：`blur.type === 'gaussian'` → `filter: blur(radius px)`；带 blur 的
   节点通常已被栅格化（走位图路径），矢量渲染时才需要处理。
 
 ## 5. 文本
