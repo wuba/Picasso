@@ -371,5 +371,5 @@ export type RestoreDSL = {
 //      cornerHints / layoutConstraints / stack padding+gap+alignment，供 LLM 多端代码生成少猜。
 export const RESTORE_SCHEMA_VERSION = '1.1';
 
-// 解析包版本常量（与 package.json 同步手工维护，写入 meta.parserVersion 做实现溯源）
-export const PARSER_VERSION = '0.0.45-beta.10';
+// 解析包版本常量由构建脚本从 package.json 注入，写入 meta.parserVersion 做实现溯源。
+export { PARSER_VERSION } from '../version';

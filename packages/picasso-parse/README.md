@@ -66,7 +66,7 @@ const rnCode = picassoCode([dsl], artboardJSON.frame.width, CodeType.ReactNative
 
 所有函数签名一致：`(layer: SKLayer) => Component`，返回 Picasso 中间 DSL 的根节点。
 
-### RestoreDSL（结构保真中间表示，0.0.45 新增）
+### RestoreDSL（结构保真中间表示，0.1.0 首次正式发布）
 
 与上述四个函数不同，RestoreDSL 相关 API 是**多输入签名**（三导出管线）：
 
