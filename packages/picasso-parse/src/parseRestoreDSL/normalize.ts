@@ -289,8 +289,32 @@ const canUsePointCornerRadius = (layer: SKLayer, points: any[]): boolean => (
 );
 
 /**
+ * 读取 Sketch 2025 style.corners 圆角数组。
+ * @param layer Sketch 图层，Frame / GraphicFrame 常把圆角存在 style.corners.radii。
+ * @returns 四角圆角数组 [tl, tr, br, bl]；无有效字段时返回 undefined。
+ */
+const styleCornersToBorderRadius = (layer: SKLayer): number[] | undefined => {
+    const radii = layer.style?.corners?.radii;
+    if (!Array.isArray(radii) || !radii.length) {
+        return undefined;
+    }
+
+    // 1 个值表示四角同值；4 个值表示四角独立值，顺序与 RestoreDSL 保持一致。
+    const radiusList = radii.length === 1
+        ? [radii[0], radii[0], radii[0], radii[0]]
+        : radii.slice(0, 4);
+
+    if (radiusList.length !== 4) {
+        return undefined;
+    }
+
+    // style.corners 也需要 clamp，避免哨兵值污染 RestoreDSL。
+    return radiusList.map(radius => normalizeBorderRadiusValue(radius, layer));
+};
+
+/**
  * 四角圆角：points.cornerRadius / fixedRadius 统一到 [tl, tr, br, bl]。
- * @param layer Sketch 图层；rectangle 和 Frame/GraphicFrame 可读取四角 points 圆角，其它类型读取 fixedRadius 兜底。
+ * @param layer Sketch 图层；rectangle 和 Frame/GraphicFrame 可读取 points / style.corners，其它类型读取 fixedRadius 兜底。
  * @returns 四角圆角数组 [tl, tr, br, bl]；全 0 或无圆角时返回 undefined。
  *
  * 只信任 4 点 rectangle / Frame / GraphicFrame 的 points.cornerRadius——因为：
@@ -307,7 +331,14 @@ export const borderRadiusToRestore = (layer: SKLayer): number[] | undefined => m
     if (canUsePointCornerRadius(layer, points)) {
         // rectangle / Frame 的 points 顺序为 tl → tr → br → bl。
         radius = points.map((p: any) => normalizeBorderRadiusValue(p.cornerRadius, layer));
-    } else if (typeof layer.fixedRadius === 'number' && layer.fixedRadius > 0) {
+    }
+
+    if (!radius || radius.every(r => r === 0)) {
+        // Sketch 2025 的 Frame 圆角可能出现在 style.corners.radii，需在 fixedRadius 前读取。
+        radius = styleCornersToBorderRadius(layer);
+    }
+
+    if ((!radius || radius.every(r => r === 0)) && typeof layer.fixedRadius === 'number' && layer.fixedRadius > 0) {
         // fixedRadius 是统一圆角；Frame 容器常见此字段，需与 rectangle 一样保留。
         const r = normalizeBorderRadiusValue(layer.fixedRadius, layer);
         radius = [r, r, r, r];

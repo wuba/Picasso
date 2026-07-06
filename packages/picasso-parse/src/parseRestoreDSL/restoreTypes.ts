@@ -323,4 +323,4 @@ export type RestoreDSL = {
 export const RESTORE_SCHEMA_VERSION = '1.0';
 
 // 解析包版本常量（与 package.json 同步手工维护，写入 meta.parserVersion 做实现溯源）
-export const PARSER_VERSION = '0.0.45-beta.8';
+export const PARSER_VERSION = '0.0.45-beta.9';

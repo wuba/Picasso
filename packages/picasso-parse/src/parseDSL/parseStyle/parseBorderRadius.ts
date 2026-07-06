@@ -4,6 +4,8 @@ import { precisionControl } from '../../common/utils'
 
 /**
  * 获取当前图层允许的最大圆角。
+ * @param layer Sketch 图层，用于读取 frame 宽高。
+ * @returns 当前图层可渲染圆角上限；无有效尺寸时返回 0。
  */
 const getMaxRadius = (layer: SKLayer): number => {
     // CSS/Sketch 最终视觉上圆角不会超过短边的一半，超出值按胶囊处理。
@@ -14,6 +16,9 @@ const getMaxRadius = (layer: SKLayer): number => {
 
 /**
  * 统一清洗单个圆角值。
+ * @param radius Sketch 导出的圆角值，可能为空、负数或超大哨兵值。
+ * @param layer 圆角所属图层，用于按短边一半做 clamp。
+ * @returns 清洗后的非负圆角值。
  */
 const normalizeRadius = (radius: any, layer: SKLayer): number => {
     // 非数字、负数和空值都按无圆角处理，避免脏数据进入 DSL。
@@ -28,14 +33,49 @@ const normalizeRadius = (radius: any, layer: SKLayer): number => {
 }
 
 /**
+ * 读取 Sketch 2025 style.corners 圆角数组。
+ * @param layer Sketch 图层，Frame / GraphicFrame 常把圆角存在 style.corners.radii。
+ * @returns 四角圆角数组；无有效圆角字段时返回 undefined。
+ */
+const getStyleCornersRadiusList = (layer: SKLayer): number[] | undefined => {
+    const radii = layer.style?.corners?.radii;
+    if (!Array.isArray(radii) || !radii.length) {
+        return undefined;
+    }
+
+    // radii.length === 1 表示四角同值；radii.length === 4 表示四角独立值。
+    const radiusList = radii.length === 1
+        ? [radii[0], radii[0], radii[0], radii[0]]
+        : radii.slice(0, 4);
+
+    if (radiusList.length !== 4) {
+        return undefined;
+    }
+
+    // style.corners 同样可能携带 Sketch 超大哨兵值，输出前统一清洗。
+    return radiusList.map(radius => normalizeRadius(radius, layer));
+}
+
+/**
  * 统一读取图层四角圆角，返回顺序为：左上、右上、右下、左下。
+ * @param layer Sketch 图层。
+ * @returns 四角圆角数组 [tl, tr, br, bl]；无圆角时返回全 0。
  */
 export const getBorderRadiusList = (layer: SKLayer): number[] => {
     // rectangle 和 Frame 都可能通过 points[].cornerRadius 表达四角独立圆角。
     const points = Array.isArray(layer.points) ? layer.points : [];
 
     if (points.length === 4) {
-        return points.map(({ cornerRadius }) => normalizeRadius(cornerRadius, layer));
+        const pointRadiusList = points.map(({ cornerRadius }) => normalizeRadius(cornerRadius, layer));
+        // points 中存在有效圆角时优先使用，保留四角独立设置。
+        if (pointRadiusList.some(radius => radius > 0)) {
+            return pointRadiusList;
+        }
+    }
+
+    const styleCornersRadiusList = getStyleCornersRadiusList(layer);
+    if (styleCornersRadiusList?.some(radius => radius > 0)) {
+        return styleCornersRadiusList;
     }
 
     // 老版本 Sketch 或 Frame 容器会把统一圆角放在 fixedRadius 上。

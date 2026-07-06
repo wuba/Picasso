@@ -434,6 +434,21 @@ const makeExportB = (a: any): any => {
                 layers: [],
             },
             {
+                _class: 'group', groupBehavior: 1,   // Frame style.corners 圆角：Sketch 2025 会按 style.corners.radii 导出
+                do_objectID: 'F-STYLE-CORNERS', name: '样式圆角Frame', isVisible: true,
+                frame: { _class: 'rect', x: 220, y: 10, width: 80, height: 40 },
+                style: {
+                    _class: 'style',
+                    corners: {
+                        _class: 'MSImmutableStyleCorners',
+                        radii: [60, 30, 0, 20],
+                        style: 0,
+                    },
+                    fills: [mkFill(1, 1, 1)],
+                },
+                layers: [],
+            },
+            {
                 _class: 'group',   // 无 groupBehavior 的普通编组：tint 语义必须保持（回归护栏）
                 do_objectID: 'F-G1', name: '图标组', isVisible: true,
                 frame: { _class: 'rect', x: 10, y: 100, width: 40, height: 40 },
@@ -454,6 +469,36 @@ const makeExportB = (a: any): any => {
     const radiusFrame = dsl.artboard.children!.filter(k => k.name === '圆角Frame')[0];
     assert(JSON.stringify(radiusFrame.borderRadius) === JSON.stringify([20, 20, 0, 20]),
         'Frame 适配：Frame points.cornerRadius 可读取并按短边一半 clamp');
+    const styleCornersFrame = dsl.artboard.children!.filter(k => k.name === '样式圆角Frame')[0];
+    assert(JSON.stringify(styleCornersFrame.borderRadius) === JSON.stringify([20, 20, 0, 20]),
+        'Frame 适配：Frame style.corners.radii 可读取并按短边一半 clamp');
+    const measure = picassoArtboardMeatureParse(deepCopy(frameRoot)) as any;
+    /**
+     * 在 measure DSL 组件树中按名称查找节点。
+     * @param node 当前搜索节点。
+     * @param name 目标节点名称。
+     * @returns 命中的节点；没有命中时返回 undefined。
+     */
+    const findMeasureNodeByName = (node: any, name: string): any => {
+        // measure DSL 返回树结构，不能按数组顶层查找。
+        if (!node) return undefined;
+        if (node.name === name) return node;
+        if (!Array.isArray(node.children)) return undefined;
+        for (const child of node.children) {
+            const matched = findMeasureNodeByName(child, name);
+            if (matched) return matched;
+        }
+        return undefined;
+    };
+    const measureStyleCornersFrame = findMeasureNodeByName(measure, '样式圆角Frame');
+    assert(JSON.stringify(measureStyleCornersFrame.panel.properties.radius) === JSON.stringify([20, 20, 0, 20])
+        && JSON.stringify(measureStyleCornersFrame.style.borderRadius) === JSON.stringify({
+            topLeft: 20,
+            topRight: 20,
+            bottomRight: 0,
+            bottomLeft: 20,
+        }),
+        'Frame 适配：measure DSL 同步读取 Frame style.corners.radii');
     const plainGroup = dsl.artboard.children!.filter(k => k.name === '图标组')[0];
     // 普通编组的着色提示不得误升为背景（fills）；纯色 tint 已下发删除，两字段皆无
     assert(!plainGroup.tint && !plainGroup.fills, 'Frame 适配：普通编组着色提示不落 fills（tint 已下发删除）');
