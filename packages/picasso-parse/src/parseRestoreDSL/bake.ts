@@ -30,6 +30,8 @@
  *  7. slice 切图上提：group 无 image 而其直接子级 slice 带同 frame 的切图 url 时，
  *     把 image 上提到 group 并补 renderHint=image（插件端对多层嵌套 icon 的回填不齐，
  *     统一在此兜底，消费端只认「group 带 image → 整组用位图」一条规则）
+ *  8. export-format 可见锚点组切图 frame 收口：插件端注入的 image.frame 可能误取内部
+ *     内容偏移；若它明显越出组边界，且直接子层中存在唯一同尺寸锚点，则按锚点回正。
  */
 import { RestoreNode, RestoreFill, RestoreGradient, RestoreGradientCss, RestoreFrame } from './restoreTypes';
 import { round2 } from './normalize';
@@ -38,6 +40,72 @@ import { round2 } from './normalize';
 const sameFrame = (a: RestoreFrame, b: RestoreFrame): boolean =>
     Math.abs(a.x - b.x) <= 0.5 && Math.abs(a.y - b.y) <= 0.5
     && Math.abs(a.w - b.w) <= 0.5 && Math.abs(a.h - b.h) <= 0.5;
+
+/** 判断两个尺寸是否可视为同一切图区域（允许 Sketch 导出取整造成的 1~2pt 误差）。 */
+const sameSize = (a: RestoreFrame, b: RestoreFrame, tolerance = 2): boolean =>
+    Math.abs(a.w - b.w) <= tolerance && Math.abs(a.h - b.h) <= tolerance;
+
+/**
+ * 判断 frame 是否明显越出容器边界。
+ * @param frame 待校验 frame，坐标为画板绝对坐标。
+ * @param bounds 容器绝对 frame，用于判断切图是否仍处在组的物理范围内。
+ * @param tolerance 允许的导出取整/半像素误差，单位 pt。
+ * @returns 超出任一边界超过 tolerance 时返回 true。
+ */
+const overflowsBounds = (frame: RestoreFrame, bounds: RestoreFrame, tolerance = 2): boolean =>
+    frame.x < bounds.x - tolerance
+    || frame.y < bounds.y - tolerance
+    || frame.x + frame.w > bounds.x + bounds.w + tolerance
+    || frame.y + frame.h > bounds.y + bounds.h + tolerance;
+
+/**
+ * 根据可见锚点回正 export-format 组切图的 image.frame。
+ *
+ * 插件端有时会把整组切图的 image.frame.x/y 注入成内部内容偏移；渲染端会忠实消费该
+ * frame，导致完整 PNG 被整体错摆。这里只修正同时满足三类证据的节点：1) export-format
+ * 整组切图；2) 当前 image.frame 明显越出组边界；3) 直接子层里存在唯一与切图尺寸一致
+ * 的可见锚点。宽高沿用 PNG 实测得到的 image.frame.w/h，只回正 x/y。
+ *
+ * @param node 当前 RestoreDSL 节点，原地修正 node.image.frame。
+ * @returns 发生修正时返回 true；证据不足时返回 false。
+ */
+const normalizeExportFormatImageFrame = (node: RestoreNode): boolean => {
+    const imf = node.image && node.image.frame;
+    if (!imf || node.rasterizeReason !== 'export-format' || !node.children || !node.absFrame) {
+        return false;
+    }
+
+    if (!overflowsBounds(imf, node.absFrame)) {
+        return false;
+    }
+
+    const sameSizedChildren = node.children.filter(child => sameSize(child.absFrame, imf));
+    if (sameSizedChildren.length !== 1) {
+        return false;
+    }
+
+    const anchor = sameSizedChildren[0];
+    if (!anchor || overflowsBounds(anchor.absFrame, node.absFrame)) {
+        return false;
+    }
+
+    const anchorFrame = anchor.absFrame;
+    let nextX = anchorFrame.x - (imf.w - anchorFrame.w) / 2;
+    let nextY = anchorFrame.y - (imf.h - anchorFrame.h) / 2;
+
+    // 贴边蒙版导出常因半像素/取整比可见 frame 多 1pt，优先吸附回组边界，避免 -0.5/0.26
+    // 这类亚像素坐标继续传给消费端。
+    if (Math.abs(anchorFrame.x - node.absFrame.x) <= 1) nextX = node.absFrame.x;
+    if (Math.abs(anchorFrame.y - node.absFrame.y) <= 1) nextY = node.absFrame.y;
+
+    const nextFrame = { ...imf, x: round2(nextX), y: round2(nextY) };
+    if (Math.abs(nextFrame.x - imf.x) <= 0.5 && Math.abs(nextFrame.y - imf.y) <= 0.5) {
+        return false;
+    }
+
+    node.image!.frame = nextFrame;
+    return true;
+};
 
 /**
  * 线性渐变 → CSS-ready {angle, stops[].pct}。
@@ -202,6 +270,10 @@ const bakeNode = (node: RestoreNode, inheritedTint: string | undefined, isRoot: 
     // 4. gradient.css（在 tint/直线处理后算，用最终 fills/borders；直线转换产物无渐变不受影响）
     if (node.fills) node.fills = bakeGradientsIn(node.fills, node.frame.w, node.frame.h);
     if (node.borders) node.borders = bakeGradientsIn(node.borders, node.frame.w, node.frame.h);
+
+    // 8. export-format 可见锚点组切图 frame 收口：只在证据充分时回正 x/y，避免消费端按错位
+    // image.frame 渲染完整 PNG。
+    normalizeExportFormatImageFrame(node);
 
     // 7. slice 切图上提：group 自身无切图、直接子级 slice 带同 frame 切图 → 上提 + renderHint
     if (!node.image && node.children) {

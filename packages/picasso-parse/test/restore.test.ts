@@ -931,6 +931,40 @@ const makeExportB = (a: any): any => {
     assert(!groupVector.flip && !groupVector.rotation,
         'bake 位图变换：切图 url 回填后的 group 二次 bake 删 rotation/flip（栅格化已烘焙组变换）');
 
+    // export-format 的整组切图可能由插件端注入错误的 image.frame 偏移：PNG 自身是完整横幅，
+    // 但 frame.x 误取内部内容偏移会让渲染器忠实右移。二次 bake 应在证据充分时按唯一几何锚点回正。
+    const maskedExportTree: any = {
+        id: 'banner-group', type: 'group', name: '编组 + 蒙版',
+        frame: { x: 0, y: 0, w: 750, h: 634 },
+        absFrame: { x: 0, y: 0, w: 750, h: 634 },
+        image: {
+            url: 'https://example.com/banner.png',
+            frame: { x: 171, y: 258, w: 751, h: 242 },
+            w: 1502,
+            h: 484,
+        },
+        renderHint: 'image',
+        rasterizeReason: 'export-format',
+        children: [
+            {
+                id: 'banner-anchor', type: 'rect', name: '背景区域',
+                frame: { x: 0.26, y: 258, w: 749.74, h: 242 },
+                absFrame: { x: 0.26, y: 258, w: 749.74, h: 242 },
+                fills: [{ color: '#FFFFFF' }],
+            },
+            {
+                id: 'inner-bitmap', type: 'image', name: '位图',
+                frame: { x: 162, y: 258, w: 352, h: 172 },
+                absFrame: { x: 162, y: 258, w: 352, h: 172 },
+                image: { url: 'https://example.com/inner.png' },
+            },
+        ],
+    };
+    bakeRestoreTree(maskedExportTree);
+    assert(maskedExportTree.image.frame.x === 0 && maskedExportTree.image.frame.y === 258
+        && maskedExportTree.image.frame.w === 751 && maskedExportTree.image.frame.h === 242,
+        'bake export-format 组：错位 image.frame 按唯一几何锚点回正，保留 PNG 实测宽高');
+
     // —— slice 切图上提：group 无 image、同 frame 子 slice 带切图 → 上提 + renderHint ——
     // 生产流程里切图 URL 是插件端在 parse 之后按 stableId 回填的，parse 时 bake 看不到；
     // 插件端回填后需再调一次 bakeRestoreTree（幂等）。这里直接对回填后的 DSL 树测 bake
