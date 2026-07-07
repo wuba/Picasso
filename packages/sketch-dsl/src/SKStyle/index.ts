@@ -29,6 +29,24 @@ export type SKStyle = {
         hue: number
         saturation: number
     }
+    /**
+     * Sketch 2025 Frame / GraphicFrame 的圆角字段。
+     * radii 为 1 个值时表示四角同值；为 4 个值时按左上、右上、右下、左下输出。
+     */
+    corners?: {
+        _class: string
+        /**
+         * 是否按祖先 Frame 圆角与 padding 推导同心圆角；Sketch API 里也可能叫 concentric。
+         */
+        concentric?: boolean
+        prefersConcentric?: number
+        radii?: number[]
+        /**
+         * 平滑圆角强度；不同 Sketch 版本可能导出为 0~1 或私有数值，解析侧仅透传。
+         */
+        smoothing?: number
+        style?: number
+    }
     contextSettings?: SKContextSettings
     fills?: SKFills
     innerShadows?: SKShadows
@@ -42,5 +60,3 @@ export * from './SKContextSettings';
 export * from './SKFills';
 export * from './SKBlur';
 export * from './SKShadows';
-
-

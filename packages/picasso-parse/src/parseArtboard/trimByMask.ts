@@ -82,12 +82,23 @@ const _mask = (layers: SKLayer[], { flag = false, frame, baseFrame }: MaskOption
                 frame = { ...currFrame };
             }
             flag = true;
+            const beforeTrim = layers[i].frame;
             // 1.切片只被画板剪切
             if (layers[i]._class === 'slice') {
                 layers[i].frame = calculateMaskIntersection(baseFrame, layers[i].frame);
             } else {
                 // 2.其他图层存在mask的时候用mask进行剪切
                 layers[i].frame = calculateMaskIntersection(frame, layers[i].frame);
+            }
+            // 裁剪确实改变了 frame 时记录裁剪前几何（挂临时字段，不进任何 DSL 产物）。
+            // 渐变 from/to 是相对 frame 的归一化坐标——frame 被裁小后同一数值指向的方向/
+            // 位置完全错位（RestoreDSL 的 mapNode 靠此字段做重映射；存量四种 DSL 不读，
+            // parseDSL 按白名单取字段，行为零变化）
+            const trimmed = layers[i].frame;
+            if (trimmed !== beforeTrim
+                && (trimmed.x !== beforeTrim.x || trimmed.y !== beforeTrim.y
+                    || trimmed.width !== beforeTrim.width || trimmed.height !== beforeTrim.height)) {
+                (layers[i] as any).__preTrimFrame = beforeTrim;
             }
         }
 

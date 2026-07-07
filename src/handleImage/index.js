@@ -2,7 +2,7 @@ import isOval from './handleJudge/isOval';
 import isRectangle from './handleJudge/isRectangle';
 import isRegularShadow from './handleJudge/isRegularShadow';
 import isRegularBorder from './handleJudge/isRegularBorder';
-import isSupportedFill from './handleJudge/isSupportedFill';
+import isSupportedFill, { isFillEnabled, isSupportedPatternFill } from './handleJudge/isSupportedFill';
 /**
  * 计算不规则图形
  *
@@ -24,8 +24,8 @@ const judge = (layer) => {
         return true;
     }
 
-    // 不支持的填充，导出为图片
-    if (!isSupportedFill(layer)) {
+    // 不支持的填充默认导出为图片；规则图片填充形状有后续 background-image 表达能力。
+    if (!isSupportedFill(layer) && !isStructuredPatternShape(layer)) {
         return true;
     }
 
@@ -34,8 +34,8 @@ const judge = (layer) => {
         return true;
     }
 
-    // 图片、矢量 则直接导出为图片
-    if (['Image','Shape'].includes(layer.type)) {
+    // 图片、复杂矢量默认导出；规则形状的图片填充可由背景图表达，保留结构。
+    if (['Image','Shape'].includes(layer.type) && !isStructuredPatternShape(layer)) {
         return true;
     }
 
@@ -86,6 +86,40 @@ const judge = (layer) => {
     // 不规则阴影，导出为图片
     if (!isRegularShadow(layer)) {
         return true;
+    }
+
+    return false;
+};
+
+/**
+ * 判断当前图层是否是可结构化表达的图片填充形状。
+ * @param {Object} layer Sketch DOM 图层；要求是规则矩形/正圆，且只有一层可支持的图片填充。
+ * @returns {boolean} true 表示后续 DSL 能用 background-image + radius 表达，无需整图切片。
+ */
+const isStructuredPatternShape = (layer) => {
+    if (!['Shape', 'ShapePath'].includes(layer.type)) {
+        return false;
+    }
+
+    const fills = layer.style?.fills?.filter(isFillEnabled) || [];
+
+    // 多层填充存在叠加语义，单靠一个 background-image 不能无损表达。
+    if (fills.length !== 1 || !isSupportedPatternFill(fills[0])) {
+        return false;
+    }
+
+    // 没有控制点就无法证明图形规则，继续交给切图路径保真。
+    if (!Array.isArray(layer.points)) {
+        return false;
+    }
+
+    // 只放开规则矩形/正圆：复杂 path 的 clip/boolean 仍交给切图保真。
+    if (layer.shapeType === 'Rectangle') {
+        return isRectangle(layer);
+    }
+
+    if (layer.shapeType === 'Oval') {
+        return isOval(layer);
     }
 
     return false;

@@ -1,0 +1,1054 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/wuba/Picasso/tree/master/packages/picasso-parse/schema/restore-dsl.schema.json",
+  "title": "Picasso RestoreDSL",
+  "description": "RestoreDSL 输出格式规范（schemaVersion 1.1）。缺省值省略原则：visible:true / rotation:0 / opacity:1 / verticalAlign:'top' / clipsContents:false / 空数组一律不写。1.1 在 1.0 CSS-ready 化基础上补齐 Sketch 2025 Frame/GraphicFrame 语义：containerRole、clipsContents、cornerHints、layoutConstraints、stack padding/gap/alignment。",
+  "$comment": "维护约定：本文件与 restoreTypes.ts、RESTORE_SCHEMA_VERSION 同步更新（只加字段升 minor，破坏性变更原则上禁止）。校验方式示例：python3 -m jsonschema 或 ajv validate -s restore-dsl.schema.json -d xxx_restore.json。",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "meta",
+    "designTokens",
+    "components",
+    "artboard"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "输出格式版本（对应 RESTORE_SCHEMA_VERSION）。只加字段升 minor；破坏性变更升 major（原则上禁止）。"
+    },
+    "meta": {
+      "type": "object",
+      "required": [
+        "parserVersion",
+        "units"
+      ],
+      "properties": {
+        "parserVersion": {
+          "type": "string",
+          "description": "picasso-parse 包版本（实现溯源）。同一 schemaVersion 下，parserVersion 变化可能引起 contentHash 变化。"
+        },
+        "units": {
+          "type": "string",
+          "enum": [
+            "pt"
+          ],
+          "description": "所有几何数值的单位。当前恒为 pt（Sketch 逻辑点）。"
+        },
+        "sketchVersion": {
+          "type": "string"
+        },
+        "pluginVersion": {
+          "type": "string"
+        },
+        "documentId": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "ISO 8601 时间戳。"
+        },
+        "componentsOmitted": {
+          "type": "boolean",
+          "description": "为 true 时 components 表未随本文件输出（tree 缺省），实例节点仅保留 componentKey 溯源。"
+        },
+        "assetsBaseUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "相对路径图片资源的基地址。所有 image.url / fills[].image.url 若非绝对 URL，必须能以 assetsBaseUrl 为基址解析；导出侧应保证二者必居其一，禁止输出无法解析的本地相对路径。"
+        },
+        "assetsScale": {
+          "type": "number",
+          "description": "切图统一导出倍率（image.scale 缺省时的全局值）。"
+        }
+      }
+    },
+    "designTokens": {
+      "type": "object",
+      "description": "高频样式值聚合（swatches 不可得，自动命名）。节点侧通过 fills[].token / runs[].styleToken 建立反向关联。",
+      "properties": {
+        "colors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "value",
+              "usages"
+            ],
+            "properties": {
+              "value": {
+                "$ref": "#/definitions/hexColor"
+              },
+              "usages": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "$comment": "key 约定自动命名 color-N。"
+        },
+        "textStyles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "usages"
+            ],
+            "properties": {
+              "usages": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "font": {
+                "type": "string",
+                "description": "PostScript 字体名。"
+              },
+              "size": {
+                "type": "number"
+              },
+              "color": {
+                "$ref": "#/definitions/hexColor"
+              },
+              "lineHeight": {
+                "type": "number"
+              },
+              "sourceName": {
+                "type": "string",
+                "description": "Sketch 共享文本样式原名（如 '08 辅助信息 24/1 Default/...'）。key 统一为 text-N，原名落此字段。"
+              }
+            }
+          },
+          "$comment": "[2.0 讨论] key 强制统一为 text-N，禁止共享样式全名做 key。"
+        }
+      }
+    },
+    "components": {
+      "type": "object",
+      "description": "组件（symbolMaster）定义表，key 为 componentKey（短哈希）。权威语义：实例节点的内联 children 是渲染权威（已应用实例 overrides 后的展开结果）；本表的 tree 是组件原始定义，仅用于复用分析、跨画板去重与 diff，渲染器不应直接消费（除非实例未内联 children 且 meta.componentsOmitted 为 false）。",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "name",
+          "symbolID",
+          "source"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Sketch 组件全名（含分组路径，'/' 分隔）。"
+          },
+          "symbolID": {
+            "type": "string",
+            "description": "Sketch symbolID（UUID）。"
+          },
+          "source": {
+            "type": "string",
+            "description": "组件来源。local = 当前文档；其他值预留（如共享库名）。",
+            "examples": [
+              "local"
+            ]
+          },
+          "tree": {
+            "$ref": "#/definitions/node",
+            "description": "组件定义树。注意坐标系：树内所有 absFrame 均为组件本地坐标（根节点恒为 x:0,y:0），与 artboard 树的画板坐标语义不同。"
+          }
+        }
+      }
+    },
+    "artboard": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/node"
+        }
+      ],
+      "description": "画板根节点（老 Artboard 与 Sketch 2025 Frame 画板均归一化为 type=artboard，背景色统一落 fills；无 fills 时按 Sketch 画布语义缺省白底）。树内所有 absFrame 均为画板坐标（根节点恒为 x:0,y:0）。根节点通常带 image（整板截图），供还原对比，不参与渲染。"
+    }
+  },
+  "definitions": {
+    "hexColor": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+      "description": "十六进制颜色 #RRGGBB 或 #RRGGBBAA（AA 为透明度）。"
+    },
+    "frame": {
+      "type": "object",
+      "required": [
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "minimum": 0
+        },
+        "h": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "gradient": {
+      "type": "object",
+      "required": [
+        "type",
+        "from",
+        "to",
+        "stops"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "linear",
+            "radial",
+            "angular"
+          ]
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "起点 [x, y]，节点 frame 的单位坐标（0..1 可越界），y 轴向下。linear 为渐变轴起点；radial 为圆心。"
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "终点 [x, y]，语义同 from。radial 时 from→to 距离为半径。"
+        },
+        "stops": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": [
+              "color",
+              "position"
+            ],
+            "properties": {
+              "color": {
+                "$ref": "#/definitions/hexColor"
+              },
+              "position": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "css": {
+          "type": "object",
+          "required": [
+            "angle",
+            "stops"
+          ],
+          "properties": {
+            "angle": {
+              "type": "number",
+              "description": "CSS linear-gradient 角度（deg，0=向上、顺时针），已按节点实际宽高换算。"
+            },
+            "stops": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "required": [
+                  "color",
+                  "pct"
+                ],
+                "properties": {
+                  "color": {
+                    "$ref": "#/definitions/hexColor"
+                  },
+                  "pct": {
+                    "type": "number",
+                    "description": "沿 CSS 渐变线的百分位，可为负 / 超 100（Sketch from/to 越界语义，浏览器沿渐变线外推，原样输出即可）。"
+                  }
+                }
+              }
+            }
+          },
+          "description": "CSS-ready 线性渐变（bake 预算值）：消费端直接拼 linear-gradient(angle, color pct%, ...)，零计算。仅 type=linear 且节点有面积时写；缺失时（radial/angular/退化）取首 stop 纯色近似。from/to/stops.position 保留作审计与非 CSS 消费端自算。"
+        }
+      }
+    },
+    "imageRef": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "绝对 URL（https），或相对 meta.assetsBaseUrl 可解析的相对路径。二者必居其一，禁止输出孤立的本地相对路径。"
+        },
+        "svgUrl": {
+          "type": "string",
+          "description": "同一切图的矢量（SVG）版本 URL，与 url（PNG）同时导出时写入（插件端注入）。"
+        },
+        "w": {
+          "type": "number",
+          "description": "位图实际像素宽（PNG IHDR 实测值，含导出倍率；插件端注入，导出降级时缺省）。消费方无需下载图片即可校验 frame x scale 与实际产物是否一致。"
+        },
+        "h": {
+          "type": "number",
+          "description": "位图实际像素高（同 w，PNG IHDR 实测值）。"
+        },
+        "scale": {
+          "type": "number",
+          "description": "位图导出倍率（如 2 表示 @2x：像素尺寸 = pt 尺寸 x 2）。缺省时取 meta.assetsScale。"
+        },
+        "frame": {
+          "$ref": "#/definitions/frame",
+          "description": "位图实际渲染范围（画板绝对坐标，pt）。切图画布 = 内容 bounds（含阴影/模糊 bleed），可能大于节点 frame 且偏移不对称；消费方必须按本字段摆放位图，缺失时才回退到节点 frame。"
+        },
+        "mode": {
+          "type": "string",
+          "description": "填充模式（对应 Sketch patternFillType 归一化值，如 fill/fit/stretch/tile）。"
+        }
+      }
+    },
+    "fill": {
+      "type": "object",
+      "description": "填充。color / gradient / image 三选一（同层多填充按数组顺序自下而上叠加）。",
+      "properties": {
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "gradient": {
+          "$ref": "#/definitions/gradient"
+        },
+        "image": {
+          "$ref": "#/definitions/imageRef"
+        },
+        "token": {
+          "type": "string",
+          "description": "指向 designTokens.colors 的 key（如 'color-3'），建立节点与 token 的正向关联。"
+        }
+      }
+    },
+    "border": {
+      "type": "object",
+      "required": [
+        "thickness",
+        "position"
+      ],
+      "properties": {
+        "thickness": {
+          "type": "number",
+          "minimum": 0
+        },
+        "position": {
+          "type": "string",
+          "enum": [
+            "inside",
+            "center",
+            "outside"
+          ],
+          "description": "描边相对路径的位置。注意 CSS border 仅能表达 inside（配合 box-sizing:border-box）；center/outside 的消费方需用 box-shadow/outline 近似或自行换算 frame。",
+          "$comment": "[2.0 讨论] 面向 web 还原时导出侧预换算为 inside + 调整 frame。"
+        },
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "gradient": {
+          "$ref": "#/definitions/gradient"
+        },
+        "dash": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "shadow": {
+      "type": "object",
+      "required": [
+        "color",
+        "x",
+        "y",
+        "blur",
+        "spread"
+      ],
+      "properties": {
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "blur": {
+          "type": "number",
+          "minimum": 0
+        },
+        "spread": {
+          "type": "number"
+        }
+      }
+    },
+    "textRun": {
+      "type": "object",
+      "required": [
+        "from",
+        "len"
+      ],
+      "properties": {
+        "from": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "起始字符下标（按 UTF-16 code unit，与 text 字段切片一致）。"
+        },
+        "len": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "font": {
+          "type": "string",
+          "description": "PostScript 字体名（如 58SmileFont-Bold）。"
+        },
+        "fontFamily": {
+          "type": "string",
+          "description": "字体族名（如 58SmileFont / PingFang SC），供消费方做 font-family fallback。"
+        },
+        "fontWeight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 900
+        },
+        "italic": {
+          "type": "boolean"
+        },
+        "size": {
+          "type": "number"
+        },
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "lineHeight": {
+          "type": "number",
+          "description": "行高（pt 绝对值，非倍数）。缺省时消费方按字体默认行高处理。"
+        },
+        "letterSpacing": {
+          "type": "number"
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right",
+            "center",
+            "justify"
+          ],
+          "description": "水平对齐。段落属性同时挂在 run 级与节点级，消费方优先取节点级 align，run 级作兼容回退。",
+          "$comment": "[2.0 讨论] 从 run 级移除。"
+        },
+        "decoration": {
+          "type": "string",
+          "description": "文本装饰（如 underline / line-through）。"
+        },
+        "styleToken": {
+          "type": "string",
+          "description": "指向 designTokens.textStyles 的 key，建立 run 与文本样式 token 的正向关联。"
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "pin",
+        "fixedWidth",
+        "fixedHeight"
+      ],
+      "properties": {
+        "pin": {
+          "type": "object",
+          "required": [
+            "left",
+            "right",
+            "top",
+            "bottom"
+          ],
+          "properties": {
+            "left": {
+              "type": "boolean"
+            },
+            "right": {
+              "type": "boolean"
+            },
+            "top": {
+              "type": "boolean"
+            },
+            "bottom": {
+              "type": "boolean"
+            }
+          }
+        },
+        "fixedWidth": {
+          "type": "boolean"
+        },
+        "fixedHeight": {
+          "type": "boolean"
+        }
+      }
+    },
+    "layoutConstraints": {
+      "type": "object",
+      "properties": {
+        "horizontal": {
+          "type": "object",
+          "required": [
+            "raw",
+            "mode"
+          ],
+          "properties": {
+            "raw": {
+              "type": "number",
+              "description": "Sketch horizontalSizing 原始枚举值。"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "fixed",
+                "fit",
+                "fill",
+                "relative",
+                "unknown"
+              ]
+            }
+          }
+        },
+        "vertical": {
+          "type": "object",
+          "required": [
+            "raw",
+            "mode"
+          ],
+          "properties": {
+            "raw": {
+              "type": "number",
+              "description": "Sketch verticalSizing 原始枚举值。"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "fixed",
+                "fit",
+                "fill",
+                "relative",
+                "unknown"
+              ]
+            }
+          }
+        },
+        "pins": {
+          "type": "object",
+          "required": [
+            "left",
+            "right",
+            "top",
+            "bottom"
+          ],
+          "properties": {
+            "left": {
+              "type": "boolean"
+            },
+            "right": {
+              "type": "boolean"
+            },
+            "top": {
+              "type": "boolean"
+            },
+            "bottom": {
+              "type": "boolean"
+            },
+            "rawHorizontal": {
+              "type": "number",
+              "description": "Sketch horizontalPins 原始位掩码。"
+            },
+            "rawVertical": {
+              "type": "number",
+              "description": "Sketch verticalPins 原始位掩码。"
+            }
+          }
+        }
+      },
+      "description": "Sketch 2025 Frame 内 sizing / pinning 语义。缺失的 sizing 轴按 fixed 理解，缺失的 pins 按无 pin 理解；绝对像素还原可忽略，生成可编辑/响应式代码时应优先消费。"
+    },
+    "stack": {
+      "type": "object",
+      "required": [
+        "direction"
+      ],
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
+        },
+        "spacing": {
+          "type": "number",
+          "description": "1.0 兼容字段；1.1 起推荐使用 gap。"
+        },
+        "gap": {
+          "type": "number",
+          "description": "Stack 主轴子项间距。"
+        },
+        "crossAxisGap": {
+          "type": "number",
+          "description": "Stack wrap 后跨轴行/列间距。"
+        },
+        "padding": {
+          "type": "object",
+          "required": [
+            "left",
+            "top",
+            "right",
+            "bottom"
+          ],
+          "properties": {
+            "left": {
+              "type": "number"
+            },
+            "top": {
+              "type": "number"
+            },
+            "right": {
+              "type": "number"
+            },
+            "bottom": {
+              "type": "number"
+            }
+          }
+        },
+        "justifyContent": {
+          "type": "string",
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "between",
+            "around",
+            "evenly",
+            "unknown"
+          ]
+        },
+        "alignItems": {
+          "type": "string",
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "stretch",
+            "none",
+            "unknown"
+          ]
+        },
+        "alignContent": {
+          "type": "string",
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "between",
+            "around",
+            "evenly",
+            "unknown"
+          ]
+        },
+        "wraps": {
+          "type": "boolean"
+        }
+      },
+      "description": "Sketch Stack / legacy Smart Layout 堆叠信息。绝对还原仍以 frame/absFrame 为权威；生成可维护布局时可消费本字段。"
+    },
+    "cornerHints": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "type": "string",
+          "enum": [
+            "rounded",
+            "smooth",
+            "unknown"
+          ],
+          "description": "高级圆角风格提示；不支持时退化为 borderRadius。"
+        },
+        "rawStyle": {
+          "type": "number",
+          "description": "Sketch style.corners.style 原始值。"
+        },
+        "smoothing": {
+          "type": "number",
+          "description": "Sketch 圆角平滑强度，平台支持时用于连续圆角。"
+        },
+        "prefersConcentric": {
+          "type": "boolean",
+          "description": "是否按祖先 Frame 圆角/padding 推导同心圆角。"
+        }
+      },
+      "description": "圆角高级语义补充。borderRadius 是像素级半径权威，cornerHints 只用于支持 smooth/concentric 的平台进一步接近 Sketch。"
+    },
+    "node": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "name",
+        "frame",
+        "absFrame"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "稳定 ID（跨解析可复现，annotateStableIds 注入）。存量四种 DSL 中同一 ID 透传为 stableId 字段。"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "artboard",
+            "group",
+            "rect",
+            "oval",
+            "path",
+            "text",
+            "image",
+            "slice"
+          ],
+          "description": "节点类型。shapePath/triangle/star/polygon 等矢量类统一归为 path；symbolInstance/symbolMaster/shapeGroup 归为 group；Sketch 2025 的 Frame/GraphicFrame（_class group + groupBehavior 1/2）嵌套时归为 group，作为解析根时归为 artboard（画板语义）。"
+        },
+        "name": {
+          "type": "string",
+          "description": "Sketch 图层名。仅用于 diff 模糊配对与调试，不参与 contentHash。"
+        },
+        "frame": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/frame"
+            }
+          ],
+          "description": "相对最近坐标参照祖先的 frame（Sketch 原始值，参照系不保证是直接父节点）。消费方应一律使用 absFrame 定位。",
+          "$comment": "[2.0 讨论] 要么保证严格相对直接父节点，要么移除本字段。"
+        },
+        "absFrame": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/frame"
+            }
+          ],
+          "description": "所属树根坐标系下的绝对 frame：artboard 树内为画板坐标，components[].tree 内为组件本地坐标（树根恒为 x:0,y:0）。rotation 非 0 时记录的是未旋转时的 frame。"
+        },
+        "visible": {
+          "type": "boolean",
+          "default": true,
+          "description": "缺省 true 省略。"
+        },
+        "rotation": {
+          "type": "number",
+          "default": 0,
+          "description": "旋转角度（度）。与 Sketch 约定一致：逆时针为正，围绕节点中心旋转（CSS transform:rotate 需取反）。缺省 0 省略。契约：字段出现 = 消费端必须应用；type=image/path 的切图节点像素已烘焙变换，bake 阶段已删字段（group 栅格化位图未烘焙，保留）。与 flip 同时出现时 CSS 顺序为 scale(...) rotate(...)（矩阵右到左 = 先转后翻，符合 Sketch 世界坐标语义）。"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "description": "缺省 1 省略。注意 opacity:0 的节点会被显式输出（多为热区/占位），消费方不应丢弃其子树。"
+        },
+        "constraints": {
+          "$ref": "#/definitions/constraints"
+        },
+        "layoutConstraints": {
+          "$ref": "#/definitions/layoutConstraints"
+        },
+        "stack": {
+          "$ref": "#/definitions/stack"
+        },
+        "containerRole": {
+          "type": "string",
+          "enum": [
+            "frame",
+            "graphicFrame"
+          ],
+          "description": "Sketch 2025 groupBehavior 1/2 的显式容器身份。Frame/GraphicFrame 具备真实背景、圆角、裁剪和布局语义；普通 group 省略。"
+        },
+        "clipsContents": {
+          "type": "boolean",
+          "default": false,
+          "description": "Frame/GraphicFrame 是否裁剪子层。true 时 H5/小程序用 overflow:hidden；iOS 用 clipsToBounds/masksToBounds；Android/鸿蒙启用容器裁剪。缺省 false 省略。"
+        },
+        "borderRadius": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "四角圆角 [左上, 右上, 右下, 左下]（与 CSS border-radius 四值顺序一致）。"
+        },
+        "cornerHints": {
+          "$ref": "#/definitions/cornerHints"
+        },
+        "fills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fill"
+          }
+        },
+        "tint": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fill"
+          },
+          "description": "普通编组（非 shapeGroup、非 Frame 容器）上的填充是「子图标着色提示」而非背景。纯色 tint 已在 parse 端 bake 阶段下发到子孙 fills/borders/runs 的 color 并删除本字段——正常产物不再出现；仅渐变着色（极罕见，无法逐色下发）保留原样，消费端可取首 stop 纯色近似下发。若在产物中见到纯色 tint 属 parse 缺陷。group 节点保留 fills 的只有两类真实填充：shapeGroup（布尔形状）与 Frame/GraphicFrame 容器（背景填充）。"
+        },
+        "borders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/border"
+          }
+        },
+        "shadows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/shadow"
+          }
+        },
+        "innerShadows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/shadow"
+          }
+        },
+        "blur": {
+          "type": "object",
+          "required": [
+            "type",
+            "radius"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "gaussian / background / motion / zoom。"
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "svgPath": {
+          "type": "string",
+          "description": "path 节点的矢量路径（SVG path data，坐标系为节点 frame 本地、原点左上）。"
+        },
+        "windingRule": {
+          "type": "string",
+          "enum": [
+            "evenodd",
+            "nonzero"
+          ],
+          "default": "evenodd",
+          "description": "svgPath 的填充规则。缺省 evenodd 省略（Sketch 常用值）。"
+        },
+        "booleanOperation": {
+          "type": "string",
+          "enum": [
+            "union",
+            "subtract",
+            "intersect",
+            "difference"
+          ],
+          "description": "该节点参与父级布尔运算的运算符。策略：保留本字段由消费方合成（导出侧预合并为单一 svgPath 留作后续优化）。注意布尔组首个子节点通常无运算符（作为基形）。"
+        },
+        "shapeGroup": {
+          "type": "boolean",
+          "description": "布尔运算形状组标记：type 仍为 group，但 fills 为真实填充、children 为参与布尔运算的子路径。缺省 false 省略。"
+        },
+        "flip": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "boolean"
+            },
+            "y": {
+              "type": "boolean"
+            }
+          },
+          "description": "镜像翻转（Sketch isFlippedHorizontal / isFlippedVertical）。x = 水平翻转，y = 垂直翻转，仅有翻转时输出（CSS 对应 transform: scaleX(-1) / scaleY(-1)，围绕节点中心）。契约：字段出现 = 消费端必须应用，无任何「已烘焙需忽略」的例外——type=image/path 切图节点像素已烘焙翻转，bake 阶段已删字段；group 栅格化位图未烘焙，保留字段消费端须翻。与 rotation 并存时 CSS 写 scale(...) rotate(...)（先转后翻）。"
+        },
+        "text": {
+          "type": "string",
+          "description": "text 节点的完整字符串。"
+        },
+        "textResizing": {
+          "type": "string",
+          "enum": [
+            "auto-width",
+            "auto-height",
+            "fixed"
+          ],
+          "description": "文本框行为（Sketch textBehaviour）。auto-width = 单行不换行、宽度随内容；auto-height = 固定宽度自动换行增高；fixed = 宽高全固定。导出侧对 text 节点应尽力必写——缺失时消费方在字体 fallback 量宽偏大时无法判断是否允许换行，会导致布局破坏。"
+        },
+        "verticalAlign": {
+          "type": "string",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ],
+          "default": "top",
+          "description": "文本垂直对齐。缺省 top 省略。"
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right",
+            "center",
+            "justify"
+          ],
+          "description": "节点级段落水平对齐（取自 run 级 align 的归一：全段一致时上提）。消费方优先取本字段，缺失时回退 runs[0].align。"
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/textRun"
+          },
+          "description": "富文本分段。runs 的 [from, from+len) 区间应完整覆盖 text 且互不重叠。"
+        },
+        "effectiveLineHeight": {
+          "type": "number",
+          "description": "runs 无显式 lineHeight 时的有效行高（pt）。单行自适应文本取 frame 高（即 Sketch 按字体默认行高实算的值），多行按 1.4x 字号近似；textResizing=fixed 不写。消费方取值顺序：run.lineHeight ?? effectiveLineHeight ?? 字体默认。"
+        },
+        "image": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/imageRef"
+            }
+          ],
+          "description": "位图内容。image 节点必有；group 节点带 image 表示该组已整组导出为切图（见 renderHint）；artboard 根节点带 image 为整板截图（仅供对比）。"
+        },
+        "renderHint": {
+          "type": "string",
+          "enum": [
+            "image",
+            "vector"
+          ],
+          "description": "带 image 的 group 的渲染意图，由导出侧判定逻辑（handleImage / 纯矢量原子组整组导出）直接落数据：image = 矢量子树不可精确还原（含布尔运算丢失、遮罩、不规则样式），必须用切图渲染，children 仅供结构分析；vector = 切图仅为冗余快照，优先矢量渲染。"
+        },
+        "rasterizeReason": {
+          "type": "string",
+          "enum": [
+            "slice",
+            "irregular-vector",
+            "export-format"
+          ],
+          "description": "整组切图的判定原因：slice = 设计师显式放置切片；irregular-vector = 不规则矢量（handleIregularLayer 判定）；export-format = 图层自带 exportFormats。供还原质量归因与 handleJudge 边界回归用。"
+        },
+        "componentKey": {
+          "type": "string",
+          "description": "指向顶层 components 表的 key。存在时本节点为组件实例，其内联 children 为应用 overrides 后的展开树（渲染权威）。"
+        },
+        "overrides": {
+          "type": "object",
+          "description": "实例对组件定义的覆盖记录（key 为被覆盖节点的稳定 ID 或 override 路径，value 为覆盖值，如文本/图片/嵌套 symbol）。仅作 diff 溯源用途——渲染无需消费，内联 children 已应用覆盖。"
+        },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8,12}$",
+          "description": "节点自身样式内容指纹（不含 name、绝对坐标与 children），用于跨版本 diff 的节点配对。1.1 起 containerRole / clipsContents / cornerHints / layoutConstraints / stack 进入指纹，Frame 语义变化会被识别为真实内容变化。"
+        },
+        "styleHash": {
+          "type": "string",
+          "description": "无几何内容指纹：contentSignature 去掉 frame 后的 sha1 前 8 位。与 contentHash 组成两轮 diff 接力——contentHash 全等=未变；仅 styleHash 全等=移动未改样式（moved）。"
+        },
+        "subtreeHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8,12}$",
+          "description": "Merkle 子树指纹（contentHash + 有序 children subtreeHash），subtreeHash 相等可整棵剪枝跳过 diff。"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/node"
+          },
+          "description": "子节点，数组顺序即 z 序（靠前的在下层）。"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "text"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "text",
+              "runs"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "path"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "svgPath"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "image"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

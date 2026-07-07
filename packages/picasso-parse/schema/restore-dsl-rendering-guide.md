@@ -1,0 +1,237 @@
+# RestoreDSL 渲染指南（消费端语义规范）
+
+面向 RestoreDSL 的一切消费方：服务端 LLM 还原提示词、确定性渲染器
+（`tools/gen_restore_html.js` / `tools/gen_restore_fragment.js`）、diff 可视化等。**格式合法性**以
+`restore-dsl.schema.json` 为准，本文回答的是「拿到合法数据后怎么渲染才对」。
+两者须与 `RESTORE_SCHEMA_VERSION` 同步维护。
+
+## 1. 总则
+
+- **消费端契约**：DSL 输出 CSS-ready 最终值，消费端**不做**任何字段
+  兜底、推断或转换回退——缺字段即等于 Sketch 里就没有；有字段就必须应用。
+  语义收敛在 parse 端 `bake.ts` 单点，消费端只做「字段 → 属性」的机械映射。
+- 单位一律 pt（`meta.units`）；750 宽画板即 750pt，Web 端 1pt = 1px 直出即可。
+- **画板背景**：`artboard.fills` 是页面底色，必须渲染；该字段**必填**
+  （无背景时 parse 显式写白底），消费端不再需要兜底链。Sketch 2025 的 Frame
+  画板已由 parse 归一化（type='artboard'、背景落 fills），消费方无需区分画板
+  是 Artboard 还是 Frame。
+- **缺省值省略**：`visible:true`、`rotation:0`、`opacity:1`、空数组一律不落盘。
+  字段不存在 = 取默认值，不是数据缺失。
+- 双坐标系：`frame` 是父级相对坐标（CSS 定位直接用）；`absFrame` 在
+  **artboard 树里是画板绝对坐标**，在 **components[].tree 里是组件本地坐标**。
+- `id` 是稳定 ID（跨版本 diff 用），渲染时当唯一 key 使用；**建议**代码类
+  产物为每个渲染权威元素携带该 id（dsl-id 溯源标注，可选但推荐；画板根同样
+  落 `artboard.id`），供后续迭代/审查从产物直接反查 DSL 节点。HTML 类消费端
+  落 `data-dsl-id` 属性，其余平台通道见 §10；一个节点渲染成多个元素时只标
+  最外层（渲染权威元素）。dsl-id 是纯溯源标注，不参与任何视觉渲染。
+- `contentHash`/`subtreeHash`/`styleHash`/`constraints`/`componentKey`/`overrides`
+  与渲染无关，可整段忽略（`toRenderProfile` 输出的精简视图已剥掉）。
+
+## 2. 节点渲染决策树
+
+按顺序判定，命中即止：
+
+1. `type === 'slice'` → 无视觉，跳过。
+2. `opacity === 0` → 仍渲染节点及子树，但加 `opacity:0`；这是全量
+   RestoreDSL 的保真口径。若消费的是 `toRenderProfile` 精简视图，该类占位
+   子树已在喂给 LLM 前被剔除。
+3. **纯阴影矩形**：`type ∈ {rect, oval}` 且有 `shadows`、无 `fills`、
+   `renderHint === 'image'` → 优先 CSS `box-shadow` 渲染（该类位图常被画板边缘
+   裁切，CSS 更准）。
+4. **位图节点**：`renderHint === 'image'` 或 `type === 'image'`，且有 `image.url`
+   → 用位图渲染，**跳过矢量子树**（子树因布尔运算丢失等原因不保证可精确还原，
+   `rasterizeReason` 说明栅格化原因）。摆放规则见 §3。
+5. `type === 'text'` → 文本规则见 §5。
+6. `type === 'path'` 且有 `svgPath` → 内联 SVG：`viewBox="0 0 w h"`，
+   `preserveAspectRatio="none"`，`windingRule === 'evenodd'` 时加
+   `fill-rule="evenodd"`。
+7. `type ∈ {rect, oval}` → div + 背景/边框/圆角（oval 即 `border-radius: 50%`）。
+8. `type === 'group'` → 容器 div，递归 children。语义见 §6。
+
+## 3. 位图摆放（image.frame / scale）
+
+- **优先用 `image.frame`**（插件端采集的画布真实渲染范围，画板绝对
+  坐标）：位图画布可能含阴影/模糊 bleed，大于节点 frame 且**四边不对称**。
+  换算父相对坐标：`left = image.frame.x - (absFrame.x - frame.x)`，top 同理，
+  宽高直接用 `image.frame.w/h`。
+- **rotation/flip 契约：字段出现 = 必须应用，无「已烘焙需忽略」的例外**。
+  切图是 Sketch 渲染管线的产物（所见即所得），图层自身变换必然烘焙进像素——
+  parse 端 bake 对**一切带切图 url 的节点**（含 group/shapeGroup 栅格化）删
+  rotation/flip；产物中还出现该字段的只剩矢量节点，消费端照常应用即可。消费端
+  **禁止**再做任何按节点类型「剥离/忽略 transform」的启发式。前置条件：
+  group 切图 url 由插件端回填，插件收口必须在回填后再跑一次 `bakeRestoreTree`，
+  否则该删除不生效。
+- `image.frame` 缺失时回退节点 `frame` 原位摆放（缺失的多为无 bleed 或 trim 已
+  裁边的位图，回退无损）。不要自行做居中/阴影公式假设——历史上这两种假设都被
+  实测推翻过（bleed 可以完全偏向一侧）。
+- **老数据兼容回摆**：只有在消费方显式开启兼容模式时，才允许按 PNG 实际尺寸
+  回摆（PNG÷scale ≠ frame）并用阴影公式估 bleed；此时必须截断到物理可行域——
+  单侧 bleed ≤ `PNG−frame` 的总差值，且不越过画板边缘（导出画布被画板裁切，
+  `min(估值, 差值, absFrame.x/y)`）。实测案例：贴画板顶的全宽页头，阴影朝下，
+  公式估出 bleed(10,8) 而真实是 (0,0)，不截断会整条偏移。新数据应优先补齐
+  `image.frame`，默认渲染不得启发式猜测。
+- 位图像素尺寸 = pt 尺寸 × 倍率。倍率取 `image.scale ?? meta.assetsScale`
+  （节点级仅在与全局不同时落盘）。画板整图 `artboard.image` 有独立 scale
+  （375 宽画板 2x，其余 1x）。
+- `image.svgUrl` 存在时是同一切图的矢量版本，需要无损缩放时可优先。
+- 已知噪声：切片被 Sketch 像素对齐，`image.frame` 与小数坐标节点可能有 ≤1pt
+  漂移，属正常。
+
+## 4. 样式映射
+
+- **颜色**：`#RRGGBB` / `#RRGGBBAA` 8 位 hex，现代浏览器原生支持。
+- **线性渐变**：直接消费 `gradient.css`——
+  `linear-gradient(css.angle deg, stops[i].color stops[i].pct%, ...)`，零计算。
+  `pct` 可为负 / 超 100（Sketch from/to 越界语义，浏览器沿渐变线外推，原样
+  输出即可）。**不要**用 `stops[].position × 100` 当 CSS %——那是 from→to 参数
+  比例，与 CSS 渐变线百分位只在 from/to 恰好铺满投影时才相等（实测：越界渐变
+  被"压平"，深色 stop 提前变淡）。`from`/`to` 仅作审计与非 CSS 消费端自算。
+  radial/angular 无 css 字段，退化取首 stop 纯色，或按 CSS `radial-gradient`
+  尽力映射。
+- **边框**：`position` 语义 CSS 没有直接对应，用 box-shadow 模拟不影响布局：
+  `inside` → `inset 0 0 0 t`；`outside` → `0 0 0 t`（spread）；`center` →
+  内外各半。border 属性会挤占盒模型，不要用。
+- **阴影**：`shadows` → `box-shadow: x y blur spread color`；`innerShadows`
+  同理加 `inset`。
+- **圆角**：`borderRadius` 数组四角 `[tl, tr, br, bl]`，全等时可合并。
+  解析侧会把异常大值收敛到 `min(width, height) / 2`，消费端可按该数组直接渲染。
+  `cornerHints` 只表达 Sketch 2025 smooth / concentric 等增强语义：平台支持连续圆角时可进一步
+  应用（如 iOS continuous corner、Android/Harmony 近似 path/shape 裁剪），不支持时必须退化为
+  普通 `borderRadius`，不能丢半径。
+- **裁剪**：`clipsContents === true` 表示 Frame/GraphicFrame 必须裁剪子层。H5/小程序对应
+  `overflow: hidden`；iOS 对应 `clipsToBounds` / `layer.masksToBounds`；Android 对应父容器
+  `clipChildren/clipToPadding` 与 outline/path 裁剪；鸿蒙对应容器 clip。父容器同时有圆角时，
+  圆角与裁剪必须一起生效。
+- **变换**：Sketch `rotation` 逆时针为正 → CSS `rotate(-r deg)`；`flip` →
+  `scale(±1, ±1)`；`transform-origin: center`。
+- **模糊**：`blur.type === 'gaussian'` → `filter: blur(radius px)`；带 blur 的
+  节点通常已被栅格化（走位图路径），矢量渲染时才需要处理。
+
+## 5. 文本
+
+- **行高兜底链**：`run.lineHeight ?? node.effectiveLineHeight ?? 本地近似`。
+  `effectiveLineHeight` 是 parse 侧算好的：单行 = frame 高（Sketch 实算
+  默认行高），多行 ≈ 1.4 × 字号。不要用 1.2 × 字号的通用假设——PingFang 下
+  实测偏小。
+- 多 `runs` 按 `from`/`len` 切 span，只写与首 run 不同的属性。
+- **文本颜色**：`runs[].color` 就是最终渲染色——图层级 fills 覆盖与祖先
+  tint 着色都已在 parse 端 bake 阶段下发进 runs，消费端零覆盖逻辑。text 节点
+  出现 `fills` 只剩一种情形：**渐变文字**（罕见），可取首 stop 纯色近似或
+  background-clip:text 精确渲染。
+- **保留显式换行**：`text` 里的 `\n` 是真实换行（多段落、竖排星号列全靠它定位），
+  HTML 输出必须 `white-space: pre-wrap`（或 `\n`→`<br>`），默认的空白折叠会把
+  段落挤成一坨。
+- 对齐：`node.align ?? run.align ?? 'left'`；`verticalAlign` 默认 top。
+- 单行判定：`textResizing !== 'auto-height'` 且 frame 高 < 行高 × 1.8 →
+  `white-space: nowrap`（防意外折行）。
+- 字体：`fontFamily` 落地时补中文兜底链
+  `'PingFang SC', -apple-system, sans-serif`。
+- **非系统字体需消费端自备字体文件**：`fontFamily` / `fontWeight` 数据是对的，
+  但渲染环境没装该字体就会回退兜底链，字宽/字形失真（实测：don58 数字字体缺失
+  回退 PingFang 后数值明显变宽、压住后缀）。消费端须按 DSL 实际用到的
+  `fontFamily` 提供 `@font-face`（参照 `tools/gen_restore_fragment.js` 的
+  `PICASSO_FONT_DIR` 机制：按字体名查 woff2/woff/ttf 内联，系统字体跳过）。
+  以 `.` 开头的 PostScript 名（`.SFNS` 等）是 macOS 私有系统字体，无文件可嵌，
+  走兜底链即可。
+
+## 6. group 语义
+
+- **`tint`（基本不出现）**：普通编组填充的「子图标着色提示」已在 parse 端
+  bake 阶段下发到子孙 `fills`/`borders`/`runs` 的 color 并删除字段——消费端
+  **没有**任何 tint 下发逻辑。产物中仅可能残留**渐变着色**（极罕见）：不渲染为
+  背景，可取首 stop 纯色近似下发。若在产物中见到纯色 tint 属 parse 缺陷，
+  应报修而非兜底。
+- **Frame 容器不是普通编组**：Sketch 2025 Frame（含嵌套）的填充是**真实背景**，
+  parse 已保持其 `fills` 语义，按普通背景渲染即可。`containerRole` 显式区分
+  `frame` / `graphicFrame`，消费方不要再靠 type=group 猜；这类容器可同时带背景、
+  描边、阴影、圆角、裁剪与 Stack/约束信息。
+- **`shapeGroup: true`**：布尔运算形状组，其 `fills` 才是真实填充，children 是
+  布尔子路径。`booleanOperation` 是字段透传（union/subtract/…），消费方不预合并
+  ——无法合成路径时整组退化用位图（这类组通常已带 `image`）。
+- **shapeGroup 无位图时的合成**：不要把 `fills` 涂成组包围盒（会出成色块）。
+  可行近似：把全部子路径平移到组坐标系后拼进**同一个** `<path>`，
+  `fill-rule="evenodd"`——subtract 的内路径自然成为挖洞（时钟/放大镜/ⓘ 类
+  镂空 icon 实测正确）。注意 evenodd 只在单个 path 元素内生效，拆成多个
+  `<path>` 不会挖洞。产物 svgPath 只含绝对 M/L/C/Z 命令，平移即给所有坐标
+  加子节点 frame 偏移。
+- **组阴影**：带 `shadows` 的 group 若 `renderHint === 'image'`，默认位图渲染
+  （按 §3 摆位即精确）。需要**可编辑输出**时可改走「CSS box-shadow + 子树矢量」
+  ——`shadows` 参数与 children 都在 JSON 里，三选一（位图 / CSS+子树 / 混合）
+  由消费方按输出目标决定；位图始终是视觉对照的权威。
+
+## 7. 组件与蒙版
+
+- SymbolInstance 已内联展开：**实例节点的 children 是渲染权威**（overrides 已
+  应用）；`components[componentKey].tree` 是 master 定义，仅供复用分析，渲染
+  不要读它。
+- mask 是 frame 裁剪近似（父容器 `overflow: hidden` 即可），非路径级镂空。
+  父容器同时带 `borderRadius` 时，应保持 `overflow: hidden` 与圆角同时生效。
+
+## 8. 布局语义（给可编辑/响应式代码生成）
+
+- **像素级还原第一原则**：`frame` / `absFrame` 仍是视觉权威。LLM 生成绝对定位代码时，
+  可以忽略 `layoutConstraints` / `stack`，但不能反过来用布局推断覆盖已给出的几何。
+- **`layoutConstraints`**：来自 Sketch 2025 `horizontalSizing` / `verticalSizing` /
+  `horizontalPins` / `verticalPins`。用于多端可编辑布局：
+  `mode=fixed` 倾向固定宽高，`relative` 倾向随父容器比例缩放，`fit/fill` 倾向 Stack/Flex
+  下的内容自适应/填满；`pins` 表示边距约束。缺失的 sizing 轴按 `fixed` 处理，缺失的
+  pins 按无 pin 处理。H5 可映射 absolute+left/right/top/bottom 或 flex；iOS 可映射
+  AutoLayout constraints；Android 可映射 ConstraintLayout/Flexbox；鸿蒙可映射 ArkUI
+  约束或 Flex。
+- **`stack`**：来自 Sketch Stack / legacy Smart Layout。`direction`、`gap`、`padding`、
+  `justifyContent`、`alignItems`、`wraps` 可用于生成可维护布局；若生成结果与 `absFrame`
+  有冲突，优先保持像素还原，把 Stack 只作为代码结构提示。
+
+## 9. designTokens
+
+`designTokens.colors` / `textStyles` 是高频值聚合（`fill.token` /
+`run.styleToken` 反向引用）。渲染时不需要；生成**可维护代码**时应把 token 提为
+CSS 变量/类，key 命名 `color-N` / `text-N`，`sourceName` 是 Sketch 共享样式原名。
+
+## 10. 版本兼容（对外口径）
+
+| schemaVersion | 消费端注意 |
+| --- | --- |
+| 1.0 | 对外首发。CSS-ready 化（本文完整语义）：gradient.css 直接消费；tint/text.fills 已下发不出现；rotation/flip 出现即应用；artboard.fills 必填；stroke 细直线已转 fills 矩形；同 frame 子 slice 切图已上提到 group。语义收敛在 parse 端 `bake.ts` 单点，消费端零推断 |
+| 1.1 | 新增 Sketch 2025 Frame/GraphicFrame 语义：`containerRole`、`clipsContents`、`cornerHints`、`layoutConstraints`、增强 `stack`。跨端 LLM 生成时优先消费这些字段，旧 1.0 文件按缺省语义回退。 |
+
+## 11. dsl-id 溯源标注（多端通道）
+
+反查发生在**源码层**而非运行时：后续迭代由工具/LLM 在生成代码文本里检索
+节点 id 定位回 DSL 节点，运行时可查询只是加分项。
+
+dsl-id 标注是**可选项，推荐开启**——是否携带由消费端按输出目标决定
+（基线渲染器 `gen_restore_html` 默认携带，作参照实现）；**一旦携带，
+必须遵守以下三条**，否则跨端反查工具无法统一：
+
+1. 标注在渲染权威元素上，形式**不影响渲染结果**；
+2. 标注必须**可静态检索**（落在产物源码文本里）；
+3. **锚点词全端统一为 `dsl-id`**——任何平台的产物 `grep "dsl-id"` 必须命中
+   全部标注点，不得换词或缩写。
+
+通道约定：有专用属性通道的（`data-*`），属性名含锚点词、值放裸 id；
+共用通用通道的（testID / testTag / .id() 等），值加 `dsl-id:` 前缀；
+注释兜底统一 `dsl-id: <id>`。id 中的 `/`（实例路径分隔）在以下所有
+字符串通道中均合法。
+
+| 目标平台 | 写法 | 说明 |
+| --- | --- | --- |
+| H5 / PC（React / Vue / 原生 HTML） | `<div data-dsl-id="a1b2/c3d4">` | 本文其余章节的既有契约 |
+| 微信 / 抖音小程序（WXML / TTML） | `<view data-dsl-id="a1b2/c3d4">` | `data-*` 语法与 HTML 一致，事件里走 `dataset.dslId` |
+| React Native | `<View testID="dsl-id:a1b2/c3d4">` | RN 官方自动化定位属性，iOS 侧映射 accessibilityIdentifier |
+| iOS（SwiftUI / UIKit） | `.accessibilityIdentifier("dsl-id:a1b2/c3d4")` | 纯标识，不进 VoiceOver 朗读内容（区别于 label） |
+| Android（Compose / View XML） | `Modifier.testTag("dsl-id:a1b2/c3d4")` / `android:tag="dsl-id:a1b2/c3d4"` | **不要**用 contentDescription（污染无障碍） |
+| 鸿蒙（ArkUI） | `.id('dsl-id:a1b2/c3d4')` | ArkUI 组件标识属性，自动化测试同款通道 |
+| 兜底（任何平台） | 紧邻节点注释 `/* dsl-id: a1b2/c3d4 */` | 通道缺失或发布包要求零运行时痕迹时用，反查能力不损失 |
+
+`testID` / `accessibilityIdentifier` / `testTag` 会留在发布包里——属惰性
+元数据，id 只是短哈希，无泄露风险；确需干净发布包的端降级走注释通道。
+
+## 12. 直线与描边路径
+
+- **stroke-only 细直线**：parse 端已把「h≤1（或 w≤1）+ 单条纯色实线
+  border」的直线烘焙成等效 `fills` 矩形（骑线语义、短边=thickness），消费端
+  无需特判。
+- **一般描边路径**：SVG 渲染时描边骑线会向 frame 外溢出半个 thickness，svg
+  元素默认 `overflow: hidden` 会裁掉——带 stroke 的 path 需 `overflow: visible`
+  （实测：4px stroke 画在 1px 高 viewBox 里被裁成 1px 细线）。

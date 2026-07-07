@@ -88,6 +88,22 @@ export const picassoArtboardLowcodeParse = (layer: SKLayer): Component => {
     return DSL[0];
 }
 
+/**
+ * RestoreDSL（结构保真中间表示）解析 + 稳定 ID 注入。
+ * 注意：picassoArtboardRestoreParse 签名与上述四个方法不同（三份导出输入），见 README。
+ *
+ * assessRestoreDiffability：跨版本 diff 前置判定（复制画板检测），服务端 diff 第一步；
+ * toRenderProfile：LLM 还原精简视图（剥 hash/组件字典/透明占位，全量产物照常落库）。
+ */
+export { picassoArtboardRestoreParse, annotateStableIds } from './parseRestoreDSL';
+export { assessRestoreDiffability } from './parseRestoreDSL/diffability';
+export type { DiffabilityReport, DiffabilityVerdict } from './parseRestoreDSL/diffability';
+export { toRenderProfile } from './parseRestoreDSL/renderProfile';
+// bakeRestoreTree：CSS-ready 后处理（picassoArtboardRestoreParse 内部已调用；
+// 单独导出供服务端补 bake / 插件端切图 URL 回填后二次调用用）
+export { bakeRestoreTree, bakeGradientCss } from './parseRestoreDSL/bake';
+export * from './parseRestoreDSL/restoreTypes';
+
 // 代码生成
 export * from '../../picasso-code-browser/src'
 

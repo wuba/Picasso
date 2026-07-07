@@ -27,5 +27,67 @@ export interface BaseComponent {
         comType: string
         groupId: string
     }
-    groupBreadcrumb?: { id: string; name: string }[] //Symbol group 面包屑
+    groupBreadcrumb?: { id: string; name: string; stableId?: string }[] //Symbol group 面包屑
+    // —— Sketch 2025 Frame / Stack 标注元信息 ——
+    // 这些字段只用于标注/审计消费：表达 Sketch 原生容器、裁剪、圆角和布局语义。
+    // 存量 code / operation / lowcode 链路不应据此改写 style、children 或布局推断。
+    containerRole?: 'frame' | 'graphicFrame'
+    clipsContents?: boolean
+    cornerHints?: {
+        rawStyle?: number
+        style?: 'rounded' | 'smooth' | string
+        smoothing?: number
+        prefersConcentric?: boolean
+    }
+    layoutConstraints?: {
+        horizontal?: { raw: number; mode: 'fixed' | 'relative' | 'fit' | 'fill' | 'unknown' }
+        vertical?: { raw: number; mode: 'fixed' | 'relative' | 'fit' | 'fill' | 'unknown' }
+        pins?: {
+            left?: boolean
+            right?: boolean
+            top?: boolean
+            bottom?: boolean
+            rawHorizontal?: number
+            rawVertical?: number
+        }
+    }
+    stack?: {
+        direction: 'horizontal' | 'vertical'
+        spacing?: number
+        gap?: number
+        crossAxisGap?: number
+        justifyContent?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly' | 'unknown'
+        alignItems?: 'start' | 'center' | 'end' | 'stretch' | 'none' | 'unknown'
+        alignContent?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly' | 'unknown'
+        wraps?: boolean
+        padding?: { left?: number; top?: number; right?: number; bottom?: number }
+    }
+    // —— 稳定 ID / 内容指纹 ——
+    // 由 annotateStableIds 在 SKLayer 上原地注入，再由 parseDSL 条件透传到本类型。
+    // 「未注入」的老输入产物不落 key（向后兼容护栏，restore.test.ts 有断言）。
+    //
+    // stableId：原稿画板 do_objectID 的 sha1 短哈希（默认 8 位十六进制，碰撞时该节点延至
+    //   12 位）。Symbol 展开子树内为「实例短id/master图层短id」复合路径。
+    //   与 Sketch 的 do_objectID 不同，跨解绑副本 / 跨版本可稳定对齐。
+    //
+    // contentHash：节点归一化属性签名的 sha1 前 8 位，签名内容 = {
+    //   类型 t、frame f、visible、rotation、opacity、flip、windingRule、booleanOp、
+    //   artboard 背景色、resizingConstraints、stack、borderRadius、
+    //   fills / borders / shadows / innerShadows / blur、
+    //   text（string + runs + textBehaviour + verticalAlign）、image._ref / imageUrl、
+    //   path 的 svgPath
+    // }。刻意不含 id / name / children / 绝对坐标——name 是 diff 模糊配对独立打分信号，
+    //   绝对坐标会随父级移动漂移。历史盲区：groupBehavior 与 fills/tint 分类语义不入指纹
+    //   （见 hash.ts 顶部注释）。
+    //
+    // subtreeHash：Merkle 结构 sha1(contentHash + 有序 children.subtreeHash) 前 8 位。
+    //   子树任一节点变化都会向上冒泡到根，用于 diff 快速裁枝。
+    //
+    // styleHash：与 contentHash 同签名但**去掉 frame**，sha1 前 8 位。让消费方能识别
+    //   「仅移动未改样式」（contentHash 变、styleHash 不变 → moved），几何差异靠消费方
+    //   直接比对节点 frame 字段。
+    stableId?: string
+    contentHash?: string
+    subtreeHash?: string
+    styleHash?: string
 }
