@@ -20,6 +20,7 @@
     },
     "meta": {
       "type": "object",
+      "description": "本次 RestoreDSL 导出的环境与资源元信息，用于追踪产物来源、解释单位和解析相对资源路径。",
       "required": [
         "parserVersion",
         "units"
@@ -37,13 +38,16 @@
           "description": "所有几何数值的单位。当前恒为 pt（Sketch 逻辑点）。"
         },
         "sketchVersion": {
-          "type": "string"
+          "type": "string",
+          "description": "生成产物时使用的 Sketch 版本号，用于排查不同 Sketch 版本导出的图层结构差异。"
         },
         "pluginVersion": {
-          "type": "string"
+          "type": "string",
+          "description": "生成产物时使用的 Picasso 插件版本号，用于区分插件侧导出逻辑差异。"
         },
         "documentId": {
-          "type": "string"
+          "type": "string",
+          "description": "Sketch 文档标识，用于跨导出批次关联同一设计文件。"
         },
         "generatedAt": {
           "type": "string",
@@ -70,6 +74,7 @@
       "properties": {
         "colors": {
           "type": "object",
+          "description": "颜色 token 表，key 由导出侧按 color-N 自动生成，value 保存颜色值与出现次数。",
           "additionalProperties": {
             "type": "object",
             "required": [
@@ -78,11 +83,13 @@
             ],
             "properties": {
               "value": {
-                "$ref": "#/definitions/hexColor"
+                "$ref": "#/definitions/hexColor",
+                "description": "该颜色 token 对应的十六进制颜色值。"
               },
               "usages": {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1,
+                "description": "该颜色 token 在当前产物中被引用的次数。"
               }
             }
           },
@@ -90,6 +97,7 @@
         },
         "textStyles": {
           "type": "object",
+          "description": "文本样式 token 表，key 由导出侧按 text-N 自动生成，保存可复用的字体、字号、颜色和行高信息。",
           "additionalProperties": {
             "type": "object",
             "required": [
@@ -98,28 +106,31 @@
             "properties": {
               "usages": {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1,
+                "description": "该文本样式 token 在当前产物中被引用的次数。"
               },
               "font": {
                 "type": "string",
                 "description": "PostScript 字体名。"
               },
               "size": {
-                "type": "number"
+                "type": "number",
+                "description": "字号（pt）。"
               },
               "color": {
-                "$ref": "#/definitions/hexColor"
+                "$ref": "#/definitions/hexColor",
+                "description": "文本颜色。"
               },
               "lineHeight": {
-                "type": "number"
+                "type": "number",
+                "description": "文本行高（pt 绝对值，非倍数）。"
               },
               "sourceName": {
                 "type": "string",
                 "description": "Sketch 共享文本样式原名（如 '08 辅助信息 24/1 Default/...'）。key 统一为 text-N，原名落此字段。"
               }
             }
-          },
-          "$comment": "[2.0 讨论] key 强制统一为 text-N，禁止共享样式全名做 key。"
+          }
         }
       }
     },
@@ -173,6 +184,7 @@
     },
     "frame": {
       "type": "object",
+      "description": "矩形范围，单位由 meta.units 决定；坐标系取决于承载该 frame 的字段语义。",
       "required": [
         "x",
         "y",
@@ -181,24 +193,29 @@
       ],
       "properties": {
         "x": {
-          "type": "number"
+          "type": "number",
+          "description": "矩形左上角 x 坐标。"
         },
         "y": {
-          "type": "number"
+          "type": "number",
+          "description": "矩形左上角 y 坐标。"
         },
         "w": {
           "type": "number",
-          "minimum": 0
+          "minimum": 0,
+          "description": "矩形宽度。"
         },
         "h": {
           "type": "number",
-          "minimum": 0
+          "minimum": 0,
+          "description": "矩形高度。"
         }
       },
       "additionalProperties": false
     },
     "gradient": {
       "type": "object",
+      "description": "渐变填充定义，保留 Sketch 归一化后的端点、色标，并在可直接表达为 CSS 线性渐变时提供 css 预算结果。",
       "required": [
         "type",
         "from",
@@ -212,7 +229,8 @@
             "linear",
             "radial",
             "angular"
-          ]
+          ],
+          "description": "渐变类型。linear 为线性渐变，radial 为径向渐变，angular 为角度渐变。"
         },
         "from": {
           "type": "array",
@@ -235,6 +253,7 @@
         "stops": {
           "type": "array",
           "minItems": 2,
+          "description": "渐变色标数组，按渐变方向上的位置排列。",
           "items": {
             "type": "object",
             "required": [
@@ -243,12 +262,14 @@
             ],
             "properties": {
               "color": {
-                "$ref": "#/definitions/hexColor"
+                "$ref": "#/definitions/hexColor",
+                "description": "该色标的颜色。"
               },
               "position": {
                 "type": "number",
                 "minimum": 0,
-                "maximum": 1
+                "maximum": 1,
+                "description": "该色标在 Sketch 渐变轴上的归一化位置，0 为起点、1 为终点。"
               }
             }
           }
@@ -267,6 +288,7 @@
             "stops": {
               "type": "array",
               "minItems": 2,
+              "description": "可直接用于 CSS linear-gradient 的色标数组。",
               "items": {
                 "type": "object",
                 "required": [
@@ -275,7 +297,8 @@
                 ],
                 "properties": {
                   "color": {
-                    "$ref": "#/definitions/hexColor"
+                    "$ref": "#/definitions/hexColor",
+                    "description": "CSS 色标颜色。"
                   },
                   "pct": {
                     "type": "number",
@@ -291,6 +314,7 @@
     },
     "imageRef": {
       "type": "object",
+      "description": "图片资源引用，描述图片地址、实际像素尺寸、导出倍率和在画板中的实际渲染范围。",
       "properties": {
         "url": {
           "type": "string",
@@ -327,13 +351,16 @@
       "description": "填充。color / gradient / image 三选一（同层多填充按数组顺序自下而上叠加）。",
       "properties": {
         "color": {
-          "$ref": "#/definitions/hexColor"
+          "$ref": "#/definitions/hexColor",
+          "description": "纯色填充颜色。"
         },
         "gradient": {
-          "$ref": "#/definitions/gradient"
+          "$ref": "#/definitions/gradient",
+          "description": "渐变填充内容。"
         },
         "image": {
-          "$ref": "#/definitions/imageRef"
+          "$ref": "#/definitions/imageRef",
+          "description": "图片填充内容。"
         },
         "token": {
           "type": "string",
@@ -343,6 +370,7 @@
     },
     "border": {
       "type": "object",
+      "description": "描边样式，描述描边粗细、位置以及纯色、渐变或虚线信息。",
       "required": [
         "thickness",
         "position"
@@ -350,7 +378,8 @@
       "properties": {
         "thickness": {
           "type": "number",
-          "minimum": 0
+          "minimum": 0,
+          "description": "描边粗细（pt）。"
         },
         "position": {
           "type": "string",
@@ -359,17 +388,19 @@
             "center",
             "outside"
           ],
-          "description": "描边相对路径的位置。注意 CSS border 仅能表达 inside（配合 box-sizing:border-box）；center/outside 的消费方需用 box-shadow/outline 近似或自行换算 frame。",
-          "$comment": "[2.0 讨论] 面向 web 还原时导出侧预换算为 inside + 调整 frame。"
+          "description": "描边相对路径的位置。注意 CSS border 仅能表达 inside（配合 box-sizing:border-box）；center/outside 的消费方需用 box-shadow/outline 近似或自行换算 frame。"
         },
         "color": {
-          "$ref": "#/definitions/hexColor"
+          "$ref": "#/definitions/hexColor",
+          "description": "纯色描边颜色。"
         },
         "gradient": {
-          "$ref": "#/definitions/gradient"
+          "$ref": "#/definitions/gradient",
+          "description": "渐变描边内容。"
         },
         "dash": {
           "type": "array",
+          "description": "虚线描边片段长度数组，按画线长度与空白长度交替解释。",
           "items": {
             "type": "number"
           }
@@ -378,6 +409,7 @@
     },
     "shadow": {
       "type": "object",
+      "description": "阴影参数，既用于外阴影 shadows，也用于内阴影 innerShadows。",
       "required": [
         "color",
         "x",
@@ -387,25 +419,31 @@
       ],
       "properties": {
         "color": {
-          "$ref": "#/definitions/hexColor"
+          "$ref": "#/definitions/hexColor",
+          "description": "阴影颜色。"
         },
         "x": {
-          "type": "number"
+          "type": "number",
+          "description": "阴影水平偏移（pt），正值向右。"
         },
         "y": {
-          "type": "number"
+          "type": "number",
+          "description": "阴影垂直偏移（pt），正值向下。"
         },
         "blur": {
           "type": "number",
-          "minimum": 0
+          "minimum": 0,
+          "description": "阴影模糊半径（pt）。"
         },
         "spread": {
-          "type": "number"
+          "type": "number",
+          "description": "阴影扩展半径（pt），正值外扩，负值内收。"
         }
       }
     },
     "textRun": {
       "type": "object",
+      "description": "富文本片段，覆盖 text 字符串中的一段连续区间，并携带该区间的字体、颜色、行高等样式。",
       "required": [
         "from",
         "len"
@@ -418,7 +456,8 @@
         },
         "len": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "description": "片段长度（按 UTF-16 code unit 计数）。"
         },
         "font": {
           "type": "string",
@@ -431,23 +470,28 @@
         "fontWeight": {
           "type": "integer",
           "minimum": 100,
-          "maximum": 900
+          "maximum": 900,
+          "description": "CSS 字重数值，范围 100 到 900。"
         },
         "italic": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "是否为斜体。"
         },
         "size": {
-          "type": "number"
+          "type": "number",
+          "description": "字号（pt）。"
         },
         "color": {
-          "$ref": "#/definitions/hexColor"
+          "$ref": "#/definitions/hexColor",
+          "description": "文本片段颜色。"
         },
         "lineHeight": {
           "type": "number",
           "description": "行高（pt 绝对值，非倍数）。缺省时消费方按字体默认行高处理。"
         },
         "letterSpacing": {
-          "type": "number"
+          "type": "number",
+          "description": "字间距（pt）。"
         },
         "align": {
           "type": "string",
@@ -457,8 +501,7 @@
             "center",
             "justify"
           ],
-          "description": "水平对齐。段落属性同时挂在 run 级与节点级，消费方优先取节点级 align，run 级作兼容回退。",
-          "$comment": "[2.0 讨论] 从 run 级移除。"
+          "description": "水平对齐。段落属性同时挂在 run 级与节点级，消费方优先取节点级 align，run 级作兼容回退。"
         },
         "decoration": {
           "type": "string",
@@ -472,6 +515,7 @@
     },
     "constraints": {
       "type": "object",
+      "description": "旧版 Sketch resize constraints 约束信息，用于描述子层相对父容器边缘的固定关系和宽高伸缩意图。",
       "required": [
         "pin",
         "fixedWidth",
@@ -480,6 +524,7 @@
       "properties": {
         "pin": {
           "type": "object",
+          "description": "子层相对父容器四边的固定边缘集合。",
           "required": [
             "left",
             "right",
@@ -488,24 +533,30 @@
           ],
           "properties": {
             "left": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否固定到父容器左边。"
             },
             "right": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否固定到父容器右边。"
             },
             "top": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否固定到父容器上边。"
             },
             "bottom": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否固定到父容器下边。"
             }
           }
         },
         "fixedWidth": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "父容器尺寸变化时是否保持自身宽度不变。"
         },
         "fixedHeight": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "父容器尺寸变化时是否保持自身高度不变。"
         }
       }
     },
@@ -514,6 +565,7 @@
       "properties": {
         "horizontal": {
           "type": "object",
+          "description": "水平方向 sizing 语义。",
           "required": [
             "raw",
             "mode"
@@ -531,12 +583,14 @@
                 "fill",
                 "relative",
                 "unknown"
-              ]
+              ],
+              "description": "水平方向归一化 sizing 模式。fixed 固定宽度；fit 按内容适配；fill 填满父容器剩余空间；relative 按比例变化；unknown 表示暂无法识别。"
             }
           }
         },
         "vertical": {
           "type": "object",
+          "description": "垂直方向 sizing 语义。",
           "required": [
             "raw",
             "mode"
@@ -554,12 +608,14 @@
                 "fill",
                 "relative",
                 "unknown"
-              ]
+              ],
+              "description": "垂直方向归一化 sizing 模式。fixed 固定高度；fit 按内容适配；fill 填满父容器剩余空间；relative 按比例变化；unknown 表示暂无法识别。"
             }
           }
         },
         "pins": {
           "type": "object",
+          "description": "Sketch 2025 pinning 语义，表示子层在父 Frame 中固定到哪些边。",
           "required": [
             "left",
             "right",
@@ -568,16 +624,20 @@
           ],
           "properties": {
             "left": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否固定到父 Frame 左边。"
             },
             "right": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否固定到父 Frame 右边。"
             },
             "top": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否固定到父 Frame 上边。"
             },
             "bottom": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否固定到父 Frame 下边。"
             },
             "rawHorizontal": {
               "type": "number",
@@ -603,7 +663,8 @@
           "enum": [
             "horizontal",
             "vertical"
-          ]
+          ],
+          "description": "Stack 主轴方向。horizontal 表示子项从左到右排列；vertical 表示子项从上到下排列。"
         },
         "spacing": {
           "type": "number",
@@ -619,6 +680,7 @@
         },
         "padding": {
           "type": "object",
+          "description": "Stack 容器内容区相对容器边缘的内边距。",
           "required": [
             "left",
             "top",
@@ -627,16 +689,20 @@
           ],
           "properties": {
             "left": {
-              "type": "number"
+              "type": "number",
+              "description": "左内边距（pt）。"
             },
             "top": {
-              "type": "number"
+              "type": "number",
+              "description": "上内边距（pt）。"
             },
             "right": {
-              "type": "number"
+              "type": "number",
+              "description": "右内边距（pt）。"
             },
             "bottom": {
-              "type": "number"
+              "type": "number",
+              "description": "下内边距（pt）。"
             }
           }
         },
@@ -650,7 +716,8 @@
             "around",
             "evenly",
             "unknown"
-          ]
+          ],
+          "description": "主轴方向上的子项分布方式，对应可维护布局中的 justify-content 语义。"
         },
         "alignItems": {
           "type": "string",
@@ -661,7 +728,8 @@
             "stretch",
             "none",
             "unknown"
-          ]
+          ],
+          "description": "单行或单列在交叉轴上的子项对齐方式，对应可维护布局中的 align-items 语义。"
         },
         "alignContent": {
           "type": "string",
@@ -673,10 +741,12 @@
             "around",
             "evenly",
             "unknown"
-          ]
+          ],
+          "description": "多行或多列在交叉轴上的整体分布方式，对应可维护布局中的 align-content 语义。"
         },
         "wraps": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "子项超出主轴可用空间时是否允许换行或换列。"
         }
       },
       "description": "Sketch Stack / legacy Smart Layout 堆叠信息。绝对还原仍以 frame/absFrame 为权威；生成可维护布局时可消费本字段。"
@@ -710,6 +780,7 @@
     },
     "node": {
       "type": "object",
+      "description": "RestoreDSL 树节点，统一承载 Sketch 图层的结构、几何、样式、文本、图片和组件溯源信息。",
       "required": [
         "id",
         "type",
@@ -746,8 +817,7 @@
               "$ref": "#/definitions/frame"
             }
           ],
-          "description": "相对最近坐标参照祖先的 frame（Sketch 原始值，参照系不保证是直接父节点）。消费方应一律使用 absFrame 定位。",
-          "$comment": "[2.0 讨论] 要么保证严格相对直接父节点，要么移除本字段。"
+          "description": "相对最近坐标参照祖先的 frame（Sketch 原始值，参照系不保证是直接父节点）。消费方应一律使用 absFrame 定位。"
         },
         "absFrame": {
           "allOf": [
@@ -775,13 +845,16 @@
           "description": "缺省 1 省略。注意 opacity:0 的节点会被显式输出（多为热区/占位），消费方不应丢弃其子树。"
         },
         "constraints": {
-          "$ref": "#/definitions/constraints"
+          "$ref": "#/definitions/constraints",
+          "description": "旧版 Sketch resize constraints 信息，用于生成响应式或可编辑布局。"
         },
         "layoutConstraints": {
-          "$ref": "#/definitions/layoutConstraints"
+          "$ref": "#/definitions/layoutConstraints",
+          "description": "Sketch 2025 Frame sizing / pinning 信息，用于生成可维护布局。"
         },
         "stack": {
-          "$ref": "#/definitions/stack"
+          "$ref": "#/definitions/stack",
+          "description": "Stack 或 legacy Smart Layout 信息，描述子项排列方向、间距、内边距和对齐方式。"
         },
         "containerRole": {
           "type": "string",
@@ -807,13 +880,15 @@
           "description": "四角圆角 [左上, 右上, 右下, 左下]（与 CSS border-radius 四值顺序一致）。"
         },
         "cornerHints": {
-          "$ref": "#/definitions/cornerHints"
+          "$ref": "#/definitions/cornerHints",
+          "description": "圆角高级语义提示，用于在支持连续圆角或同心圆角的平台进一步接近 Sketch 效果。"
         },
         "fills": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/fill"
-          }
+          },
+          "description": "节点真实填充数组，按自下而上的叠加顺序排列。"
         },
         "tint": {
           "type": "array",
@@ -826,22 +901,26 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/border"
-          }
+          },
+          "description": "节点描边数组，按 Sketch 样式顺序保留。"
         },
         "shadows": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/shadow"
-          }
+          },
+          "description": "节点外阴影数组，按 Sketch 样式顺序保留。"
         },
         "innerShadows": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/shadow"
-          }
+          },
+          "description": "节点内阴影数组，按 Sketch 样式顺序保留。"
         },
         "blur": {
           "type": "object",
+          "description": "节点模糊效果，描述 Sketch blur 类型和半径。",
           "required": [
             "type",
             "radius"
@@ -853,7 +932,8 @@
             },
             "radius": {
               "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "description": "模糊半径（pt）。"
             }
           }
         },
@@ -888,10 +968,12 @@
           "type": "object",
           "properties": {
             "x": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否水平镜像翻转。"
             },
             "y": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "是否垂直镜像翻转。"
             }
           },
           "description": "镜像翻转（Sketch isFlippedHorizontal / isFlippedVertical）。x = 水平翻转，y = 垂直翻转，仅有翻转时输出（CSS 对应 transform: scaleX(-1) / scaleY(-1)，围绕节点中心）。契约：字段出现 = 消费端必须应用，无任何「已烘焙需忽略」的例外——type=image/path 切图节点像素已烘焙翻转，bake 阶段已删字段；group 栅格化位图未烘焙，保留字段消费端须翻。与 rotation 并存时 CSS 写 scale(...) rotate(...)（先转后翻）。"
@@ -946,7 +1028,7 @@
               "$ref": "#/definitions/imageRef"
             }
           ],
-          "description": "位图内容。image 节点必有；group 节点带 image 表示该组已整组导出为切图（见 renderHint）；artboard 根节点带 image 为整板截图（仅供对比）。"
+          "description": "位图内容。image 节点必须携带本字段；group 节点携带本字段表示该组已整组导出为切图或冗余快照，具体渲染优先级由 renderHint 表达；artboard 根节点携带本字段表示整板截图，仅用于对比。"
         },
         "renderHint": {
           "type": "string",
