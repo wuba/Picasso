@@ -1,6 +1,6 @@
 {
     "name": "@wubafe/picasso-parse",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Picasso解析库",
     "main": "dist/picasso-parse/src/index.js",
     "publishConfig": {
