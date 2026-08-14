@@ -46,6 +46,87 @@ assert(sha1('abc') === 'a9993e364706816aba3e25717850c26c9cd0d89d', 'sha1("abc") 
 assert(sha1('') === 'da39a3ee5e6b4b0d3255bfef95601890afd80709', 'sha1("") 标准向量');
 assert(sha1('中文字符串测试') === sha1('中文字符串测试'), 'sha1 UTF-8 稳定');
 
+// ---------- 1.1. blur/blurs 跨版本归一化 ----------
+{
+    /**
+     * 构造带模糊样式的最小矩形图层。
+     * @param id 图层唯一标识。
+     * @param name 图层名称，用于从 RestoreDSL 中定位断言目标。
+     * @param style Sketch 原始 style 数据。
+     * @returns 可直接放入测试画板的矩形图层。
+     */
+    const makeBlurLayer = (id: string, name: string, style: any): any => ({
+        _class: 'rectangle',
+        do_objectID: id,
+        name,
+        isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 40, height: 40 },
+        style: { _class: 'style', ...style },
+    });
+    const blurArtboard: any = {
+        _class: 'artboard',
+        do_objectID: 'BLUR-ROOT',
+        name: '模糊兼容画板',
+        isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 200, height: 100 },
+        layers: [
+            makeBlurLayer('BLUR-LEGACY', '旧版单值', {
+                blur: { _class: 'blur', isEnabled: true, type: 0, radius: 8 },
+            }),
+            makeBlurLayer('BLUR-MODERN', '新版数组', {
+                blurs: [
+                    { _class: 'blur', isEnabled: false, type: 0, radius: 3 },
+                    { _class: 'blur', isEnabled: true, type: 1, radius: 12.345 },
+                ],
+            }),
+            makeBlurLayer('BLUR-MODERN-EQUIVALENT', '新版等价值', {
+                blurs: [{ _class: 'blur', isEnabled: true, type: 0, radius: 8 }],
+            }),
+            makeBlurLayer('BLUR-BOTH', '新旧共存', {
+                blur: { _class: 'blur', isEnabled: true, type: 0, radius: 4 },
+                blurs: [{ _class: 'blur', isEnabled: true, type: 3, radius: 16 }],
+            }),
+            makeBlurLayer('BLUR-AUTHORITY', '新版禁用保持关闭', {
+                blur: { _class: 'blur', isEnabled: true, type: 2, radius: 6 },
+                blurs: [{ _class: 'blur', isEnabled: false, type: 1, radius: 10 }],
+            }),
+            makeBlurLayer('BLUR-DISABLED', '全部禁用', {
+                blur: { _class: 'blur', isEnabled: false, type: 0, radius: 8 },
+                blurs: [{ _class: 'blur', isEnabled: false, type: 1, radius: 12 }],
+            }),
+        ],
+    };
+    const blurDsl = picassoArtboardRestoreParse(
+        undefined,
+        deepCopy(blurArtboard),
+        undefined,
+        { generatedAt: 'fixed' },
+    );
+    /**
+     * 按名称读取模糊兼容测试节点。
+     * @param name 图层名称。
+     * @returns 对应的 RestoreDSL 节点。
+     */
+    const blurNode = (name: string): any => blurDsl.artboard.children!.filter(node => node.name === name)[0];
+
+    const legacyNode = blurNode('旧版单值');
+    const equivalentModernNode = blurNode('新版等价值');
+    assert(JSON.stringify(blurNode('旧版单值').blur) === JSON.stringify({ type: 'gaussian', radius: 8 }),
+        'Blur 兼容：Sketch 101.x style.blur 正确归一化');
+    assert(JSON.stringify(blurNode('新版数组').blur) === JSON.stringify({ type: 'motion', radius: 12.35 }),
+        'Blur 兼容：Sketch 2025.1+ style.blurs 选择首个已启用项并归一化');
+    assert(JSON.stringify(blurNode('新旧共存').blur) === JSON.stringify({ type: 'background', radius: 16 }),
+        'Blur 兼容：新旧字段共存时优先使用 style.blurs');
+    assert(blurNode('新版禁用保持关闭').blur === undefined,
+        'Blur 兼容：style.blurs 存在但未启用时不恢复可能残留的 style.blur');
+    assert(blurNode('全部禁用').blur === undefined,
+        'Blur 兼容：新旧字段均未启用时不输出 blur');
+    assert(legacyNode.contentHash === equivalentModernNode.contentHash,
+        'Blur 兼容：语义相同的 blur/blurs 生成一致 contentHash');
+    assert(legacyNode.styleHash === equivalentModernNode.styleHash,
+        'Blur 兼容：语义相同的 blur/blurs 生成一致 styleHash');
+}
+
 // ---------- 2. 向后兼容：未注入输入的存量 DSL 产物不含新增 key ----------
 {
     const measure = picassoArtboardMeatureParse(deepCopy(rawArtboard));

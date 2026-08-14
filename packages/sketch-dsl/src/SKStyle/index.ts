@@ -12,7 +12,14 @@ export type SKStyle = {
     miterLimit?: number
     startMarkerType?: number
     windingRule?: number
+    /**
+     * Sketch 101.x 及更早版本导出的单值模糊字段。
+     */
     blur?: SKBlur
+    /**
+     * Sketch 2025.1 及以上版本导出的模糊数组。
+     */
+    blurs?: SKBlur[]
     borderOptions?: {
         _class: string
         isEnabled: boolean
