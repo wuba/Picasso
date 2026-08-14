@@ -330,11 +330,19 @@ const BLUR_TYPES = ['gaussian', 'motion', 'zoom', 'background'];
 
 /**
  * 图层模糊效果归一化。
- * 与其他 style 字段一致，未启用（!isEnabled）返回 undefined 不落 key。
+ * Sketch 101.x 使用单值 style.blur，Sketch 2025.1 起改为 style.blurs 数组。
+ * style.blurs 存在时以新版数组为权威，即使为空或全部禁用也不读取可能残留的旧字段；
+ * 仅在新版字段不存在时回退 style.blur。未启用时返回 undefined 不落 key。
  * 未知 type 数值降级为 gaussian（最常见）。
+ * @param layer Sketch 原始图层。
+ * @returns 已启用模糊的 RestoreDSL 语义；不存在时返回 undefined。
  */
 export const blurToRestore = (layer: SKLayer): { type: string; radius: number } | undefined => memo('blur', layer, () => {
-    const blur: any = layer.style && layer.style.blur;
+    const style = layer.style;
+    const blur = style && Array.isArray(style.blurs)
+        ? style.blurs.find(item => !!item && item.isEnabled)
+        : style && style.blur;
+    // 同一份数据偶尔会残留新旧两套字段；新版数组为权威，避免把已关闭的旧值重新启用。
     if (!blur || !blur.isEnabled) return undefined;
     return {
         type: BLUR_TYPES[blur.type] || 'gaussian',
