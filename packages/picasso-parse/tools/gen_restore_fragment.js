@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * RestoreDSL(schemaVersion 1.0) -> 还原稿渲染核心 + 还原稿独立产物(片段 / 纯净页)
+ * RestoreDSL(schemaVersion 1.1，兼容已有 1.0 字段) -> 还原稿渲染核心 + 还原稿独立产物(片段 / 纯净页)
  *
  * 由 gen_restore_html.js 拆出的渲染核心: 节点渲染 / 私有字体内联 / 位图回摆与像素校准
  * 全部在此实现; gen_restore_html.js 只在本模块之上组装「还原稿 vs 原设计图」对比页外壳。
@@ -73,23 +73,57 @@ function gradientCss(g) {
   return 'linear-gradient(' + num(css.angle) + 'deg, ' + stops + ')';
 }
 
+/**
+ * 将单个 fill 转为背景属性；图片模式只影响填充，不修改布局 frame。
+ * @param {object} fill RestoreDSL 填充。
+ * @returns {Array<Array<string>>} CSS 属性列表。
+ */
 function fillToBg(fill) {
-  // 单个 fill -> (background-color / background-image) css 片段列表
   if ('color' in fill) return [['background-color', colorCss(fill.color)]];
   if ('gradient' in fill) {
     const g = fill.gradient;
-    if (g.type === 'linear') return [['background-image', gradientCss(g)]];
-    // 非线性渐变兜底: 取第一个 stop 颜色
-    return [['background-color', colorCss(g.stops[0].color)]];
+    if (g.type === 'linear' && g.css) return [['background-image', gradientCss(g)]];
+    return g.stops && g.stops.length ? [['background-color', colorCss(g.stops[0].color)]] : [];
   }
   if ('image' in fill) {
+    const mode = fill.image.mode || 'fill';
+    const sizes = { fill: 'cover', fit: 'contain', stretch: '100% 100%', tile: 'auto' };
     return [
       ['background-image', "url('" + fill.image.url + "')"],
-      ['background-size', 'cover'],
-      ['background-position', 'center'],
+      ['background-size', sizes[mode] || 'cover'],
+      ['background-position', mode === 'tile' ? '0 0' : 'center'],
+      ['background-repeat', mode === 'tile' ? 'repeat' : 'no-repeat'],
     ];
   }
   return [];
+}
+
+/**
+ * 组合自下而上的 fills，反转为 CSS 自上而下的背景层，并保持每层尺寸及平铺模式。
+ * 纯色也转为背景图片层，确保半透明颜色不会覆盖掉下层图片。
+ * @param {object[]} fills RestoreDSL 填充数组。
+ * @returns {Array<Array<string>>} 四个等长背景列表或单填充的 CSS 属性。
+ */
+function fillsToBg(fills) {
+  if (!fills || !fills.length) return [];
+  if (fills.length === 1) return fillToBg(fills[0]);
+  const layers = fills.slice().reverse().map((fill) => {
+    const props = Object.fromEntries(fillToBg(fill));
+    const color = props['background-color'];
+    const image = props['background-image'] || (color ? 'linear-gradient(' + color + ', ' + color + ')' : null);
+    return image ? {
+      image: image,
+      size: props['background-size'] || 'auto',
+      position: props['background-position'] || '0 0',
+      repeat: props['background-repeat'] || 'no-repeat',
+    } : null;
+  }).filter(Boolean);
+  return layers.length ? [
+    ['background-image', layers.map((layer) => layer.image).join(', ')],
+    ['background-size', layers.map((layer) => layer.size).join(', ')],
+    ['background-position', layers.map((layer) => layer.position).join(', ')],
+    ['background-repeat', layers.map((layer) => layer.repeat).join(', ')],
+  ] : [];
 }
 
 function bordersToCss(node, styles) {
@@ -435,9 +469,7 @@ function renderShape(node, indent, extraClass) {
   if (extraClass === undefined) extraClass = '';
   const styles = baseStyles(node);
   blurCss(node, styles);
-  for (const fl of node.fills || []) {
-    for (const kv of fillToBg(fl)) styles.push(kv);
-  }
+  styles.push(...fillsToBg(node.fills));
   bordersToCss(node, styles);
   radiusCss(node, styles, node.type === 'oval');
   const pad = '  '.repeat(indent);
@@ -761,77 +793,104 @@ async function createRestoreRenderContext(dslInput, options) {
            'src="' + url + '" style="' + styleAttr(styles) + '" alt="">\n';
   }
 
+  /**
+   * 渲染固定文本框：保留显式段落、逐 run 字体样式与整体垂直对齐。
+   * auto-width 只禁止软换行，不改变 Sketch 给出的定位和宽度。
+   * @param {object} node RestoreDSL 文本节点。
+   * @param {number} indent 缩进层级。
+   * @returns {string} 文本节点 HTML。
+   */
   function renderText(node, indent) {
     const styles = baseStyles(node);
     blurCss(node, styles);
     let runs = node.runs || [];
     const text = node.text != null ? node.text : '';
     const pad = '  '.repeat(indent);
-    if (!runs.length) {
-      return pad + '<div class="n txt" data-dsl-id="' + esc(node.id) + '" ' +
-             'style="' + styleAttr(styles) + '">' + esc(text) + '</div>\n';
-    }
-
-    // 图层色/祖先 tint 已在 parse 端下发进 runs[].color, 消费端零覆盖逻辑;
-    // 文本节点带 fills 只剩渐变文字(罕见), 首色近似
     const gradFill = (node.fills || []).find((fl) => 'gradient' in fl);
-    if (gradFill) {
+    if (gradFill && gradFill.gradient.stops.length) {
       const approx = gradFill.gradient.stops[0].color;
-      runs = runs.map((r) => Object.assign({}, r, { color: approx }));
-      logFix('text-gradient-approx', "渐变文字 '" + node.name.slice(0, 20) + "' 用首 stop " + approx + ' 近似');
+      runs = runs.map((run) => Object.assign({}, run, { color: approx }));
+      logFix('text-gradient-approx', "渐变文字 '" + node.name + "' 用首 stop " + approx + ' 近似');
     }
-
-    const r0 = runs[0];
-    // 行高兜底链: run.lineHeight -> effectiveLineHeight(parse 侧已按同一规则算好) -> 本地近似
-    let lh = r0.lineHeight || node.effectiveLineHeight;
-    if (!lh) {
-      // 单行文本的 frame 高度就是 Sketch 实算的默认行高, 直接采用;
-      // 多行文本用 PingFang 默认行高 ~1.4x 字号近似
-      const fh = node.frame.h;
-      lh = fh <= r0.size * 1.9 ? fh : Math.round(r0.size * 1.4);
-    }
-    const align = node.align || r0.align || 'left';
+    const r0 = runs[0] || { size: 14, fontWeight: 400 };
+    const defaultHeight = node.frame.h <= r0.size * 1.9 ? node.frame.h : Math.round(r0.size * 1.4);
+    const lh = r0.lineHeight || node.effectiveLineHeight || defaultHeight;
     styles.push(
       ['font-family', "'" + (r0.fontFamily || 'PingFang SC') + "', 'PingFang SC', -apple-system, sans-serif"],
       ['font-size', px(r0.size)],
       ['font-weight', String(r0.fontWeight != null ? r0.fontWeight : 400)],
       ['color', colorCss(r0.color != null ? r0.color : '#000')],
       ['line-height', px(lh)],
-      ['text-align', align]);
+      ['text-align', node.align || r0.align || 'left']);
     if (r0.letterSpacing) styles.push(['letter-spacing', px(r0.letterSpacing)]);
-
-    const multiline = node.textResizing === 'auto-height' || node.frame.h >= lh * 1.8;
-    if (!multiline) {
-      styles.push(['white-space', 'nowrap']);
-    } else {
-      // text 里的显式换行符(\n)必须保留, HTML 默认会折叠成空格
-      // (多段落正文与竖排星号列全靠 \n 定位)
-      styles.push(['white-space', 'pre-wrap']);
-      if (text.indexOf('\n') >= 0) {
-        logFix('text-newline', "多行文本 '" + node.name.slice(0, 20) + "' 含 " +
-                               (text.match(/\n/g) || []).length + ' 个换行符, pre-wrap 保留');
-      }
+    if (r0.italic) styles.push(['font-style', 'italic']);
+    const multiline = node.textResizing !== 'auto-width'
+      && (node.textResizing === 'auto-height' || node.frame.h >= lh * 1.8);
+    styles.push(['white-space', multiline ? 'pre-wrap' : 'pre']);
+    if (node.verticalAlign === 'middle' || node.verticalAlign === 'bottom') {
+      styles.push(['display', 'flex'], ['flex-direction', 'column'],
+        ['justify-content', node.verticalAlign === 'middle' ? 'center' : 'flex-end']);
     }
 
-    let body;
-    if (runs.length <= 1) {
-      body = esc(text);
-    } else {
-      // 多 run: 按 from/len 切 span, 只写与首 run 不同的属性
+    /**
+     * 输出段内 runs 的交集；没有覆盖的间隙仍保留原文，不因不完整 runs 丢字。
+     * @param {number} from 段落起点，UTF-16 下标。
+     * @param {number} to 段落终点，不包含分隔符。
+     * @param {number} paragraphHeight 当前段落容器提供的继承行高，单位 px。
+     * @returns {string} 转义后的段内 HTML。
+     */
+    function paragraphBody(from, to, paragraphHeight) {
+      let cursor = from;
       const parts = [];
-      for (const r of runs) {
-        const seg = text.slice(r.from, r.from + r.len);
+      for (const run of runs) {
+        const lo = Math.max(from, run.from, cursor);
+        const hi = Math.min(to, run.from + run.len);
+        if (hi <= lo) continue;
+        if (lo > cursor) parts.push(esc(text.slice(cursor, lo)));
         const sp = [];
-        if (r.color !== r0.color) sp.push(['color', colorCss(r.color)]);
-        if (r.size !== r0.size) sp.push(['font-size', px(r.size)]);
-        if (r.fontWeight !== r0.fontWeight) sp.push(['font-weight', String(r.fontWeight != null ? r.fontWeight : 400)]);
-        if (sp.length) parts.push('<span style="' + styleAttr(sp) + '">' + esc(seg) + '</span>');
-        else parts.push(esc(seg));
+        if (run.color !== r0.color && run.color) sp.push(['color', colorCss(run.color)]);
+        if (run.size !== r0.size && run.size) sp.push(['font-size', px(run.size)]);
+        if (run.fontWeight !== r0.fontWeight) sp.push(['font-weight', String(run.fontWeight != null ? run.fontWeight : 400)]);
+        if (run.fontFamily && run.fontFamily !== r0.fontFamily) {
+          sp.push(['font-family', "'" + run.fontFamily + "', 'PingFang SC', -apple-system, sans-serif"]);
+        }
+        const runHeight = run.lineHeight || node.effectiveLineHeight || lh;
+        // 段落可能覆盖首 run 的行高，样式省略必须以实际继承值为准。
+        if (runHeight !== paragraphHeight) sp.push(['line-height', px(runHeight)]);
+        if ((run.letterSpacing || 0) !== (r0.letterSpacing || 0)) sp.push(['letter-spacing', px(run.letterSpacing || 0)]);
+        if (!!run.italic !== !!r0.italic) sp.push(['font-style', run.italic ? 'italic' : 'normal']);
+        if (run.decoration && run.decoration !== 'none') sp.push(['text-decoration', run.decoration]);
+        const segment = esc(text.slice(lo, hi));
+        parts.push(sp.length ? '<span style="' + styleAttr(sp) + '">' + segment + '</span>' : segment);
+        cursor = hi;
       }
-      body = parts.join('');
+      if (cursor < to) parts.push(esc(text.slice(cursor, to)));
+      return parts.join('');
     }
-    return pad + '<div class="n txt" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" ' +
-           'style="' + styleAttr(styles) + '">' + body + '</div>\n';
+    const paragraphs = [];
+    const separator = /\r\n|[\n\r\u2028\u2029]/g;
+    let start = 0;
+    let match;
+    while ((match = separator.exec(text)) !== null) {
+      paragraphs.push({ from: start, to: match.index });
+      start = match.index + match[0].length;
+    }
+    paragraphs.push({ from: start, to: text.length });
+    const body = paragraphs.map((paragraph) => {
+      // 末尾空段没有段首字符，沿用结束分隔符的样式，不能误继承首段的行高或对齐。
+      const styleFrom = paragraph.from === text.length && paragraph.from > 0 ? paragraph.from - 1 : paragraph.from;
+      const first = runs.find((run) => run.from <= styleFrom && run.from + run.len > styleFrom)
+        || runs.find((run) => run.from >= paragraph.from && run.from < paragraph.to);
+      // 缺省 run.align 就是 left，不能继承上一段的 center/right。
+      const align = node.align || (first ? first.align || 'left' : r0.align || 'left');
+      const paragraphHeight = first && first.lineHeight || node.effectiveLineHeight || lh;
+      return '<div class="txt-paragraph" style="text-align: ' + align + '; line-height: ' + px(paragraphHeight)
+        + '; min-height: ' + px(paragraphHeight) + '">'
+        + paragraphBody(paragraph.from, paragraph.to, paragraphHeight) + '</div>';
+    }).join('');
+    return pad + '<div class="n txt" data-dsl-id="' + esc(node.id) + '" data-name="' + esc(node.name) + '" '
+      + 'style="' + styleAttr(styles) + '"><div class="txt-content" style="width: 100%; min-width: 0; flex-shrink: 0">'
+      + body + '</div></div>\n';
   }
 
   async function renderNode(node, indent) {
@@ -871,15 +930,11 @@ async function createRestoreRenderContext(dslInput, options) {
     blurCss(node, styles);
     let shapeChildren = node.children || [];
     if (!node.shapeGroup) {
-      for (const fl of node.fills || []) {
-        for (const kv of fillToBg(fl)) styles.push(kv);
-      }
+      styles.push(...fillsToBg(node.fills));
     } else {
       if (node.fills && node.fills.length && shapeChildren.length === 0) {
         // 无子路径的 shapeGroup: bbox 填充是唯一可用信息
-        for (const fl of node.fills) {
-          for (const kv of fillToBg(fl)) styles.push(kv);
-        }
+        styles.push(...fillsToBg(node.fills));
       } else if (node.fills && node.fills.length) {
         // 无位图兜底的 shapeGroup: 把 bbox 涂成 fills 会出现"色块"(logo 文字/圆形
         // 气泡变实心方块)。改为不画 bbox: 子路径合成单个 SVG + fill-rule=evenodd
@@ -917,9 +972,7 @@ async function createRestoreRenderContext(dslInput, options) {
   let bodyNodes = '';
   const artStyles = [['width', px(ART_W)], ['height', px(ART_H)], ['position', 'relative']];
   // 画板背景 fills 必填(parse 端 bake 兜底白底), 消费端零兜底直接读
-  for (const fl of ART.fills) {
-    for (const kv of fillToBg(fl)) artStyles.push(kv);
-  }
+  artStyles.push(...fillsToBg(ART.fills));
   for (const c of ART.children || []) {
     bodyNodes += await renderNode(c, childIndent);
   }

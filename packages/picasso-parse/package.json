@@ -1,6 +1,6 @@
 {
     "name": "@wubafe/picasso-parse",
-    "version": "0.1.2",
+    "version": "0.2.0",
     "description": "Picasso解析库",
     "main": "dist/picasso-parse/src/index.js",
     "publishConfig": {
@@ -10,9 +10,10 @@
         "sync:version": "node tools/sync_parser_version.js",
         "prebuild": "npm run sync:version",
         "build": "tsc",
+        "prepack": "npm run build",
         "prepublishOnly": "npm run build",
         "pretest": "npm run sync:version",
-        "test": "ts-node test/index.ts && ts-node test/restore.test.ts"
+        "test": "ts-node test/index.ts && ts-node test/restore.test.ts && ts-node test/visual-analysis.test.ts"
     },
     "devDependencies": {
         "@types/node": "^10.12.15",
