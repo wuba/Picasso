@@ -86,8 +86,10 @@
   输出即可）。**不要**用 `stops[].position × 100` 当 CSS %——那是 from→to 参数
   比例，与 CSS 渐变线百分位只在 from/to 恰好铺满投影时才相等（实测：越界渐变
   被"压平"，深色 stop 提前变淡）。`from`/`to` 仅作审计与非 CSS 消费端自算。
-  radial/angular 无 css 字段，退化取首 stop 纯色，或按 CSS `radial-gradient`
-  尽力映射。
+  radial/angular 无 css 字段时只可标记为近似；可使用首 stop 临时色，优先消费插件保真
+  素材并保留诊断。不能把忽略椭圆几何的 CSS 映射称为精确。
+- **图片填充**：fill.mode 的 fill/fit/stretch/tile 对应 cover/contain/100% 100%/auto+repeat；
+  多 fills 要反序生成 CSS 背景列表，分别保留每层 size/position/repeat 和透明颜色叠层。
 - **边框**：`position` 语义 CSS 没有直接对应，用 box-shadow 模拟不影响布局：
   `inside` → `inset 0 0 0 t`；`outside` → `0 0 0 t`（spread）；`center` →
   内外各半。border 属性会挤占盒模型，不要用。
@@ -113,7 +115,8 @@
   `effectiveLineHeight` 是 parse 侧算好的：单行 = frame 高（Sketch 实算
   默认行高），多行 ≈ 1.4 × 字号。不要用 1.2 × 字号的通用假设——PingFang 下
   实测偏小。
-- 多 `runs` 按 `from`/`len` 切 span，只写与首 run 不同的属性。
+- 多 `runs` 按 `from`/`len` 切 span，只写与首 run 不同的属性；行高须与当前段落容器的继承值比较，
+  不同时显式设置，避免后续 run 错误继承段首行高。
 - **文本颜色**：`runs[].color` 就是最终渲染色——图层级 fills 覆盖与祖先
   tint 着色都已在 parse 端 bake 阶段下发进 runs，消费端零覆盖逻辑。text 节点
   出现 `fills` 只剩一种情形：**渐变文字**（罕见），可取首 stop 纯色近似或
@@ -121,9 +124,10 @@
 - **保留显式换行**：`text` 里的 `\n` 是真实换行（多段落、竖排星号列全靠它定位），
   HTML 输出必须 `white-space: pre-wrap`（或 `\n`→`<br>`），默认的空白折叠会把
   段落挤成一坨。
-- 对齐：`node.align ?? run.align ?? 'left'`；`verticalAlign` 默认 top。
-- 单行判定：`textResizing !== 'auto-height'` 且 frame 高 < 行高 × 1.8 →
-  `white-space: nowrap`（防意外折行）。
+- 对齐：node.align 是已上提的一致对齐；未提供时各显式段落读取覆盖段首字符的 run.align，缺省 left；`verticalAlign` 默认 top，
+  middle/bottom 对整体文本内容使用居中/底部对齐，不能逐 span 对齐。末尾空段继承结束分隔符最后一个 UTF-16 单元所属 run 的对齐与行高，不退回首段。
+- 换行判定：`textResizing=auto-width` 优先禁止软换行，但保留显式分段；其它文本可
+  根据 auto-height 或 frame 高度判定是否允许自动换行，不改 frame 给出的定位与尺寸。
 - 字体：`fontFamily` 落地时补中文兜底链
   `'PingFang SC', -apple-system, sans-serif`。
 - **非系统字体需消费端自备字体文件**：`fontFamily` / `fontWeight` 数据是对的，
@@ -235,3 +239,15 @@ dsl-id 标注是**可选项，推荐开启**——是否携带由消费端按输
 - **一般描边路径**：SVG 渲染时描边骑线会向 frame 外溢出半个 thickness，svg
   元素默认 `overflow: hidden` 会裁掉——带 stroke 的 path 需 `overflow: visible`
   （实测：4px stroke 画在 1px 高 viewBox 里被裁成 1px 细线）。
+
+## 0.2.0 实现勘误（核心 Schema 仍为 1.1）
+
+以下是对既有字段的消费修复，不改变格式或新增强制门槛：
+
+- `verticalAlign=middle/bottom` 应对整个多 run 文本内容做垂直对齐，不能逐 span 分散对齐。
+- `textResizing=auto-width` 禁止软换行，仍保留显式换行；框的定位和尺寸继续读取 frame。
+- 未上提一致 node.align 时，显式段落分别读取覆盖该段首字符的 run.align；缺省 align 为 left，不能继承上一段的 center/right。各段分别设置行高，避免首段行高撑大其余段落。
+- 图片 fill.mode 的 fill/fit/stretch/tile 分别对应 cover/contain/100% 100%/auto+repeat。
+  多 fills 从下到上排列，CSS 背景列表要反序，并分别保留 size/position/repeat。
+- 非默认 patternTileScale、复杂径向渐变、蒙版和混合模式不能凭现有精简字段宣称精确。
+  使用公开 analyzeRestoreVisuals 的独立原始事实报告，在插件副本仍存在时补拍；失败只报告限制并继续还原。

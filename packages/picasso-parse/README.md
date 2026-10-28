@@ -87,6 +87,50 @@ const rnCode = picassoCode([dsl], artboardJSON.frame.width, CodeType.ReactNative
 
 四种存量 DSL 透传的注入字段：`stableId` / `contentHash` / `subtreeHash` / `styleHash`（`restoreComponentKey` / `restoreOverrides` 只落 RestoreDSL，不透传）。
 
+### 原始视觉事实分析（0.2.0 新增）
+
+`analyzeRestoreVisuals(exportB, { includeText?: boolean })` 从包主入口公开导出。请在
+`trimByMask`、切图整形及 RestoreDSL 解析之前调用；函数不修改输入，不依赖 Node 或
+Sketch API，可在插件 JavaScriptCore 中直接运行，空输入返回空报告。
+
+```ts
+import { analyzeRestoreVisuals } from '@wubafe/picasso-parse';
+
+const report = analyzeRestoreVisuals(exportB); // includeText 默认 true
+// report.reportVersion === 1
+// report.nodesByObjectId[do_objectID] = {
+//   objectId, parentObjectId?, stableId?, raw: { frame, style, ... }, maskChain?
+// }
+// report.issues = [{ objectId, dslId?, role, code, field?, index?,
+//                    captureOwnerId, captureScope: 'layer' | 'composition' }]
+```
+
+`raw` 保留选定字段的独立副本与原始精度，包括完整 style 中的填充/渐变椭圆参数、
+patternTileScale、混合模式、blur 栈，以及 attributedString 中的段落、字体原值和
+图层已有的 glyphBounds。缺失信息保持缺失，不把估算值写成 Sketch 实测值。
+`includeText: false` 时省略文本与文本样式事实。
+
+诊断原因码覆盖 `UNSUPPORTED_FILL`、`NONLINEAR_GRADIENT`、`UNKNOWN_GRADIENT_TYPE`、
+`PATTERN_SCALE`、`PATTERN_TRANSFORM`、`NON_NORMAL_BLEND`、`MASK_CHAIN`、
+`BOOLEAN_COMPOSITION`、`BLUR_STACK` 和 `BLUR_APPROXIMATION`。原始 fills/blurs 索引不重排。
+`captureOwnerId` 是原生补拍建议；composition 需要包含蒙版、背景或兄弟层等上下文，
+不能承诺单层透明 PNG 等价。补拍失败仍可使用结构与设计原图继续还原，报告不构成阻断。
+
+报告独立于核心 RestoreDSL，不自动塞入 schema、指纹或四种存量 DSL。插件应在临时
+原生副本删除前消费补拍建议；后续可通过稳定 ID 关联，未注入时只使用真实 do_objectID。
+本次核心 `schemaVersion` 仍为 `1.1`，不新增必填字段，也不重写历史数据。
+
+### 0.2.0 的兼容修复
+
+- Semibold / DemiBold 正确输出 `fontWeight: 600`。配对成功的 stableId 保持稳定；
+  对应 contentHash/styleHash/subtreeHash 随正确字重更新。A 缺失时原有内容指纹 ID
+  也会变化，消费方应结合 parserVersion 识别实现差异，不重写历史产物。
+- 确定性 renderer 消费 `verticalAlign=middle/bottom`、auto-width 和按显式段落的
+  align；保留 run 字体、行高、字距差异。auto-width 禁止软换行，仍保留显式换行。
+- 图片填充分别消费 fill/fit/stretch/tile；多 fills 保持叠层顺序及每层独立模式。
+  非默认 tileScale 与复杂径向渐变仍由原始事实和诊断转交插件原生补拍，不伪称精确。
+- 四种旧解析入口用修改前 0.1.2 的完整输出摘要回归；原始事实 API 不改变老输入。
+
 ### 代码生成（DSL → 文本）
 
 | 函数 | 输出 |
@@ -210,10 +254,10 @@ node tools/gen_restore_fragment.js <restore.json> <output.html> [--fit-width]
 
 ```sh
 # 纯本地目录
-export PICASSO_FONT_DIR="/Users/me/fonts:/Users/me/private-fonts"
+export PICASSO_FONT_DIR="/path/to/fonts:/path/to/private-fonts"
 
 # 混用本地目录与远程 URL
-export PICASSO_FONT_DIR="/Users/me/fonts,https://cdn.example.com/don58-Medium.woff2"
+export PICASSO_FONT_DIR="/path/to/fonts,https://cdn.example.com/don58-Medium.woff2"
 
 node tools/gen_restore_html.js restore.json out.html
 ```
@@ -235,16 +279,21 @@ cd Picasso/packages/picasso-parse
 npm install
 npm run build        # tsc → dist/，会一并编译 sibling 包源码
 
-npm test             # 依次运行 test/index.ts 与 test/restore.test.ts
+npm test             # 一次性执行存量入口、RestoreDSL 与视觉事实/渲染回归
 ```
 
-发布：
+发布准备（不上传 npm）：
 
 ```sh
 # 在 packages/picasso-parse 目录下
-npm version <patch|minor|major>
-npm publish --access public
+npm test
+npm pack --dry-run
+npm pack             # prepack 自动构建并同步 parserVersion，避免打入旧 dist
 ```
+
+版本变更见 [CHANGELOG.md](CHANGELOG.md)。正式发布前应确认包名、版本、registry、
+dist-tag 与已验证 tarball；只有明确确认后才执行发布。发布现成 tarball 时不会重新执行
+源码目录的测试或构建，因此应使用经过检查的同一份产物。
 
 ## 贡献
 

@@ -1,6 +1,6 @@
 # RestoreDSL 确定性 HTML 渲染器
 
-把 RestoreDSL（`schemaVersion 1.0`）渲染成静态 HTML 还原稿。**模拟 LLM 消费者的确定性渲染基线**，用于区分：
+把 RestoreDSL（`schemaVersion 1.1`（也接受已有 1.0 字段））渲染成静态 HTML 还原稿。**模拟 LLM 消费者的确定性渲染基线**，用于区分：
 
 - **「数据不够还原」** → 改 `packages/picasso-parse/src/parseRestoreDSL/` 或插件端切图/字体采集
 - **「LLM 没用好数据」** → 改服务端提示词
@@ -81,10 +81,10 @@ node gen_restore_fragment.js <restore.json> <output.html> [--fit-width]
 
 ```sh
 # 纯本地目录
-export PICASSO_FONT_DIR="/Users/me/fonts:/Users/me/private-fonts"
+export PICASSO_FONT_DIR="/path/to/fonts:/path/to/private-fonts"
 
 # 混用本地目录与远程 URL
-export PICASSO_FONT_DIR="/Users/me/fonts,https://cdn.example.com/don58-Medium.woff2"
+export PICASSO_FONT_DIR="/path/to/fonts,https://cdn.example.com/don58-Medium.woff2"
 
 node gen_restore_html.js restore.json out.html
 ```
@@ -94,3 +94,9 @@ node gen_restore_html.js restore.json out.html
 ## 与 schema 的同步
 
 本目录 Node.js 渲染工具、`../schema/restore-dsl.schema.json`、`../schema/restore-dsl-rendering-guide.md`、`../src/parseRestoreDSL/restoreTypes.ts` 的 `RESTORE_SCHEMA_VERSION` 必须同步维护——改任一处都要检查其余几处，否则渲染器会与产物脱节，失去对照价值。
+
+## 0.2.0 消费修复
+
+图片 fill.mode 与多 fills 的叠层使用独立 CSS 背景列表；文本 auto-width 保持固定画板几何且禁止软换行，
+显式段落分别消费 align，middle/bottom 对齐整体文本内容。本次修复既有字段消费，核心 Schema 仍为 1.1。
+没有真实 Sketch 像素证据的径向渐变椭圆与 patternTileScale，不增加猜测性的“精确”绘制。

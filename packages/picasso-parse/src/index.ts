@@ -96,6 +96,8 @@ export const picassoArtboardLowcodeParse = (layer: SKLayer): Component => {
  * toRenderProfile：LLM 还原精简视图（剥 hash/组件字典/透明占位，全量产物照常落库）。
  */
 export { picassoArtboardRestoreParse, annotateStableIds } from './parseRestoreDSL';
+export { analyzeRestoreVisuals } from './parseRestoreDSL/analyzeRestoreVisuals';
+export type { RestoreVisualAnalysisOptions, RestoreRawVisualFacts, RestoreVisualIssueCode, RestoreVisualIssue, RestoreVisualAnalysis } from './parseRestoreDSL/analyzeRestoreVisuals';
 export { assessRestoreDiffability } from './parseRestoreDSL/diffability';
 export type { DiffabilityReport, DiffabilityVerdict } from './parseRestoreDSL/diffability';
 export { toRenderProfile } from './parseRestoreDSL/renderProfile';

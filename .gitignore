@@ -2,6 +2,7 @@
 picasso.sketchplugin
 packages/*/dist
 packages/*/types
+.release/
 
 # ─── 依赖与锁文件 ────────────────────────────
 node_modules

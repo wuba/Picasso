@@ -474,7 +474,7 @@ const FONT_FAMILY_MAP: { [key: string]: string } = {
  * 匹配顺序不可随意换：
  *   1) black / heavy 900 优先——某些字体命名 `HeavyBold`，先 heavy 判 900 更准；
  *   2) ultra/extra bold 800 必须在 bold 前——否则 `UltraBold` 会被 bold 抢去落 700；
- *   3) semi/demi bold 600 同样必须在 bold 后但独立判——名字含 bold 的都得先绕过 bold 分支；
+ *   3) semi/demi bold 600 必须在 bold 前——否则 Semibold / DemiBold 会被误判为 700；
  *   4) light 300 放最后——`ExtraLight` / `UltraLight` 已在前面被 200 拦住，
  *      否则 `UltraLight` 会先命中 light 落 300。
  * 未命中一律 400（Regular / Normal）。
@@ -482,8 +482,8 @@ const FONT_FAMILY_MAP: { [key: string]: string } = {
 export const fontWeightFromName = (psName: string): number => {
     if (/black|heavy/i.test(psName)) return 900;
     if (/ultrabold|extrabold/i.test(psName)) return 800;
-    if (/bold/i.test(psName)) return 700;
     if (/semibold|demibold/i.test(psName)) return 600;
+    if (/bold/i.test(psName)) return 700;
     if (/medium/i.test(psName)) return 500;
     if (/extralight|ultralight/i.test(psName)) return 200;
     if (/thin/i.test(psName)) return 100;

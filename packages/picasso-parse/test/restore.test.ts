@@ -141,6 +141,119 @@ assert(sha1('中文字符串测试') === sha1('中文字符串测试'), 'sha1 UT
     assert(text === JSON.stringify(measure2), '未注入输入：measure DSL 两次解析逐字节一致');
 }
 
+// ---------- 2.1. Measure 专用普通 Group 保留标记 ----------
+{
+    /**
+     * 创建参数面板解析所需的最小空样式。
+     * @returns Sketch style 测试对象。
+     * @throws 本方法只创建普通对象，不会抛出异常。
+     */
+    const makeEmptyStyle = (): any => ({
+        _class: 'style',
+        fills: [],
+        borders: [],
+        shadows: [],
+        innerShadows: [],
+        contextSettings: { _class: 'graphicsContextSettings', opacity: 1, blendMode: 0 },
+    });
+    /**
+     * 创建模拟自动栅格化开关图标的普通 Group 画板。
+     * @param preserveInMeasure 是否向输入 Group 写入 Measure 专用保留标记。
+     * @returns 可供四种存量解析入口消费的最小画板。
+     * @throws 本方法只创建普通对象，不会抛出异常。
+     */
+    const makePreserveGroupArtboard = (preserveInMeasure: boolean): any => ({
+        _class: 'artboard',
+        do_objectID: 'PMG-ROOT',
+        stableId: 'root-stable-id',
+        name: 'Measure保组画板',
+        isVisible: true,
+        frame: { _class: 'rect', x: 0, y: 0, width: 100, height: 100 },
+        style: makeEmptyStyle(),
+        layers: [{
+            _class: 'group',
+            do_objectID: 'PMG-GROUP',
+            stableId: '121afc07',
+            name: '默认-开',
+            isVisible: true,
+            ...(preserveInMeasure ? { preserveInMeasure: true } : {}),
+            frame: { _class: 'rect', x: 0, y: 0, width: 44, height: 22 },
+            style: makeEmptyStyle(),
+            layers: [
+                {
+                    _class: 'rectangle',
+                    do_objectID: 'PMG-RECT',
+                    stableId: 'rect-stable-id',
+                    name: '开关背景',
+                    isVisible: true,
+                    fixedRadius: 11,
+                    frame: { _class: 'rect', x: 0, y: 0, width: 44, height: 22 },
+                    style: makeEmptyStyle(),
+                },
+                {
+                    _class: 'oval',
+                    do_objectID: 'PMG-OVAL',
+                    stableId: 'oval-stable-id',
+                    name: '开关滑块',
+                    isVisible: true,
+                    frame: { _class: 'rect', x: 24, y: 2, width: 18, height: 18 },
+                    style: makeEmptyStyle(),
+                },
+            ],
+        }],
+    });
+    /**
+     * 按 stableId 在 DSL 树中查找节点。
+     * @param node 当前搜索节点。
+     * @param stableId 目标稳定 ID。
+     * @returns 命中的 DSL 节点；未命中返回 undefined。
+     * @throws 本方法只遍历普通对象，不会主动抛出异常。
+     */
+    const findByStableId = (node: any, stableId: string): any => {
+        if (!node) return undefined;
+        if (node.stableId === stableId) return node;
+        if (!Array.isArray(node.children)) return undefined;
+
+        for (const child of node.children) {
+            const matched = findByStableId(child, stableId);
+
+            if (matched) return matched;
+        }
+
+        return undefined;
+    };
+
+    const ordinaryMeasure = picassoArtboardMeatureParse(makePreserveGroupArtboard(false)) as any;
+    const preservedMeasure = picassoArtboardMeatureParse(makePreserveGroupArtboard(true)) as any;
+    const ordinaryGroup = findByStableId(ordinaryMeasure, '121afc07');
+    const preservedGroup = findByStableId(preservedMeasure, '121afc07');
+
+    assert(ordinaryGroup === undefined
+        && !!findByStableId(ordinaryMeasure, 'rect-stable-id')
+        && !!findByStableId(ordinaryMeasure, 'oval-stable-id'),
+        'Measure 保组：未标记普通 Group 继续按历史行为拍平，子节点保持可选');
+    assert(!!preservedGroup
+        && preservedGroup.type === 'Container'
+        && preservedGroup.stableId === '121afc07'
+        && preservedGroup.panel.properties.size.width === 44
+        && preservedGroup.panel.properties.size.height === 22,
+        'Measure 保组：带标记普通 Group 保留直接 stableId 与 44x22 参数面板');
+    assert(!!preservedGroup
+        && preservedGroup.containerRole === undefined
+        && JSON.stringify(preservedMeasure).indexOf('preserveInMeasure') === -1,
+        'Measure 保组：不制造 containerRole，输入标记不进入输出 DSL');
+
+    const ordinaryCode = picassoArtboardCodeParse(makePreserveGroupArtboard(false));
+    const preservedCode = picassoArtboardCodeParse(makePreserveGroupArtboard(true));
+    const ordinaryOperation = picassoArtboardOperationCodeParse(makePreserveGroupArtboard(false));
+    const preservedOperation = picassoArtboardOperationCodeParse(makePreserveGroupArtboard(true));
+
+    assert(JSON.stringify(preservedCode) === JSON.stringify(ordinaryCode),
+        'Measure 保组：preserveInMeasure 不改变 code DSL');
+    assert(JSON.stringify(preservedOperation) === JSON.stringify(ordinaryOperation),
+        'Measure 保组：preserveInMeasure 不改变 operation DSL');
+}
+
 // ---------- 4. annotate 注入：模拟「副本 ID 全换」 ----------
 const makeExportB = (a: any): any => {
     const b = deepCopy(a);

@@ -23,6 +23,8 @@ const hasVisualStyle = (layer: SKLayer): boolean => {
  * @description 去掉分组，同时去掉图层层级
  * @param {SKLayer[]} layers
  * @param {SKLayer[]} [afterLayer=[]]
+ * @param {string} type 当前解析模式，仅 measure 模式识别 preserveInMeasure。
+ * @param {{id:string;name:string;stableId?:string}[]} [groupBreadcrumb=[]] 当前祖先面包屑。
  * @returns {SKLayer[]}
  */
 const filterGroupLayer = (
@@ -44,9 +46,12 @@ const filterGroupLayer = (
         // 非组件 或 是未解绑组件 或 组件解绑之后的组件
         // 组行为:{ Default: 0, Frame: 1, Graphic: 2 }
         // Graphic 是原子图形单元，保留（正常已在插件端被整组栅格化为 image，这里兜底）；
-        // Frame 仅在自身带可见样式时保留为节点，纯组织性 Frame 与 Default 组一样拍平
+        // Frame 仅在自身带可见样式时保留为节点，纯组织性 Frame 与 Default 组一样拍平。
+        // preserveInMeasure 是生产端显式声明的标注选择节点，只在 measure 投影保留；
+        // 输出由 parseDSL 白名单重建，因此该输入标记不会进入最终 DSL。
         if (
             layer._class !== 'group' ||
+            (type === 'measure' && layer.preserveInMeasure === true) ||
             layer.groupBehavior === 2 ||
             (layer.groupBehavior === 1 && hasVisualStyle(layer)) ||
             layer.symbolComponentObject ||
